@@ -9,7 +9,7 @@ Data sources
 The system ingests from four source types: in-field sensors (soil moisture, EC, temperature, humidity, wind, rainfall) updating every 15 minutes; weather forecast APIs updating every 3 hours; manual logs entered by the farm manager per event or weekly (irrigation runs, fertigation, spray applications, scouting observations, tissue samples); and computed fields derived from the above (ETo, water deficit, GDD, chill hours, risk indices).
 
 Interface — 7 pages
-Login — email + password with remember me
+Login — email + password with remember me, there will be multiple users permissions for different modules within the applications, such as admin, worker who can only log activities, supervisor who can change different activities and add new activities, etc
 Dashboard — command center with four top metrics, 7-day weather strip, active alerts panel, block status grid (green/amber/red health status per block), upcoming calendar widget, and recent activity feed
 Blocks — per-block live profile across all five agronomic domains (soil & water, phenology, nutrition, pest & disease, weather) with inline alerts and source attribution
 Calendar — month/week/day toggle, colour-coded events by activity type, ability to add events and log completions directly from entries
@@ -18,3 +18,10 @@ Activity log — searchable and filterable history of all actions taken across a
 Settings — block configuration, sensor connections, weather API, irrigation controller (future integration), notification preferences, and team/user management
 
 Navigation — top nav bar, fully responsive for desktop and mobile field use
+Tech stack
+Frontend - nextjs + tailwindcss
+backend - netlify with nextjs app router
+database and authentication - supabase
+AI LLM - netlify AI gateway
+Design reference - design.png
+
