@@ -42,9 +42,13 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 - No route, no components
 - Requires: per-block live profile across 5 agronomic domains (soil & water, phenology, nutrition, pest & disease, weather), inline alerts, source attribution
 
-### 4. Calendar Page — ❌ Not started
-- No route, no components
-- Requires: month/week/day toggle, colour-coded events, add events, log completions
+### 4. Calendar Page — ✅ Done
+- Full page route `app/(dashboard)/calendar/page.tsx`
+- Toggles for Month, Week (time grid), and Day (timeline) views
+- Colour-coded event pills (Irrigation, Fertigation, Spraying, Pruning, Scouting, Weather Alerts)
+- "Add Event" modal with activity-specific field blocks
+- "Log Completion" modal to capture actual start/end and notes
+- Shared types and mock data in `types.ts`
 
 ### 5. Recommendations Page — ❌ Not started
 - No route, no components
@@ -123,7 +127,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Settings page | 🟡 50% |
 | Navigation | ✅ 80% |
 | Blocks page | ❌ 0% |
-| Calendar page | ❌ 0% |
+| Calendar page | ✅ 100% (UI done, data mocked) |
 | Recommendations page | ❌ 0% |
 | Activity Log page | ❌ 0% |
 | Database schema | ❌ 0% |
@@ -138,3 +142,4 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Date | What changed |
 |---|---|
 | 2026-05-09 | Initial progress snapshot created |
+| 2026-05-09 | Built Calendar page (Month/Week/Day views, Add Event & Log Completion modals, mock data) || 2026-05-09 | Created `deploy-skill.md` with instructions for deploying the NutJob application to the local machine |

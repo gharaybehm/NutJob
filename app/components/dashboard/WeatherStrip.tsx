@@ -13,7 +13,7 @@ function getWeatherIcon(code: number) {
 }
 
 export default async function WeatherStrip() {
-  let forecast = [];
+  let forecast: { day: string; date: string; icon: ReturnType<typeof getWeatherIcon>; tempH: number; tempL: number; rain: number; rawDate: string }[] = [];
   try {
     const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=38.08&longitude=33.57&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto', { next: { revalidate: 3600 } });
     if (res.ok) {
