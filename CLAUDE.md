@@ -133,6 +133,10 @@ npm run start    # Start production server
 npm run lint     # Run ESLint
 ```
 
+## Standing Rules
+
+- **Always update `PROGRESS.md`** after completing any task. Update the relevant status row(s) and add a dated entry to the Changelog section. This is mandatory — do not skip it.
+
 ## Conventions
 
 - Use TypeScript for all files (`.tsx` / `.ts`)
