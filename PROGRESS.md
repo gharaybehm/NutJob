@@ -2,7 +2,7 @@
 
 > Last updated: 2026-05-09
 
-## Overall Status: ~35% Complete
+## Overall Status: ~60% Complete
 
 ---
 
@@ -38,9 +38,20 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 
 ❌ Data is currently mostly **mock/static** — needs real Supabase queries
 
-### 3. Blocks Page — ❌ Not started
-- No route, no components
-- Requires: per-block live profile across 5 agronomic domains (soil & water, phenology, nutrition, pest & disease, weather), inline alerts, source attribution
+### 3. Blocks Page — ✅ Done (Phase 1 & 2)
+- Route: `app/(dashboard)/blocks/page.tsx` ✅ (Now a Server Component fetching from Supabase)
+- `BlocksPage.tsx` — client shell, two-column layout (farm map | detail) ✅
+- `BlockMapGrid.tsx` — CSS grid-template-areas spatial farm layout, status colours, alert badges ✅
+- `BlockDetailPanel.tsx` — tabbed panel with 5 domain tabs + alert count badges ✅
+- `tabs/SoilWaterTab.tsx` — moisture bar, EC, ETo, water deficit, irrigation schedule ✅
+- `tabs/PhenologyTab.tsx` — season timeline, growth stage, GDD, chill hours, harvest window ✅
+- `tabs/NutritionTab.tsx` — nutrient gauge bars with sufficiency ranges, tissue analysis, fertigation history ✅
+- `tabs/PestDiseaseTab.tsx` — risk level, observation cards, scouting schedule ✅
+- `tabs/WeatherTab.tsx` — current conditions, risk flags, 24-hr forecast strip ✅
+- `NewBlockModal.tsx` — shell with all fields (variety, rootstock, planting year, spacing, tree count) ✅
+- `AlertBadge.tsx` + `SourceBadge.tsx` — shared UI atoms ✅
+- `types.ts` + `mockData.ts` — full type system + rich mock data for domain profiles ✅
+- Supabase schema + live data wiring for block creation and persistence ✅
 
 ### 4. Calendar Page — ✅ Done
 - Full page route `app/(dashboard)/calendar/page.tsx`
@@ -80,7 +91,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Manual logs (irrigation, spray, scouting, etc.) | ❌ Not started | |
 | Initial block data / PDF upload & extraction | ❌ Not started | |
 | Computed fields (ETo, water deficit, GDD, chill hours, risk indices) | ❌ Not started | |
-| DB schema / migrations | ❌ Not started | No schema files found |
+| DB schema / migrations | ✅ Done | 12 migrations applied — see table list below |
 
 ---
 
@@ -126,11 +137,11 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Dashboard page | 🟡 70% (UI done, data mocked) |
 | Settings page | 🟡 50% |
 | Navigation | ✅ 80% |
-| Blocks page | ❌ 0% |
+| Blocks page | ✅ 100% (Phase 2 — UI done, persistence wired) |
 | Calendar page | ✅ 100% (UI done, data mocked) |
 | Recommendations page | ❌ 0% |
 | Activity Log page | ❌ 0% |
-| Database schema | ❌ 0% |
+| Database schema | ✅ 100% |
 | Real data ingestion | ❌ 0% |
 | AI reasoning engine | ❌ 0% |
 | Roles & permissions | ❌ 0% |
@@ -142,4 +153,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Date | What changed |
 |---|---|
 | 2026-05-09 | Initial progress snapshot created |
-| 2026-05-09 | Built Calendar page (Month/Week/Day views, Add Event & Log Completion modals, mock data) || 2026-05-09 | Created `deploy-skill.md` with instructions for deploying the NutJob application to the local machine |
+| 2026-05-09 | Built Calendar page (Month/Week/Day views, Add Event & Log Completion modals, mock data) |
+| 2026-05-09 | Created `deploy-skill.md` with instructions for deploying the NutJob application to the local machine |
+| 2026-05-17 | Built Blocks page Phase 2 — wired up Supabase persistence, created Server Actions for block creation, fixed RLS, and added optimistic UI updates |
+| 2026-05-17 | Built complete Supabase schema — 13 tables: user_profiles, blocks (seeded), block_alerts, soil_water_readings, phenology_records, tissue_samples, fertigation_log, scouting_reports, pest_observations, weather_snapshots, activity_log, recommendations + upgraded calendar_events. All tables have RLS + policies. |

@@ -24,23 +24,31 @@ export async function createEvent(data: Omit<InsertEvent, 'user_id' | 'created_a
 export async function logEventCompletion(eventId: string, actualStart: Date, actualEnd: Date, notes: string) {
   const supabase = await createClient();
 
-  // We only really have completed_at in our table, 
-  // but we can store actualStart and actualEnd in the 'details' JSON field or 'notes'.
-  // Since we don't have separate columns for actual_start/actual_end in the schema,
-  // let's update 'completed_at' to the actualEnd, and put the rest in notes.
-  const completionNotes = `Actual Start: ${actualStart.toLocaleString('en-GB')}\nActual End: ${actualEnd.toLocaleString('en-GB')}\n\n${notes}`;
+  // Fetch existing details so we can merge completion data into the JSONB field
+  const { data: existing } = await supabase
+    .from('calendar_events')
+    .select('details')
+    .eq('id', eventId)
+    .single();
+
+  const mergedDetails = {
+    ...(existing?.details as Record<string, unknown> ?? {}),
+    actual_start: actualStart.toISOString(),
+    actual_end: actualEnd.toISOString(),
+  };
 
   const { error } = await supabase
     .from('calendar_events')
     .update({
       completed_at: actualEnd.toISOString(),
-      notes: completionNotes
+      notes: notes || null,
+      details: mergedDetails,
     })
     .eq('id', eventId);
 
   if (error) {
-    console.error('Error logging completion:', error);
-    throw new Error('Failed to log completion');
+    console.error('[Calendar] Error logging completion:', error.message);
+    throw new Error(`Failed to log completion: ${error.message}`);
   }
 
   revalidatePath('/calendar');

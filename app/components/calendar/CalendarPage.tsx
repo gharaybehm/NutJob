@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useTransition } from 'react';
 import CalendarHeader, { CalendarView } from './CalendarHeader';
 import MonthView from './MonthView';
 import WeekView from './WeekView';
 import DayView from './DayView';
 import AddEventModal from './AddEventModal';
 import LogCompletionModal from './LogCompletionModal';
-import { CalendarEvent, ACTIVITY_COLORS, ACTIVITY_LABELS, MOCK_EVENTS } from './types';
+import { CalendarEvent, ACTIVITY_COLORS, ACTIVITY_LABELS } from './types';
+import { createEvent, logEventCompletion } from '@/app/(dashboard)/calendar/actions';
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
@@ -152,10 +153,11 @@ const LEGEND_ITEMS = (
 
 // ─── Main page component ──────────────────────────────────────────────────────
 
-export default function CalendarPage() {
+export default function CalendarPage({ initialEvents = [] }: { initialEvents?: CalendarEvent[] }) {
   const [view, setView]       = useState<CalendarView>('month');
   const [currentDate, setCurrentDate] = useState(() => new Date());
-  const [events, setEvents]   = useState<CalendarEvent[]>(MOCK_EVENTS);
+  const [events, setEvents]   = useState<CalendarEvent[]>(initialEvents);
+  const [isPending, startTransition] = useTransition();
 
   // Modals
   const [showAdd, setShowAdd]                             = useState(false);
@@ -179,10 +181,30 @@ export default function CalendarPage() {
   }, []);
 
   const handleSaveEvent = useCallback((event: CalendarEvent) => {
+    // Optimistic update — add immediately to local state
     setEvents((prev) => [...prev, event]);
+    // Persist to Supabase in background
+    startTransition(async () => {
+      try {
+        await createEvent({
+          title: event.title,
+          type: event.type,
+          start_date: event.startDate.toISOString(),
+          end_date: event.endDate.toISOString(),
+          block: event.block ?? null,
+          notes: event.notes ?? null,
+          details: event.details ?? null,
+        });
+      } catch (err) {
+        console.error('[Calendar] Failed to save event:', err);
+        // Rollback on failure
+        setEvents((prev) => prev.filter((e) => e.id !== event.id));
+      }
+    });
   }, []);
 
   const handleLogCompletion = useCallback((eventId: string, actualStart: Date, actualEnd: Date, notes: string) => {
+    // Optimistic update
     setEvents((prev) =>
       prev.map((e) =>
         e.id === eventId
@@ -190,16 +212,29 @@ export default function CalendarPage() {
           : e
       )
     );
+    // Persist to Supabase in background
+    startTransition(async () => {
+      try {
+        await logEventCompletion(eventId, actualStart, actualEnd, notes);
+      } catch (err) {
+        console.error('[Calendar] Failed to log completion:', err);
+      }
+    });
   }, []);
 
   return (
     <div className="flex flex-col gap-4">
       {/* Page title */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Farm Calendar</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Irrigation · Fertigation · Spraying · Pruning · Scouting
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Farm Calendar</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Irrigation · Fertigation · Spraying · Pruning · Scouting
+          </p>
+        </div>
+        {isPending && (
+          <span className="mt-1 text-xs text-slate-400 dark:text-slate-500 animate-pulse">Saving…</span>
+        )}
       </div>
 
       {/* Legend */}

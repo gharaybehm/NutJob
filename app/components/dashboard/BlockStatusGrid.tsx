@@ -1,10 +1,10 @@
 const blocks = [
-  { id: "A", name: "Block A", variety: "Nonpareil", acres: 45, status: "green", moisture: "32%", issue: null },
-  { id: "B", name: "Block B", variety: "Monterey", acres: 30, status: "green", moisture: "29%", issue: null },
-  { id: "C", name: "Block C", variety: "Nonpareil", acres: 50, status: "red", moisture: "14%", issue: "Low Moisture" },
-  { id: "D", name: "Block D", variety: "Fritz", acres: 25, status: "amber", moisture: "22%", issue: "Pest Risk" },
-  { id: "E", name: "Block E", variety: "Monterey", acres: 40, status: "green", moisture: "28%", issue: null },
-  { id: "F", name: "Block F", variety: "Nonpareil", acres: 35, status: "green", moisture: "30%", issue: null },
+  { id: "A", name: "Block A", variety: "Nonpareil", area: 45, areaUnit: "Dunm", status: "green", moisture: "32%", issue: null },
+  { id: "B", name: "Block B", variety: "Monterey", area: 30, areaUnit: "Dunm", status: "green", moisture: "29%", issue: null },
+  { id: "C", name: "Block C", variety: "Nonpareil", area: 50, areaUnit: "Dunm", status: "red", moisture: "14%", issue: "Low Moisture" },
+  { id: "D", name: "Block D", variety: "Fritz", area: 25, areaUnit: "Dunm", status: "amber", moisture: "22%", issue: "Pest Risk" },
+  { id: "E", name: "Block E", variety: "Monterey", area: 40, areaUnit: "Dunm", status: "green", moisture: "28%", issue: null },
+  { id: "F", name: "Block F", variety: "Nonpareil", area: 35, areaUnit: "Dunm", status: "green", moisture: "30%", issue: null },
 ];
 
 export default function BlockStatusGrid() {
@@ -34,7 +34,7 @@ export default function BlockStatusGrid() {
                 }`}></span>
               </div>
               <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                {block.variety} • {block.acres} ac
+                {block.variety} • {block.area} {block.areaUnit}
               </div>
               <div className="mt-4 flex items-center justify-between text-xs font-medium">
                 <span className="text-slate-600 dark:text-slate-300">Moisture: {block.moisture}</span>
