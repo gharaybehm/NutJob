@@ -529,39 +529,57 @@ export type Database = {
       }
       soil_water_readings: {
         Row: {
-          block_id: string
+          block_id: string | null
           created_at: string
           eto: number | null
+          file_url: string | null
           id: string
+          lab_reference: string | null
+          notes: string | null
+          parameters: Record<string, unknown> | null
+          ph: number | null
           recorded_at: string
           root_zone_temp: number | null
           soil_ec: number | null
           soil_moisture: number | null
           source: Database["public"]["Enums"]["data_source"]
+          test_type: string
           water_deficit: number | null
         }
         Insert: {
-          block_id: string
+          block_id?: string | null
           created_at?: string
           eto?: number | null
+          file_url?: string | null
           id?: string
+          lab_reference?: string | null
+          notes?: string | null
+          parameters?: Record<string, unknown> | null
+          ph?: number | null
           recorded_at?: string
           root_zone_temp?: number | null
           soil_ec?: number | null
           soil_moisture?: number | null
           source?: Database["public"]["Enums"]["data_source"]
+          test_type?: string
           water_deficit?: number | null
         }
         Update: {
-          block_id?: string
+          block_id?: string | null
           created_at?: string
           eto?: number | null
+          file_url?: string | null
           id?: string
+          lab_reference?: string | null
+          notes?: string | null
+          parameters?: Record<string, unknown> | null
+          ph?: number | null
           recorded_at?: string
           root_zone_temp?: number | null
           soil_ec?: number | null
           soil_moisture?: number | null
           source?: Database["public"]["Enums"]["data_source"]
+          test_type?: string
           water_deficit?: number | null
         }
         Relationships: [
@@ -756,12 +774,18 @@ export type Database = {
           created_at: string | null
           eto: number | null
           field_capacity: number | null
+          file_url: string | null
           id: string | null
+          lab_reference: string | null
+          notes: string | null
+          parameters: Record<string, unknown> | null
+          ph: number | null
           recorded_at: string | null
           root_zone_temp: number | null
           soil_ec: number | null
           soil_moisture: number | null
           source: Database["public"]["Enums"]["data_source"] | null
+          test_type: string | null
           water_deficit: number | null
           wilting_point: number | null
         }
@@ -834,6 +858,10 @@ export type Database = {
         | "spraying"
         | "pruning"
         | "scouting"
+        | "pollinating"
+        | "tilling"
+        | "plowing"
+        | "weeding"
         | "tissue-sample"
         | "other"
       agro_domain:
@@ -998,6 +1026,10 @@ export const Constants = {
         "spraying",
         "pruning",
         "scouting",
+        "pollinating",
+        "tilling",
+        "plowing",
+        "weeding",
         "tissue-sample",
         "other",
       ],

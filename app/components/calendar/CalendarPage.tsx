@@ -181,12 +181,12 @@ export default function CalendarPage({ initialEvents = [] }: { initialEvents?: C
   }, []);
 
   const handleSaveEvent = useCallback((event: CalendarEvent) => {
-    // Optimistic update — add immediately to local state
+    // Optimistic update — add immediately to local state with temp id
     setEvents((prev) => [...prev, event]);
-    // Persist to Supabase in background
+    // Persist to Supabase and replace temp id with real UUID
     startTransition(async () => {
       try {
-        await createEvent({
+        const { id: realId } = await createEvent({
           title: event.title,
           type: event.type,
           start_date: event.startDate.toISOString(),
@@ -195,6 +195,9 @@ export default function CalendarPage({ initialEvents = [] }: { initialEvents?: C
           notes: event.notes ?? null,
           details: event.details ?? null,
         });
+        setEvents((prev) =>
+          prev.map((e) => (e.id === event.id ? { ...e, id: realId } : e))
+        );
       } catch (err) {
         console.error('[Calendar] Failed to save event:', err);
         // Rollback on failure

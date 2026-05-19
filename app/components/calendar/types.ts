@@ -6,6 +6,10 @@ export type ActivityType =
   | 'spraying'
   | 'pruning'
   | 'scouting'
+  | 'pollinating'
+  | 'tilling'
+  | 'plowing'
+  | 'weeding'
   | 'weather-alert'
   | 'other';
 
@@ -20,6 +24,10 @@ export const ACTIVITY_COLORS: Record<
   spraying:      { bg: 'bg-amber-100',   text: 'text-amber-700',   ring: 'ring-amber-200',   dot: 'bg-amber-500' },
   pruning:       { bg: 'bg-purple-100',  text: 'text-purple-700',  ring: 'ring-purple-200',  dot: 'bg-purple-500' },
   scouting:      { bg: 'bg-orange-100',  text: 'text-orange-700',  ring: 'ring-orange-200',  dot: 'bg-orange-500' },
+  pollinating:   { bg: 'bg-yellow-100',  text: 'text-yellow-700',  ring: 'ring-yellow-200',  dot: 'bg-yellow-500' },
+  tilling:       { bg: 'bg-stone-100',   text: 'text-stone-700',   ring: 'ring-stone-200',   dot: 'bg-stone-500' },
+  plowing:       { bg: 'bg-rose-100',    text: 'text-rose-700',    ring: 'ring-rose-200',    dot: 'bg-rose-500' },
+  weeding:       { bg: 'bg-lime-100',    text: 'text-lime-700',    ring: 'ring-lime-200',    dot: 'bg-lime-500' },
   'weather-alert': { bg: 'bg-red-100',   text: 'text-red-700',     ring: 'ring-red-200',     dot: 'bg-red-500' },
   other:         { bg: 'bg-slate-100',   text: 'text-slate-700',   ring: 'ring-slate-200',   dot: 'bg-slate-500' },
 };
@@ -30,6 +38,10 @@ export const ACTIVITY_LABELS: Record<ActivityType, string> = {
   spraying:        'Spraying',
   pruning:         'Pruning',
   scouting:        'Scouting',
+  pollinating:     'Pollinating',
+  tilling:         'Tilling',
+  plowing:         'Plowing',
+  weeding:         'Weeding',
   'weather-alert': 'Weather Alert',
   other:           'Other',
 };

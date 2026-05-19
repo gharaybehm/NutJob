@@ -15,7 +15,7 @@ function toDatetimeLocal(d: Date) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
-const ACTIVITY_TYPES: ActivityType[] = ['irrigation', 'fertigation', 'spraying', 'pruning', 'scouting', 'other'];
+const ACTIVITY_TYPES: ActivityType[] = ['irrigation', 'fertigation', 'spraying', 'pruning', 'scouting', 'pollinating', 'tilling', 'plowing', 'weeding', 'other'];
 
 export default function AddEventModal({ defaultDate, onClose, onSave }: AddEventModalProps) {
   const now = defaultDate ?? new Date();

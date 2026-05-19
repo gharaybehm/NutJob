@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, FlaskConical } from 'lucide-react';
 import type { Block, BlockProfile } from './types';
 import { BLOCK_PROFILES, makeDefaultProfile } from './mockData';
 import type { BlockFormValues } from './BlockFormModal';
@@ -9,6 +9,7 @@ import { createBlock, updateBlock, deleteBlock } from '@/app/actions/blocks';
 import BlockMapGrid from './BlockMapGrid';
 import BlockDetailPanel from './BlockDetailPanel';
 import BlockFormModal from './BlockFormModal';
+import LogTestResultModal from './LogTestResultModal';
 
 interface Props {
   initialBlocks?: Block[];
@@ -33,6 +34,7 @@ export default function BlocksPage({ initialBlocks }: Props) {
   const [editingBlock, setEditingBlock] = useState<Block | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [testModalOpen, setTestModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const selectedProfile = profiles[selectedId];
@@ -64,6 +66,12 @@ export default function BlocksPage({ initialBlocks }: Props) {
         treeCount: Number(values.treeCount) || 0,
         rowSpacing: Number(values.rowSpacing) || 6,
         treeSpacing: Number(values.treeSpacing) || 5,
+        mapPos: {
+          col:     values.mapCol     ? Number(values.mapCol)     : editingBlock.mapPos.col,
+          row:     values.mapRow     ? Number(values.mapRow)     : editingBlock.mapPos.row,
+          colSpan: values.mapColSpan ? Number(values.mapColSpan) : editingBlock.mapPos.colSpan,
+          rowSpan: values.mapRowSpan ? Number(values.mapRowSpan) : editingBlock.mapPos.rowSpan,
+        },
       };
 
       setBlocks(prev => prev.map(b => b.id === updatedBlock.id ? updatedBlock : b));
@@ -101,7 +109,12 @@ export default function BlocksPage({ initialBlocks }: Props) {
         treeSpacing:  Number(values.treeSpacing) || 5,
         status:       'green',
         alerts:       [],
-        mapPos:       { col, row: newRow },
+        mapPos: {
+          col:     values.mapCol     ? Number(values.mapCol)     : col,
+          row:     values.mapRow     ? Number(values.mapRow)     : newRow,
+          colSpan: values.mapColSpan ? Number(values.mapColSpan) : 1,
+          rowSpan: values.mapRowSpan ? Number(values.mapRowSpan) : 1,
+        },
       };
 
       setBlocks(prev => [...prev, optimisticBlock]);
@@ -240,6 +253,24 @@ export default function BlocksPage({ initialBlocks }: Props) {
         onSave={handleFormSave}
         initialData={editingBlock || undefined}
       />
+
+      <LogTestResultModal
+        open={testModalOpen}
+        onClose={() => setTestModalOpen(false)}
+        blocks={blocks}
+        defaultBlockId={selectedId}
+      />
+
+      {/* Log Test Result FAB */}
+      {blocks.length > 0 && (
+        <button
+          onClick={() => setTestModalOpen(true)}
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-brand-700 active:scale-95 transition-all"
+        >
+          <FlaskConical className="h-4 w-4" />
+          Log Test Result
+        </button>
+      )}
 
       {/* Custom Delete Confirmation Modal */}
       {deleteConfirmId && (

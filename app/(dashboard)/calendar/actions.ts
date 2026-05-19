@@ -1,17 +1,20 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { Database } from '@/utils/supabase/types';
 
 type InsertEvent = Database['public']['Tables']['calendar_events']['Insert'];
 
-export async function createEvent(data: Omit<InsertEvent, 'user_id' | 'created_at' | 'id'>) {
+export async function createEvent(data: Omit<InsertEvent, 'user_id' | 'created_at' | 'id'>): Promise<{ id: string }> {
   const supabase = await createClient();
 
-  const { error } = await supabase
+  const { data: created, error } = await supabase
     .from('calendar_events')
-    .insert(data);
+    .insert(data)
+    .select('id')
+    .single();
 
   if (error) {
     console.error('Error creating event:', error);
@@ -19,15 +22,27 @@ export async function createEvent(data: Omit<InsertEvent, 'user_id' | 'created_a
   }
 
   revalidatePath('/calendar');
+  return { id: created.id };
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function logEventCompletion(eventId: string, actualStart: Date, actualEnd: Date, notes: string) {
   const supabase = await createClient();
+  const admin = createAdminClient();
 
-  // Fetch existing details so we can merge completion data into the JSONB field
+  // Mock events (non-UUID ids) only exist in local state — skip DB writes
+  if (!UUID_RE.test(eventId)) {
+    console.warn('[Calendar] Skipping completion log for mock event:', eventId);
+    return;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Fetch existing event so we can merge details and write to activity_log
   const { data: existing } = await supabase
     .from('calendar_events')
-    .select('details')
+    .select('title, type, block_id, details')
     .eq('id', eventId)
     .single();
 
@@ -51,5 +66,29 @@ export async function logEventCompletion(eventId: string, actualStart: Date, act
     throw new Error(`Failed to log completion: ${error.message}`);
   }
 
+  // Write to activity_log via admin client to bypass RLS
+  if (existing) {
+    const validTypes = ['irrigation', 'fertigation', 'spraying', 'pruning', 'scouting', 'pollinating', 'tilling', 'plowing', 'weeding', 'tissue-sample', 'other'] as const;
+    type ActivityType = typeof validTypes[number];
+    const activityType: ActivityType = validTypes.includes(existing.type as ActivityType)
+      ? (existing.type as ActivityType)
+      : 'other';
+
+    const { error: logError } = await admin.from('activity_log').insert({
+      title: existing.title,
+      activity_type: activityType,
+      block_id: existing.block_id ?? null,
+      description: notes || null,
+      performed_at: actualEnd.toISOString(),
+      performed_by: user?.id ?? null,
+      calendar_event_id: eventId,
+    });
+
+    if (logError) {
+      console.error('[Calendar] Failed to write activity_log:', logError.message);
+    }
+  }
+
   revalidatePath('/calendar');
+  revalidatePath('/activity');
 }

@@ -22,8 +22,10 @@ interface RecommendationCardProps {
   confidence: number | null;
   status: Status;
   blockName?: string;
+  managerNote?: string | null;
   onAccept: (id: string) => void;
   onSkip: (id: string) => void;
+  onEdit: (id: string) => void;
   isProcessing?: boolean;
 }
 
@@ -35,8 +37,10 @@ export default function RecommendationCard({
   confidence,
   status,
   blockName,
+  managerNote,
   onAccept,
   onSkip,
+  onEdit,
   isProcessing = false
 }: RecommendationCardProps) {
   
@@ -62,10 +66,13 @@ export default function RecommendationCard({
     }
   };
 
-  const getConfidenceColor = (score: number | null) => {
-    if (score === null) return "text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400";
-    if (score >= 90) return "text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400";
-    if (score >= 75) return "text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400";
+  // confidence is stored as 0.0–1.0 in the DB
+  const confidencePct = confidence !== null ? Math.round(confidence * 100) : null;
+
+  const getConfidenceColor = (pct: number | null) => {
+    if (pct === null) return "text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400";
+    if (pct >= 90) return "text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400";
+    if (pct >= 75) return "text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400";
     return "text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-400";
   };
 
@@ -76,9 +83,9 @@ export default function RecommendationCard({
           <div className={`p-2 rounded-lg ${getCategoryColor(category)}`}>
             {getCategoryIcon(category)}
           </div>
-          {confidence !== null && (
-            <div className={`text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1 ${getConfidenceColor(confidence)}`}>
-              {confidence}% Match
+          {confidencePct !== null && (
+            <div className={`text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1 ${getConfidenceColor(confidencePct)}`}>
+              {confidencePct}% Match
             </div>
           )}
         </div>
@@ -109,6 +116,7 @@ export default function RecommendationCard({
             Accept
           </button>
           <button
+            onClick={() => onEdit(id)}
             disabled={isProcessing}
             className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             title="Edit"
@@ -125,24 +133,25 @@ export default function RecommendationCard({
           </button>
         </div>
       ) : (
-        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <span className={`text-sm font-medium flex items-center gap-1.5 ${
-            status === 'accepted' ? 'text-emerald-600 dark:text-emerald-400' :
-            status === 'skipped' ? 'text-slate-500 dark:text-slate-400' :
-            'text-amber-600 dark:text-amber-400'
-          }`}>
-            {status === 'accepted' && <Check className="h-4 w-4" />}
-            {status === 'skipped' && <X className="h-4 w-4" />}
-            {status === 'edited' && <Edit2 className="h-4 w-4" />}
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </span>
-          <button
-            onClick={() => onSkip(id)} // using skip as a reset to pending essentially, or we could have a 'undo' action. Let's not implement undo for now to keep it simple.
-            disabled={true} // disabled for now, just visual indicator
-            className="text-xs text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
-          >
-            Logged
-          </button>
+        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className={`text-sm font-medium flex items-center gap-1.5 ${
+              status === 'accepted' ? 'text-emerald-600 dark:text-emerald-400' :
+              status === 'skipped' ? 'text-slate-500 dark:text-slate-400' :
+              'text-amber-600 dark:text-amber-400'
+            }`}>
+              {status === 'accepted' && <Check className="h-4 w-4" />}
+              {status === 'skipped' && <X className="h-4 w-4" />}
+              {status === 'edited' && <Edit2 className="h-4 w-4" />}
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">Logged</span>
+          </div>
+          {managerNote && (
+            <p className="text-xs text-slate-600 dark:text-slate-400 italic border-l-2 border-slate-300 dark:border-slate-600 pl-2">
+              "{managerNote}"
+            </p>
+          )}
         </div>
       )}
     </div>

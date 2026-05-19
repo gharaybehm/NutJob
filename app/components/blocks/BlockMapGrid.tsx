@@ -35,6 +35,9 @@ export default function BlockMapGrid({ blocks, selectedId, onSelect }: Props) {
   }, {} as Record<string, number>);
   const areaSummary = Object.entries(areaByUnit).map(([unit, total]) => `${total} ${unit}`).join(' + ') || '0 Dunm';
 
+  const cols = Math.max(blocks.reduce((m, b) => Math.max(m, b.mapPos.col + (b.mapPos.colSpan ?? 1)), 1), 1);
+  const rows = Math.max(blocks.reduce((m, b) => Math.max(m, b.mapPos.row + (b.mapPos.rowSpan ?? 1)), 1), 1);
+
   return (
     <div className="flex flex-col gap-4">
       {/* Legend */}
@@ -44,14 +47,29 @@ export default function BlockMapGrid({ blocks, selectedId, onSelect }: Props) {
         <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-500" />Critical</span>
       </div>
 
-      {/* Farm map grid */}
-      <div
-        className="grid gap-3"
-        style={{
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gridTemplateRows: 'repeat(3, minmax(120px, auto))',
-        }}
-      >
+      {/* Farm map wrapper — north compass overlaid top-right */}
+      <div className="relative">
+        {/* North compass */}
+        <div className="absolute top-0 right-0 z-10 flex flex-col items-center gap-0.5 select-none pointer-events-none pr-1 pt-1">
+          <svg width="28" height="28" viewBox="0 0 28 28" aria-label="North direction indicator">
+            <circle cx="14" cy="14" r="13" fill="white" stroke="#cbd5e1" strokeWidth="1.5"
+              className="dark:fill-slate-800 dark:stroke-slate-600" />
+            <path d="M14 3 L17.5 14 L14 12 L10.5 14 Z"
+              fill="currentColor" className="text-brand-600 dark:text-brand-400" />
+            <path d="M14 25 L17.5 14 L14 16 L10.5 14 Z"
+              fill="currentColor" className="text-slate-300 dark:text-slate-600" />
+          </svg>
+          <span className="text-[9px] font-bold tracking-widest text-slate-600 dark:text-slate-400 leading-none">N</span>
+        </div>
+
+        {/* Farm map grid */}
+        <div
+          className="grid gap-3"
+          style={{
+            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+            gridTemplateRows: `repeat(${rows}, minmax(120px, auto))`,
+          }}
+        >
         {blocks.map(block => {
           const cfg = statusConfig[block.status];
           const isSelected = block.id === selectedId;
@@ -99,6 +117,7 @@ export default function BlockMapGrid({ blocks, selectedId, onSelect }: Props) {
             </button>
           );
         })}
+        </div>
       </div>
 
       {/* Farm summary */}

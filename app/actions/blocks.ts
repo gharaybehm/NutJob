@@ -28,7 +28,11 @@ export async function createBlock(
   const supabase = await createClient();
 
   const id = deriveId(values.name, existingBlocks.map(b => b.id));
-  const { col, row } = nextMapPos(existingBlocks);
+  const auto = nextMapPos(existingBlocks);
+  const mapCol     = values.mapCol     ? Number(values.mapCol)     : auto.col;
+  const mapRow     = values.mapRow     ? Number(values.mapRow)     : auto.row;
+  const mapColSpan = values.mapColSpan ? Number(values.mapColSpan) : 1;
+  const mapRowSpan = values.mapRowSpan ? Number(values.mapRowSpan) : 1;
 
   const { error } = await supabase.from('blocks').insert({
     id,
@@ -42,10 +46,10 @@ export async function createBlock(
     tree_count:    Number(values.treeCount) || 0,
     row_spacing:   Number(values.rowSpacing) || 6,
     tree_spacing:  Number(values.treeSpacing) || 5,
-    map_col:       col,
-    map_row:       row,
-    map_col_span:  1,
-    map_row_span:  1,
+    map_col:       mapCol,
+    map_row:       mapRow,
+    map_col_span:  mapColSpan,
+    map_row_span:  mapRowSpan,
   });
 
   if (error) return { error: error.message };
@@ -71,6 +75,10 @@ export async function updateBlock(
     tree_count:    Number(values.treeCount) || 0,
     row_spacing:   Number(values.rowSpacing) || 6,
     tree_spacing:  Number(values.treeSpacing) || 5,
+    ...(values.mapCol     !== '' && values.mapCol     != null && { map_col:      Number(values.mapCol) }),
+    ...(values.mapRow     !== '' && values.mapRow     != null && { map_row:      Number(values.mapRow) }),
+    ...(values.mapColSpan !== '' && values.mapColSpan != null && { map_col_span: Number(values.mapColSpan) }),
+    ...(values.mapRowSpan !== '' && values.mapRowSpan != null && { map_row_span: Number(values.mapRowSpan) }),
   }).eq('id', id);
 
   if (error) return { error: error.message };

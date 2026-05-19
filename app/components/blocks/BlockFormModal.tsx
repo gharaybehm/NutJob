@@ -15,6 +15,10 @@ export interface BlockFormValues {
   treeCount: string;
   rowSpacing: string;
   treeSpacing: string;
+  mapCol: string;
+  mapRow: string;
+  mapColSpan: string;
+  mapRowSpan: string;
 }
 
 interface Props {
@@ -35,6 +39,10 @@ const EMPTY_FORM: BlockFormValues = {
   treeCount: '',
   rowSpacing: '',
   treeSpacing: '',
+  mapCol: '',
+  mapRow: '',
+  mapColSpan: '1',
+  mapRowSpan: '1',
 };
 
 type PlantOption = { id: number; commonName: string; scientificName: string };
@@ -276,6 +284,10 @@ export default function BlockFormModal({ open, onClose, onSave, initialData }: P
           treeCount: String(initialData.treeCount),
           rowSpacing: String(initialData.rowSpacing),
           treeSpacing: String(initialData.treeSpacing),
+          mapCol: String(initialData.mapPos.col),
+          mapRow: String(initialData.mapPos.row),
+          mapColSpan: String(initialData.mapPos.colSpan ?? 1),
+          mapRowSpan: String(initialData.mapPos.rowSpan ?? 1),
         });
       } else {
         setForm(EMPTY_FORM);
@@ -450,13 +462,34 @@ export default function BlockFormModal({ open, onClose, onSave, initialData }: P
                 className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
-          </div>
 
-          {!isEdit && (
-            <div className="rounded-lg border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
-              📄 <strong>PDF upload</strong> (soil/water test results) will be available in a future release. You can enter initial data manually above for now.
+            {/* Map Position */}
+            <div className="col-span-2 pt-1">
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                Map Position
+                <span className="ml-2 text-xs font-normal text-slate-400">zero-indexed grid coordinates</span>
+              </p>
+              <div className="grid grid-cols-4 gap-3">
+                {([
+                  { label: 'Column', key: 'mapCol' as const, min: 0 },
+                  { label: 'Row',    key: 'mapRow' as const, min: 0 },
+                  { label: 'Col Span', key: 'mapColSpan' as const, min: 1 },
+                  { label: 'Row Span', key: 'mapRowSpan' as const, min: 1 },
+                ]).map(({ label, key, min }) => (
+                  <div key={key} className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">{label}</label>
+                    <input
+                      type="number"
+                      min={min}
+                      value={form[key]}
+                      onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                      className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Validation error */}
