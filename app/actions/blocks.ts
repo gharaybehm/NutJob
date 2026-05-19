@@ -33,6 +33,7 @@ export async function createBlock(
   const { error } = await supabase.from('blocks').insert({
     id,
     name:          values.name.trim(),
+    crop_type:     values.cropType,
     variety:       values.variety,
     area:          Number(values.area) || 0,
     area_unit:     values.areaUnit || 'Dunm',
@@ -61,6 +62,7 @@ export async function updateBlock(
 
   const { error } = await supabase.from('blocks').update({
     name:          values.name.trim(),
+    crop_type:     values.cropType,
     variety:       values.variety,
     area:          Number(values.area) || 0,
     area_unit:     values.areaUnit || 'Dunm',

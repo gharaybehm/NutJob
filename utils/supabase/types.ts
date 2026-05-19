@@ -118,6 +118,7 @@ export type Database = {
           area_unit: string
           created_at: string
           created_by: string | null
+          crop_type: string
           field_capacity: number | null
           id: string
           map_col: number
@@ -140,6 +141,7 @@ export type Database = {
           area_unit?: string
           created_at?: string
           created_by?: string | null
+          crop_type?: string
           field_capacity?: number | null
           id: string
           map_col?: number
@@ -162,6 +164,7 @@ export type Database = {
           area_unit?: string
           created_at?: string
           created_by?: string | null
+          crop_type?: string
           field_capacity?: number | null
           id?: string
           map_col?: number

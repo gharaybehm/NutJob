@@ -55,6 +55,7 @@ export default function BlocksPage({ initialBlocks }: Props) {
       const updatedBlock: Block = {
         ...editingBlock,
         name: values.name.trim(),
+        cropType: values.cropType,
         variety: values.variety,
         area: Number(values.area) || 0,
         areaUnit: values.areaUnit || 'Dunm',
@@ -89,6 +90,7 @@ export default function BlocksPage({ initialBlocks }: Props) {
       const optimisticBlock: Block = {
         id:           tempId,
         name:         values.name.trim(),
+        cropType:     values.cropType,
         variety:      values.variety,
         area:         Number(values.area) || 0,
         areaUnit:     values.areaUnit || 'Dunm',

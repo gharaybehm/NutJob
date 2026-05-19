@@ -13,6 +13,7 @@ function rowToBlock(row: any): Block {
   return {
     id:           row.id,
     name:         row.name,
+    cropType:     row.crop_type || 'Almond',
     variety:      row.variety,
     area:         Number(row.area),
     areaUnit:     row.area_unit || 'Dunm',
@@ -36,7 +37,7 @@ export default async function BlocksRoute() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('blocks')
-    .select('id, name, variety, area, area_unit, planting_year, rootstock, tree_count, row_spacing, tree_spacing, map_col, map_row, map_col_span, map_row_span')
+    .select('id, name, crop_type, variety, area, area_unit, planting_year, rootstock, tree_count, row_spacing, tree_spacing, map_col, map_row, map_col_span, map_row_span')
     .order('map_row')
     .order('map_col');
 

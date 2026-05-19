@@ -59,7 +59,7 @@ export default function BlockDetailPanel({ profile, onEdit, onDelete }: Props) {
               </span>
             </div>
             <p className="text-sm text-slate-500 mt-0.5">
-              {block.variety} · {block.area} {block.areaUnit} · Planted {block.plantingYear} · {block.rootstock} rootstock · {block.treeCount.toLocaleString()} trees
+              {block.cropType || 'Almond'} - {block.variety} · {block.area} {block.areaUnit} · Planted {block.plantingYear} · {block.rootstock} rootstock · {block.treeCount.toLocaleString()} trees
             </p>
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0">

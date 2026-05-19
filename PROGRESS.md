@@ -1,6 +1,6 @@
 # NutJob — Progress vs Requirements
 
-> Last updated: 2026-05-09
+> Last updated: 2026-05-19
 
 ## Overall Status: ~60% Complete
 
@@ -48,7 +48,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 - `tabs/NutritionTab.tsx` — nutrient gauge bars with sufficiency ranges, tissue analysis, fertigation history ✅
 - `tabs/PestDiseaseTab.tsx` — risk level, observation cards, scouting schedule ✅
 - `tabs/WeatherTab.tsx` — current conditions, risk flags, 24-hr forecast strip ✅
-- `NewBlockModal.tsx` — shell with all fields (variety, rootstock, planting year, spacing, tree count) ✅
+- `BlockFormModal.tsx` — live Trefle.io plant search for crop type; curated list of 19 common crops shown first (clean single result), Trefle fallback for exotic species; variety auto-populated from Trefle + curated cultivar list ✅
 - `AlertBadge.tsx` + `SourceBadge.tsx` — shared UI atoms ✅
 - `types.ts` + `mockData.ts` — full type system + rich mock data for domain profiles ✅
 - Supabase schema + live data wiring for block creation and persistence ✅
@@ -63,7 +63,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 
 ### 5. Recommendations Page — ❌ Not started
 - No route, no components
-- Requires: AI-generated action cards, category filters (irrigate/fertilize/spray/scout), rationale + confidence score, accept/edit/skip controls
+- Requires: AI-generated action cards, category filters (irrigate/fertilize/spray/scout/pollinate), rationale + confidence score, accept/edit/skip controls
 
 ### 6. Activity Log Page — ❌ Not started
 - No route, no components

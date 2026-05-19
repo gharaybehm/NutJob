@@ -21,6 +21,7 @@ export interface BlockAlert {
 export interface Block {
   id: string;            // 'A' | 'B' | ...
   name: string;          // 'Block A'
+  cropType: string;      // 'Almond', 'Apple', etc.
   variety: string;       // 'Nonpareil'
   area: number;
   areaUnit: string;
