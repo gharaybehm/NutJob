@@ -158,6 +158,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Calendar page | ✅ 100% (UI done, data mocked) |
 | Recommendations page | ✅ 90% (UI + edit modal + activity log + AI generation done) |
 | Activity Log page | ✅ 100% |
+| Inventory page | ✅ 100% (Asset & Consumable tracking with calendar linking) |
 | Database schema | ✅ 100% |
 | Real data ingestion | ❌ 0% |
 | AI reasoning engine | ❌ 0% |
@@ -187,5 +188,6 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | 2026-05-24 | Phase 6 — Fully integrated dashboard layer with Supabase live database. Connected KPIGrid (dynamic moisture, rain totals, alert counters), ActiveAlerts (live unresolved list), BlockStatusGrid (real block health), UpcomingCalendar (live events), and ActivityFeed (completed actions log). Completed full linter and production build compilation verify with 0 warnings/errors. |
 | 2026-05-24 | AI soil/water test result extraction: Replaced Turkish-only regex/positional PDF parser with an advanced multimodal Gemini 2.5 Flash processor via OpenRouter and Trigger.dev. Accepts both PDF and image (PNG, JPEG, etc.) uploads. extracts pH, EC, macronutrients, minerals, and soil texture directly into the LogTestResultModal. |
 | 2026-05-24 | Robust Soil Extraction Fix — Enhanced `extract-soil-test` API route to support direct, self-contained OpenRouter LLM extraction when running locally, with a graceful Trigger.dev fallback. Resolves local Trigger.dev authentication and `ApiClientMissingError` crashes on server start. |
+| 2026-05-24 | Phase 7 — Built Inventory Page: Asset and Consumable management. Added local-first data store for asset status, maintenance logs, and consumable balances, complete with low-stock alerts, searchable dropdown suggestions, calendar event usage linking, and full role-based permissions (admin/supervisor vs worker read-only). |
 
 

@@ -62,7 +62,7 @@ The system ingests from four source types:
    - ETo (evapotranspiration), water deficit, GDD (growing degree days)
    - Chill hours, risk indices
 
-## Pages (7 total)
+## Pages (8 total)
 
 ### 1. Login
 - Email + password authentication
@@ -101,7 +101,12 @@ The system ingests from four source types:
 - Searchable and filterable history
 - All actions taken across all blocks
 
-### 7. Settings
+### 7. Inventory
+- Asset tracking with maintenance log history
+- Consumables tracking with usage logs linked to calendar events
+- Searchable suggestions and low stock alerts
+
+### 8. Settings
 - Block configuration
 - Sensor connections
 - Weather API settings

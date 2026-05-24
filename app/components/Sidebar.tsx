@@ -8,7 +8,8 @@ import {
   CalendarDays, 
   Lightbulb, 
   ActivitySquare, 
-  Settings 
+  Settings,
+  Warehouse
 } from "lucide-react";
 import SignOutButton from "./auth/SignOutButton";
 
@@ -18,6 +19,7 @@ const navigation = [
   { name: "Calendar", href: "/calendar", icon: CalendarDays },
   { name: "Recommendations", href: "/recommendations", icon: Lightbulb },
   { name: "Activity Log", href: "/activity", icon: ActivitySquare },
+  { name: "Inventory", href: "/inventory", icon: Warehouse },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
