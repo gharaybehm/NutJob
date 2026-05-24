@@ -57,7 +57,6 @@ export default function PhenologyTab({ data }: Props) {
             {STAGES.map((stage, idx) => {
               const isPast = idx < currentIdx;
               const isCurrent = idx === currentIdx;
-              const isFuture = idx > currentIdx;
               return (
                 <div key={stage.key} className="flex flex-col items-center gap-1.5" style={{ width: `${100 / STAGES.length}%` }}>
                   <div className={`z-10 flex h-7 w-7 items-center justify-center rounded-full border-2 text-sm transition-all ${

@@ -3,7 +3,17 @@
     "allow": [
       "Bash(npm run *)",
       "Bash(Start-Sleep -Seconds 8)",
-      "Bash(Get-Content \"C:\\\\Users\\\\mhrg7\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-mhrg7-Documents-NutJob\\\\139a9f1b-21e4-4f17-aafa-90186b5b2a9e\\\\tasks\\\\bo43yj8cr.output\" -Tail 30)"
+      "Bash(Get-Content \"C:\\\\Users\\\\mhrg7\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-mhrg7-Documents-NutJob\\\\139a9f1b-21e4-4f17-aafa-90186b5b2a9e\\\\tasks\\\\bo43yj8cr.output\" -Tail 30)",
+      "Bash(dir \"c:\\\\Users\\\\mhrg7\\\\Documents\\\\NutJob\" -Force)",
+      "Bash(npx tsc *)",
+      "Bash(ping -n 5 127.0.0.1)",
+      "Bash(curl -sL http://localhost:3000/blocks)",
+      "Bash(node -e \"require\\('@anthropic-ai/sdk'\\)\")",
+      "Bash(npm install *)",
+      "Bash(node -e \"require\\('pdf-parse'\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('exports',{}\\), indent=2\\)\\)\")",
+      "Bash(node -e \"const p = require\\('/c/Users/mhrg7/Documents/NutJob/node_modules/pdf-parse'\\); console.log\\(typeof p, Object.keys\\(p\\).slice\\(0,10\\)\\)\")",
+      "Bash(node -e \"console.log\\(require\\('c:/Users/mhrg7/Documents/NutJob/node_modules/pdf-parse/package.json'\\).version\\)\")"
     ]
   }
 }

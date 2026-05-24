@@ -9,6 +9,18 @@ export const metadata = {
 
 export default async function CalendarRoute() {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    // If not authenticated, standard redirect is handled by middleware but as a safeguard
+    return null;
+  }
+
+  const { data: profile } = await supabase
+    .from("user_profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
 
   const { data, error } = await supabase
     .from('calendar_events')
@@ -32,5 +44,5 @@ export default async function CalendarRoute() {
     console.error('[Calendar] Failed to fetch events:', error.message);
   }
 
-  return <CalendarPage initialEvents={initialEvents} />;
+  return <CalendarPage initialEvents={initialEvents} userRole={profile?.role || 'worker'} />;
 }

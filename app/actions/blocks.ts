@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
 import type { BlockFormValues } from '@/app/components/blocks/BlockFormModal';
-import type { Block } from '@/app/components/blocks/types';
+import type { Block, LatLng } from '@/app/components/blocks/types';
 
 /** Derive a short, unique text ID from the block name. */
 function deriveId(name: string, existing: string[]): string {
@@ -24,7 +24,7 @@ function nextMapPos(existing: Block[]): { col: number; row: number } {
 export async function createBlock(
   values: BlockFormValues,
   existingBlocks: Block[],
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; id?: string }> {
   const supabase = await createClient();
 
   const id = deriveId(values.name, existingBlocks.map(b => b.id));
@@ -34,7 +34,10 @@ export async function createBlock(
   const mapColSpan = values.mapColSpan ? Number(values.mapColSpan) : 1;
   const mapRowSpan = values.mapRowSpan ? Number(values.mapRowSpan) : 1;
 
-  const { error } = await supabase.from('blocks').insert({
+  const boundary = values.boundary ? JSON.parse(values.boundary) : null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('blocks') as any).insert({
     id,
     name:          values.name.trim(),
     crop_type:     values.cropType,
@@ -50,12 +53,13 @@ export async function createBlock(
     map_row:       mapRow,
     map_col_span:  mapColSpan,
     map_row_span:  mapRowSpan,
+    boundary,
   });
 
   if (error) return { error: error.message };
 
   revalidatePath('/blocks');
-  return {};
+  return { id };
 }
 
 export async function updateBlock(
@@ -64,7 +68,10 @@ export async function updateBlock(
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
 
-  const { error } = await supabase.from('blocks').update({
+  const boundary = values.boundary ? JSON.parse(values.boundary) : undefined;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('blocks') as any).update({
     name:          values.name.trim(),
     crop_type:     values.cropType,
     variety:       values.variety,
@@ -79,7 +86,25 @@ export async function updateBlock(
     ...(values.mapRow     !== '' && values.mapRow     != null && { map_row:      Number(values.mapRow) }),
     ...(values.mapColSpan !== '' && values.mapColSpan != null && { map_col_span: Number(values.mapColSpan) }),
     ...(values.mapRowSpan !== '' && values.mapRowSpan != null && { map_row_span: Number(values.mapRowSpan) }),
+    ...(boundary !== undefined && { boundary }),
   }).eq('id', id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/blocks');
+  return {};
+}
+
+export async function updateBlockBoundary(
+  id: string,
+  boundary: LatLng[],
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('blocks') as any)
+    .update({ boundary })
+    .eq('id', id);
 
   if (error) return { error: error.message };
 

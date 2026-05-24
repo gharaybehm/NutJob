@@ -124,21 +124,21 @@ function ParamInput({
   const num = parseFloat(value);
   const bench = benchmarkKey && !isNaN(num) ? getBenchmark(benchmarkKey, num) : null;
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 min-w-0">
       <div className="flex items-center justify-between gap-1 min-h-[20px]">
         <label className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-tight">{label}</label>
         {bench && <BenchmarkBadge status={bench.status} label={bench.label} />}
       </div>
-      <div className="relative">
+      <div className="flex items-center gap-1.5 min-w-0">
         <input
           type="number"
           step="any"
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder="—"
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 pr-14 text-sm text-slate-900 dark:text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="min-w-0 flex-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
         />
-        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">{unit}</span>
+        {unit && <span className="text-[10px] text-slate-400 shrink-0 whitespace-nowrap">{unit}</span>}
       </div>
     </div>
   );
@@ -176,22 +176,77 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
   const [soil,         setSoil]         = useState({ ...EMPTY_SOIL });
   const [notes,        setNotes]        = useState('');
   const [file,         setFile]         = useState<File | null>(null);
-  const [saving,       setSaving]       = useState(false);
-  const [error,        setError]        = useState<string | null>(null);
+  const [saving,        setSaving]        = useState(false);
+  const [error,         setError]         = useState<string | null>(null);
+  const [extracting,    setExtracting]    = useState(false);
+  const [extractedCount, setExtractedCount] = useState<number | null>(null);
+  const [extractMsg,    setExtractMsg]    = useState<string | null>(null);
 
   const setSoilField = (key: keyof typeof EMPTY_SOIL) => (v: string) =>
     setSoil(s => ({ ...s, [key]: v }));
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBlockId(defaultBlockId ?? '');
       setRecordedAt(''); setLabReference('');
       setPh(''); setSoilEc(''); setWaterEc('');
       setSoilMoisture(''); setRootZoneTemp(''); setWaterDeficit('');
       setSoil({ ...EMPTY_SOIL });
       setNotes(''); setFile(null); setError(null);
+      setExtractedCount(null); setExtractMsg(null);
     }
   }, [open, defaultBlockId]);
+
+  async function handleFileSelect(selected: File | null) {
+    setFile(selected);
+    setExtractedCount(null);
+    setExtractMsg(null);
+    if (!selected) return;
+
+    setExtracting(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', selected);
+      const res = await fetch('/api/extract-soil-test', { method: 'POST', body: fd });
+      if (!res.ok) return;
+      const { extracted, message } = await res.json();
+      if (message) { setExtractMsg(message); return; }
+      if (!extracted) return;
+
+      let count = 0;
+      const str = (v: unknown) => (v != null ? String(v) : '');
+
+      if (extracted.labReference)  { setLabReference(extracted.labReference); count++; }
+      if (extracted.recordedAt)    { setRecordedAt(extracted.recordedAt);     count++; }
+      if (extracted.ph != null)    { setPh(str(extracted.ph));                count++; }
+      if (extracted.soilEc != null){ setSoilEc(str(extracted.soilEc));        count++; }
+      if (extracted.waterEc != null){ setWaterEc(str(extracted.waterEc));     count++; }
+
+      const soilMap: Array<[string, keyof typeof EMPTY_SOIL]> = [
+        ['organicMatter', 'organicMatter'], ['phosphorus', 'phosphorus'],
+        ['potassium', 'potassium'],         ['lime', 'lime'],
+        ['cec', 'cec'],                     ['calcium', 'calcium'],
+        ['magnesium', 'magnesium'],         ['sodium', 'sodium'],
+        ['iron', 'iron'],                   ['zinc', 'zinc'],
+        ['copper', 'copper'],               ['manganese', 'manganese'],
+        ['boron', 'boron'],                 ['sand', 'sand'],
+        ['clay', 'clay'],                   ['silt', 'silt'],
+        ['textureClass', 'textureClass'],
+      ];
+      const updates: Partial<typeof EMPTY_SOIL> = {};
+      for (const [key, field] of soilMap) {
+        if (extracted[key] != null) { updates[field] = str(extracted[key]); count++; }
+      }
+      if (Object.keys(updates).length > 0) setSoil(s => ({ ...s, ...updates }));
+
+      setExtractedCount(count);
+    } catch {
+      // silent — user fills manually
+    } finally {
+      setExtracting(false);
+    }
+  }
 
   async function handleSave() {
     setError(null);
@@ -301,13 +356,19 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
             <ParamInput label="Silt" value={soil.silt} onChange={setSoilField('silt')} unit="%" />
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Texture Class</label>
-              <input
-                type="text"
+              <select
                 value={soil.textureClass}
                 onChange={e => setSoilField('textureClass')(e.target.value)}
-                placeholder="e.g. Clay Loam"
-                className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
+                className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                <option value="">— Select —</option>
+                <option value="Loam">Loam</option>
+                <option value="Clay">Clay</option>
+                <option value="Sandy">Sandy</option>
+                <option value="Silty">Silty</option>
+                <option value="Peaty">Peaty</option>
+                <option value="Chalky">Chalky</option>
+              </select>
             </div>
           </div>
 
@@ -330,10 +391,35 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
               className={`${inputCls} resize-none`}
             />
             <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 px-4 py-3 text-sm text-slate-500 hover:border-brand-400 hover:text-brand-600 dark:hover:border-brand-500 dark:hover:text-brand-400 transition-colors">
-              <Paperclip className="h-4 w-4 shrink-0" />
-              <span className="truncate">{file ? file.name : 'Attach lab report (PDF or image)…'}</span>
-              <input type="file" accept=".pdf,image/*" className="sr-only" onChange={e => setFile(e.target.files?.[0] ?? null)} />
+              {extracting
+                ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-brand-500" />
+                : <Paperclip className="h-4 w-4 shrink-0" />}
+              <span className="truncate">
+                {extracting
+                  ? 'Reading document and extracting values…'
+                  : file ? file.name : 'Attach lab report (PDF or image) — values will be extracted automatically'}
+              </span>
+              <input
+                type="file"
+                accept=".pdf,image/*"
+                className="sr-only"
+                onChange={e => handleFileSelect(e.target.files?.[0] ?? null)}
+              />
             </label>
+            {extractMsg && (
+              <div className="flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
+                {extractMsg}
+              </div>
+            )}
+            {extractedCount !== null && (
+              <div className="flex items-center gap-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                {extractedCount > 0
+                  ? `${extractedCount} field${extractedCount === 1 ? '' : 's'} auto-filled from document — review and adjust as needed.`
+                  : 'Could not extract values from this document — please fill in manually.'}
+              </div>
+            )}
           </div>
 
         </div>

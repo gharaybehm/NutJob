@@ -24,9 +24,10 @@ const navigation = [
 interface SidebarProps {
   userEmail?: string;
   userName?: string;
+  userRole?: "admin" | "supervisor" | "worker";
 }
 
-export default function Sidebar({ userEmail, userName }: SidebarProps) {
+export default function Sidebar({ userEmail, userName, userRole }: SidebarProps) {
   const pathname = usePathname();
   
   // Create initials from name or email
@@ -41,6 +42,13 @@ export default function Sidebar({ userEmail, userName }: SidebarProps) {
     }
     return "U";
   };
+
+  const visibleNavigation = navigation.filter((item) => {
+    if (userRole === "worker" && (item.name === "Recommendations" || item.name === "Settings")) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <div className="flex h-full w-64 flex-col border-r border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800">
@@ -57,7 +65,7 @@ export default function Sidebar({ userEmail, userName }: SidebarProps) {
       
       <div className="flex flex-1 flex-col overflow-y-auto">
         <nav className="flex-1 space-y-1 px-4 py-4">
-          {navigation.map((item) => {
+          {visibleNavigation.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
@@ -96,7 +104,18 @@ export default function Sidebar({ userEmail, userName }: SidebarProps) {
             <span className="text-sm font-medium text-slate-900 dark:text-white truncate">
               {userName || "Farm Manager"}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+            {userRole && (
+              <span className={`text-[10px] font-bold tracking-wider uppercase inline-block max-w-max px-1.5 py-0.5 rounded-md mt-0.5 ${
+                userRole === "admin"
+                  ? "bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400"
+                  : userRole === "supervisor"
+                  ? "bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400"
+                  : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400"
+              }`}>
+                {userRole}
+              </span>
+            )}
+            <span className="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">
               {userEmail || "Not logged in"}
             </span>
           </div>

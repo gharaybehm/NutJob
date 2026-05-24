@@ -153,7 +153,13 @@ const LEGEND_ITEMS = (
 
 // ─── Main page component ──────────────────────────────────────────────────────
 
-export default function CalendarPage({ initialEvents = [] }: { initialEvents?: CalendarEvent[] }) {
+export default function CalendarPage({ 
+  initialEvents = [],
+  userRole = "worker",
+}: { 
+  initialEvents?: CalendarEvent[];
+  userRole?: "admin" | "supervisor" | "worker";
+}) {
   const [view, setView]       = useState<CalendarView>('month');
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [events, setEvents]   = useState<CalendarEvent[]>(initialEvents);
@@ -172,9 +178,10 @@ export default function CalendarPage({ initialEvents = [] }: { initialEvents?: C
   const handleToday = useCallback(() => setCurrentDate(new Date()), []);
 
   const handleDayClick = useCallback((date: Date) => {
+    if (userRole === "worker") return;
     setAddDefaultDate(date);
     setShowAdd(true);
-  }, []);
+  }, [userRole]);
 
   const handleEventClick = useCallback((event: CalendarEvent) => {
     setDetailEvent(event);
@@ -258,7 +265,7 @@ export default function CalendarPage({ initialEvents = [] }: { initialEvents?: C
         onPrev={handlePrev}
         onNext={handleNext}
         onToday={handleToday}
-        onAddEvent={() => { setAddDefaultDate(undefined); setShowAdd(true); }}
+        onAddEvent={userRole !== "worker" ? () => { setAddDefaultDate(undefined); setShowAdd(true); } : undefined}
       />
 
       {/* Views */}
@@ -266,7 +273,7 @@ export default function CalendarPage({ initialEvents = [] }: { initialEvents?: C
         <MonthView
           currentDate={currentDate}
           events={events}
-          onDayClick={handleDayClick}
+          onDayClick={userRole !== "worker" ? handleDayClick : undefined}
           onEventClick={handleEventClick}
         />
       )}

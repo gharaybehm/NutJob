@@ -11,7 +11,7 @@ interface CalendarHeaderProps {
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
-  onAddEvent: () => void;
+  onAddEvent?: () => void;
 }
 
 const VIEWS: { key: CalendarView; label: string }[] = [
@@ -78,14 +78,16 @@ export default function CalendarHeader({
         </div>
 
         {/* Add event */}
-        <button
-          id="add-event-btn"
-          onClick={onAddEvent}
-          className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 active:scale-95 transition-all"
-        >
-          <Plus className="h-4 w-4" />
-          Add Event
-        </button>
+        {onAddEvent && (
+          <button
+            id="add-event-btn"
+            onClick={onAddEvent}
+            className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 active:scale-95 transition-all"
+          >
+            <Plus className="h-4 w-4" />
+            Add Event
+          </button>
+        )}
       </div>
     </div>
   );

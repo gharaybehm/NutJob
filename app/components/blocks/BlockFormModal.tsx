@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Loader2 } from 'lucide-react';
-import type { Block } from './types';
+import type { Block, LatLng } from './types';
 
 export interface BlockFormValues {
   name: string;
@@ -15,10 +15,13 @@ export interface BlockFormValues {
   treeCount: string;
   rowSpacing: string;
   treeSpacing: string;
+  // Grid position — kept for DB backward compat, set automatically (not shown in UI)
   mapCol: string;
   mapRow: string;
   mapColSpan: string;
   mapRowSpan: string;
+  // GPS polygon boundary (JSON string)
+  boundary?: string;
 }
 
 interface Props {
@@ -26,6 +29,7 @@ interface Props {
   onClose: () => void;
   onSave: (values: BlockFormValues) => void;
   initialData?: Block;
+  initialBoundary?: LatLng[];
 }
 
 const EMPTY_FORM: BlockFormValues = {
@@ -66,6 +70,7 @@ function PlantSearchInput({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setQuery(value); }, [value]);
 
   useEffect(() => {
@@ -247,9 +252,10 @@ function AutocompleteInput({
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
-export default function BlockFormModal({ open, onClose, onSave, initialData }: Props) {
+export default function BlockFormModal({ open, onClose, onSave, initialData, initialBoundary }: Props) {
   const [form, setForm] = useState<BlockFormValues>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedPlantId, setSelectedPlantId] = useState<number | null>(null);
   const [varietySuggestions, setVarietySuggestions] = useState<string[]>([]);
   const [varietyLoading, setVarietyLoading] = useState(false);
@@ -272,7 +278,14 @@ export default function BlockFormModal({ open, onClose, onSave, initialData }: P
 
   useEffect(() => {
     if (open) {
+      const boundary = initialBoundary
+        ? JSON.stringify(initialBoundary)
+        : initialData?.boundary
+        ? JSON.stringify(initialData.boundary)
+        : undefined;
+
       if (initialData) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setForm({
           name: initialData.name,
           cropType: initialData.cropType || '',
@@ -288,15 +301,16 @@ export default function BlockFormModal({ open, onClose, onSave, initialData }: P
           mapRow: String(initialData.mapPos.row),
           mapColSpan: String(initialData.mapPos.colSpan ?? 1),
           mapRowSpan: String(initialData.mapPos.rowSpan ?? 1),
+          boundary,
         });
       } else {
-        setForm(EMPTY_FORM);
+        setForm({ ...EMPTY_FORM, boundary });
       }
       setError(null);
       setSelectedPlantId(null);
       setVarietySuggestions([]);
     }
-  }, [open, initialData]);
+  }, [open, initialData, initialBoundary]);
 
   function handleSave() {
     if (!form.name.trim()) { setError('Block name is required.'); return; }
@@ -313,7 +327,7 @@ export default function BlockFormModal({ open, onClose, onSave, initialData }: P
   const isEdit = !!initialData;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 shadow-2xl flex flex-col max-h-screen">
 
         {/* Header */}
@@ -463,31 +477,23 @@ export default function BlockFormModal({ open, onClose, onSave, initialData }: P
               />
             </div>
 
-            {/* Map Position */}
+            {/* Boundary status badge */}
             <div className="col-span-2 pt-1">
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                Map Position
-                <span className="ml-2 text-xs font-normal text-slate-400">zero-indexed grid coordinates</span>
-              </p>
-              <div className="grid grid-cols-4 gap-3">
-                {([
-                  { label: 'Column', key: 'mapCol' as const, min: 0 },
-                  { label: 'Row',    key: 'mapRow' as const, min: 0 },
-                  { label: 'Col Span', key: 'mapColSpan' as const, min: 1 },
-                  { label: 'Row Span', key: 'mapRowSpan' as const, min: 1 },
-                ]).map(({ label, key, min }) => (
-                  <div key={key} className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">{label}</label>
-                    <input
-                      type="number"
-                      min={min}
-                      value={form[key]}
-                      onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                      className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    />
-                  </div>
-                ))}
-              </div>
+              {form.boundary ? (
+                <div className="flex items-center gap-2 rounded-lg border border-brand-200 dark:border-brand-800/50 bg-brand-50 dark:bg-brand-950/20 px-3 py-2">
+                  <span className="h-2 w-2 rounded-full bg-brand-500 shrink-0" />
+                  <span className="text-sm text-brand-700 dark:text-brand-300 font-medium">
+                    Boundary captured ({JSON.parse(form.boundary).length} points)
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 px-3 py-2">
+                  <span className="h-2 w-2 rounded-full bg-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                    No boundary drawn — draw on the map first to set block boundaries
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

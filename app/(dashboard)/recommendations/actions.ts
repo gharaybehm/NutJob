@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { tasks } from "@trigger.dev/sdk/v3";
 
 const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
@@ -191,152 +192,18 @@ export async function generateAIRecommendations(): Promise<{ count: number; mode
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) throw new Error("Unauthorised");
 
-  // Fetch all context in parallel
-  const [
-    { data: blocks },
-    { data: soilReadings },
-    { data: weatherSnapshots },
-    { data: alerts },
-    { data: scoutingReports },
-    { data: tissueSamples },
-  ] = await Promise.all([
-    supabase.from("blocks").select("*"),
-    supabase.from("soil_water_readings").select("*").order("recorded_at", { ascending: false }),
-    supabase.from("weather_snapshots").select("*").order("recorded_at", { ascending: false }),
-    supabase.from("block_alerts").select("*").eq("resolved", false),
-    supabase.from("scouting_reports").select("*").order("scouted_at", { ascending: false }),
-    supabase.from("tissue_samples").select("*").order("sampled_at", { ascending: false }),
-  ]);
+  // Trigger the Trigger.dev background task and wait for the completed result.
+  // This executes safely on background compute, bypassing serverless function timeouts,
+  // while remaining fully compatible with the existing frontend UI promise flow.
+  const run = await tasks.triggerAndWait("generate-recommendations", { userId: user.id });
 
-  if (!blocks || blocks.length === 0) throw new Error("No blocks found in database");
-
-  // Index latest reading per block
-  const latestSoil = new Map<string, typeof soilReadings extends (infer T)[] | null ? T : never>();
-  soilReadings?.forEach((r) => { if (r.block_id && !latestSoil.has(r.block_id)) latestSoil.set(r.block_id, r); });
-
-  const latestWeather = new Map<string, typeof weatherSnapshots extends (infer T)[] | null ? T : never>();
-  weatherSnapshots?.forEach((r) => {
-    const key = r.block_id ?? "global";
-    if (!latestWeather.has(key)) latestWeather.set(key, r);
-  });
-  const globalWeather = latestWeather.get("global") ?? Array.from(latestWeather.values())[0] ?? null;
-
-  const blockAlerts = new Map<string, NonNullable<typeof alerts>[number][]>();
-  alerts?.forEach((a) => {
-    if (!blockAlerts.has(a.block_id)) blockAlerts.set(a.block_id, []);
-    blockAlerts.get(a.block_id)!.push(a);
-  });
-
-  const latestScouting = new Map<string, typeof scoutingReports extends (infer T)[] | null ? T : never>();
-  scoutingReports?.forEach((r) => { if (!latestScouting.has(r.block_id)) latestScouting.set(r.block_id, r); });
-
-  const latestTissue = new Map<string, typeof tissueSamples extends (infer T)[] | null ? T : never>();
-  tissueSamples?.forEach((r) => { if (!latestTissue.has(r.block_id)) latestTissue.set(r.block_id, r); });
-
-  // Build per-block context strings
-  const today = new Date().toISOString().split("T")[0];
-  const blockContexts = blocks.map((block) => {
-    const soil = latestSoil.get(block.id);
-    const weather = latestWeather.get(block.id) ?? globalWeather;
-    const activeAlerts = blockAlerts.get(block.id) ?? [];
-    const scouting = latestScouting.get(block.id);
-    const tissue = latestTissue.get(block.id);
-
-    let ctx = `Block "${block.name}" (id: ${block.id})
-- Crop: ${block.crop_type}, Variety: ${block.variety}, Planted: ${block.planting_year}, Area: ${block.area} ${block.area_unit}, Trees: ${block.tree_count}`;
-
-    if (soil) {
-      ctx += `
-- Soil moisture: ${soil.soil_moisture ?? "N/A"}% | Field capacity: ${block.field_capacity ?? "N/A"}% | Wilting point: ${block.wilting_point ?? "N/A"}%
-- Water deficit: ${soil.water_deficit ?? "N/A"} mm | ETo: ${soil.eto ?? "N/A"} mm/day | EC: ${soil.soil_ec ?? "N/A"} dS/m`;
-    } else {
-      ctx += `\n- No soil readings on record`;
-    }
-
-    if (weather) {
-      ctx += `
-- Weather: ${weather.temp_c ?? "N/A"}°C | Humidity: ${weather.humidity_pct ?? "N/A"}% | Rainfall 7d: ${weather.rainfall_7d_mm ?? "N/A"} mm
-- Heat stress: ${weather.heat_stress_risk ? "YES" : "No"} | Frost risk: ${weather.frost_risk ? "YES" : "No"}`;
-    }
-
-    if (activeAlerts.length > 0) {
-      ctx += `\n- Active alerts: ${activeAlerts.map((a) => `[${a.severity.toUpperCase()} ${a.domain}: "${a.message}"]`).join(" | ")}`;
-    }
-
-    if (scouting) {
-      ctx += `\n- Last scouting (${scouting.scouted_at.split("T")[0]}): risk=${scouting.overall_risk}${scouting.notes ? ` — "${scouting.notes}"` : ""}`;
-    }
-
-    if (tissue?.nutrients && typeof tissue.nutrients === "object") {
-      const nutrientStr = Object.entries(tissue.nutrients as Record<string, unknown>)
-        .map(([k, v]) => `${k}:${v}`)
-        .join(", ");
-      ctx += `\n- Tissue sample (${tissue.sampled_at.split("T")[0]}): ${nutrientStr}`;
-    }
-
-    return ctx;
-  }).join("\n\n");
-
-  if (!process.env.GEMINI_API_KEY) throw new Error("Missing GEMINI_API_KEY in .env.local");
-
-  // Call Gemini with JSON output mode
-  const model = gemini.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    systemInstruction: AI_SYSTEM_PROMPT,
-  });
-
-  const result = await model.generateContent({
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: `Today: ${today}\n\nFarm data:\n\n${blockContexts}\n\nGenerate prioritised recommendations.` }],
-      },
-    ],
-    generationConfig: { responseMimeType: "application/json" },
-  });
-
-  const raw = result.response.text();
-  const modelName = "gemini-2.0-flash";
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) throw new Error("Expected array");
-  } catch {
-    throw new Error(`AI returned unparseable output: ${raw.slice(0, 200)}`);
+  if (run.ok) {
+    const output = run.output as { success: boolean; count: number; model: string };
+    revalidatePath("/recommendations");
+    return { count: output.count, model: output.model };
+  } else {
+    throw new Error(`AI agronomist reasoning task failed: ${JSON.stringify(run.error)}`);
   }
-
-  const validCategories = new Set(["irrigate", "fertilize", "spray", "scout", "prune", "other"]);
-  const validBlockIds = new Set(blocks.map((b) => b.id));
-
-  const toInsert = (parsed as Record<string, unknown>[])
-    .filter(
-      (r) =>
-        typeof r.block_id === "string" && validBlockIds.has(r.block_id) &&
-        typeof r.category === "string" && validCategories.has(r.category) &&
-        typeof r.title === "string" && r.title.length > 0 &&
-        typeof r.rationale === "string" && r.rationale.length > 0
-    )
-    .map((r) => ({
-      block_id: r.block_id as string,
-      category: r.category as RecommendationCategory,
-      title: (r.title as string).slice(0, 200),
-      rationale: r.rationale as string,
-      confidence: Math.min(1, Math.max(0, (Number(r.confidence) || 75) / 100)),
-      status: "pending" as const,
-      llm_model: modelName,
-    }));
-
-  if (toInsert.length === 0) {
-    return { count: 0, model: modelName };
-  }
-
-  const admin = createAdminClient();
-  const { error: insertError } = await admin.from("recommendations").insert(toInsert);
-  if (insertError) throw new Error(insertError.message);
-
-  revalidatePath("/recommendations");
-  return { count: toInsert.length, model: modelName };
 }
 
 export async function generateMockRecommendations() {

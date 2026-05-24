@@ -1,45 +1,57 @@
 import { Droplets, CloudRain, AlertTriangle, Timer } from "lucide-react";
 
-const kpis = [
-  {
-    name: "Avg Soil Moisture",
-    value: "28%",
-    change: "-2%",
-    changeType: "negative",
-    icon: Droplets,
-    color: "text-blue-500",
-    bg: "bg-blue-100 dark:bg-blue-900/30",
-  },
-  {
-    name: "7-Day Rain Forecast",
-    value: "12 mm",
-    change: "+4 mm",
-    changeType: "positive",
-    icon: CloudRain,
-    color: "text-brand-500",
-    bg: "bg-brand-100 dark:bg-brand-900/30",
-  },
-  {
-    name: "Active Alerts",
-    value: "3",
-    change: "+1",
-    changeType: "negative",
-    icon: AlertTriangle,
-    color: "text-red-500",
-    bg: "bg-red-100 dark:bg-red-900/30",
-  },
-  {
-    name: "Next Irrigation",
-    value: "In 14h",
-    change: "Block B, C",
-    changeType: "neutral",
-    icon: Timer,
-    color: "text-amber-500",
-    bg: "bg-amber-100 dark:bg-amber-900/30",
-  },
-];
+interface KPIGridProps {
+  avgSoilMoisture: number | null;
+  rainForecastMm: number;
+  activeAlertsCount: number;
+  nextIrrigationStr: string;
+}
 
-export default function KPIGrid() {
+export default function KPIGrid({
+  avgSoilMoisture,
+  rainForecastMm,
+  activeAlertsCount,
+  nextIrrigationStr,
+}: KPIGridProps) {
+  const kpis = [
+    {
+      name: "Avg Soil Moisture",
+      value: avgSoilMoisture !== null ? `${avgSoilMoisture}%` : "N/A",
+      change: "Live sensor average",
+      changeType: "neutral",
+      icon: Droplets,
+      color: "text-blue-500",
+      bg: "bg-blue-100 dark:bg-blue-900/30",
+    },
+    {
+      name: "7-Day Rain Forecast",
+      value: `${rainForecastMm} mm`,
+      change: "Expected total",
+      changeType: rainForecastMm > 0 ? "positive" : "neutral",
+      icon: CloudRain,
+      color: "text-brand-500",
+      bg: "bg-brand-100 dark:bg-brand-900/30",
+    },
+    {
+      name: "Active Alerts",
+      value: String(activeAlertsCount),
+      change: activeAlertsCount > 0 ? `${activeAlertsCount} unresolved` : "All systems nominal",
+      changeType: activeAlertsCount > 0 ? "negative" : "positive",
+      icon: AlertTriangle,
+      color: activeAlertsCount > 0 ? "text-red-500" : "text-slate-400",
+      bg: activeAlertsCount > 0 ? "bg-red-100 dark:bg-red-900/30" : "bg-slate-100 dark:bg-slate-800/30",
+    },
+    {
+      name: "Next Irrigation",
+      value: nextIrrigationStr,
+      change: "Scheduled queue",
+      changeType: "neutral",
+      icon: Timer,
+      color: "text-amber-500",
+      bg: "bg-amber-100 dark:bg-amber-900/30",
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {kpis.map((kpi) => (

@@ -6,7 +6,7 @@ import EventPill from './EventPill';
 interface MonthViewProps {
   currentDate: Date;
   events: CalendarEvent[];
-  onDayClick: (date: Date) => void;
+  onDayClick?: (date: Date) => void;
   onEventClick: (event: CalendarEvent) => void;
 }
 
@@ -69,8 +69,12 @@ export default function MonthView({ currentDate, events, onDayClick, onEventClic
           return (
             <div
               key={idx}
-              onClick={() => onDayClick(day)}
-              className={`group min-h-[110px] cursor-pointer border-r border-b border-slate-100 p-1.5 transition-colors last:border-r-0 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/40 ${
+              onClick={() => onDayClick?.(day)}
+              className={`group min-h-[110px] border-r border-b border-slate-100 p-1.5 transition-colors last:border-r-0 dark:border-slate-800 ${
+                onDayClick 
+                  ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40' 
+                  : 'cursor-default'
+              } ${
                 !isCurrentMonth ? 'bg-slate-50/50 dark:bg-slate-900/50' : ''
               }`}
             >

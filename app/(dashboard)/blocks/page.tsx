@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import BlocksPage from '@/app/components/blocks/BlocksPage';
 import type { Block } from '@/app/components/blocks/types';
+import { redirect } from 'next/navigation';
 
 export const metadata = {
   title: 'Blocks — NutJob',
@@ -30,18 +31,31 @@ function rowToBlock(row: any): Block {
       colSpan: Number(row.map_col_span) || 1,
       rowSpan: Number(row.map_row_span) || 1,
     },
+    boundary: row.boundary ?? undefined,
   };
 }
 
 export default async function BlocksRoute() {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    redirect("/login");
+  }
+
+  const { data: profile } = await supabase
+    .from("user_profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
   const { data, error } = await supabase
     .from('blocks')
-    .select('id, name, crop_type, variety, area, area_unit, planting_year, rootstock, tree_count, row_spacing, tree_spacing, map_col, map_row, map_col_span, map_row_span')
+    .select('id, name, crop_type, variety, area, area_unit, planting_year, rootstock, tree_count, row_spacing, tree_spacing, map_col, map_row, map_col_span, map_row_span, boundary')
     .order('map_row')
     .order('map_col');
 
   const initialBlocks: Block[] = error || !data ? [] : data.map(rowToBlock);
 
-  return <BlocksPage initialBlocks={initialBlocks} />;
+  return <BlocksPage initialBlocks={initialBlocks} userRole={profile?.role || 'worker'} />;
 }

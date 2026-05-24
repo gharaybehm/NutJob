@@ -7,7 +7,27 @@ export const metadata = {
   description: "AI-powered agronomic insights and action items",
 };
 
+import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
+
 export default async function RecommendationsPage() {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    redirect("/login");
+  }
+
+  const { data: profile } = await supabase
+    .from("user_profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role === "worker") {
+    redirect("/dashboard?error=Unauthorized");
+  }
+
   const recommendations = await getRecommendations();
 
   return (
@@ -21,6 +41,7 @@ export default async function RecommendationsPage() {
         </p>
       </div>
 
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <RecommendationsClient initialRecommendations={recommendations as any} />
     </div>
   );

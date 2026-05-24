@@ -149,7 +149,7 @@ export default function RecommendationCard({
           </div>
           {managerNote && (
             <p className="text-xs text-slate-600 dark:text-slate-400 italic border-l-2 border-slate-300 dark:border-slate-600 pl-2">
-              "{managerNote}"
+              &quot;{managerNote}&quot;
             </p>
           )}
         </div>

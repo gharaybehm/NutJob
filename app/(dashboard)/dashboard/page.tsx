@@ -4,8 +4,11 @@ import ActiveAlerts from "@/app/components/dashboard/ActiveAlerts";
 import BlockStatusGrid from "@/app/components/dashboard/BlockStatusGrid";
 import UpcomingCalendar from "@/app/components/dashboard/UpcomingCalendar";
 import ActivityFeed from "@/app/components/dashboard/ActivityFeed";
+import { getDashboardData } from "./actions";
 
-export default function Dashboard() {
+export default async function Dashboard() {
+  const data = await getDashboardData();
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -19,7 +22,12 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Grid */}
-      <KPIGrid />
+      <KPIGrid 
+        avgSoilMoisture={data.avgSoilMoisture} 
+        rainForecastMm={data.rainForecastMm} 
+        activeAlertsCount={data.activeAlertsCount} 
+        nextIrrigationStr={data.nextIrrigationStr} 
+      />
 
       {/* Weather Strip */}
       <WeatherStrip />
@@ -28,14 +36,14 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column (Alerts & Block Status) */}
         <div className="flex flex-col gap-6 lg:col-span-2">
-          <ActiveAlerts />
-          <BlockStatusGrid />
+          <ActiveAlerts alerts={data.alerts} />
+          <BlockStatusGrid blocks={data.blocks} />
         </div>
 
         {/* Right Column (Calendar & Activity Feed) */}
         <div className="flex flex-col gap-6">
-          <UpcomingCalendar />
-          <ActivityFeed />
+          <UpcomingCalendar events={data.events} />
+          <ActivityFeed activities={data.activities} />
         </div>
       </div>
     </div>

@@ -18,6 +18,11 @@ export interface BlockAlert {
 
 // ─── Block (static metadata) ──────────────────────────────────────────────────
 
+export interface LatLng {
+  lat: number;
+  lng: number;
+}
+
 export interface Block {
   id: string;            // 'A' | 'B' | ...
   name: string;          // 'Block A'
@@ -32,8 +37,10 @@ export interface Block {
   treeSpacing: number;   // metres
   status: HealthStatus;
   alerts: BlockAlert[];
-  // Grid position for the map (col/row zero-indexed)
+  // Grid position for the map (col/row zero-indexed) — kept for backward compat
   mapPos: { col: number; row: number; colSpan?: number; rowSpan?: number };
+  // GPS polygon boundary — set when user draws the block on the satellite map
+  boundary?: LatLng[];
 }
 
 // ─── Soil & Water Domain ──────────────────────────────────────────────────────

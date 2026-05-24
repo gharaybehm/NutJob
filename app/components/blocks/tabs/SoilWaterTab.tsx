@@ -254,6 +254,7 @@ export default function SoilWaterTab({ data, blockId }: Props) {
 
   useEffect(() => {
     if (!blockId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHistoryLoading(true);
     import('@/utils/supabase/client').then(async ({ createClient }) => {
       const sb = createClient();
