@@ -55,6 +55,59 @@ async function writeActivityLog(params: {
   return data.id;
 }
 
+type AgroDomain = "soil-water" | "phenology" | "nutrition" | "pest-disease" | "weather";
+
+async function applyStateMutation(category: RecommendationCategory, block_id: string | null) {
+  if (!block_id) return;
+
+  const domainMap: Record<RecommendationCategory, AgroDomain | null> = {
+    irrigate: "soil-water",
+    fertilize: "nutrition",
+    spray: "pest-disease",
+    scout: "pest-disease",
+    prune: "phenology",
+    other: null,
+  };
+
+  const domain = domainMap[category];
+  const admin = createAdminClient();
+
+  if (domain) {
+    await admin
+      .from("block_alerts")
+      .update({ resolved: true, resolved_at: new Date().toISOString() })
+      .eq("block_id", block_id)
+      .eq("domain", domain)
+      .eq("resolved", false);
+  }
+
+  if (category === "irrigate") {
+    const { data: block } = await admin
+      .from("blocks")
+      .select("field_capacity")
+      .eq("id", block_id)
+      .single();
+
+    await admin.from("soil_water_readings").insert({
+      block_id,
+      water_deficit: 0,
+      soil_moisture: block?.field_capacity ?? 30,
+      source: "manual",
+      test_type: "Irrigation Reset",
+      notes: "Auto-generated from accepted AI recommendation",
+      recorded_at: new Date().toISOString(),
+    });
+  }
+
+  if (category === "spray") {
+    await admin
+      .from("pest_observations")
+      .update({ stage: "Resolved", risk_level: "green" })
+      .eq("block_id", block_id)
+      .neq("stage", "Resolved");
+  }
+}
+
 export async function getRecommendations() {
   const supabase = await createClient();
 
@@ -105,6 +158,8 @@ export async function updateRecommendationStatus(
       recommendation_id: id,
       performed_by: user?.id ?? null,
     });
+
+    await applyStateMutation(rec.category as RecommendationCategory, rec.block_id);
   }
 
   const admin = createAdminClient();
@@ -150,6 +205,8 @@ export async function editRecommendation(
     recommendation_id: id,
     performed_by: user?.id ?? null,
   });
+
+  await applyStateMutation(rec.category as RecommendationCategory, rec.block_id);
 
   const admin = createAdminClient();
   const { error } = await admin
