@@ -141,3 +141,42 @@ export async function createWorker(formData: FormData) {
   revalidatePath('/settings')
   return { success: `Successfully created new ${role}` }
 }
+
+export async function updateBlockConfig(
+  blockId: string,
+  params: {
+    fieldCapacity: number | null;
+    wiltingPoint: number | null;
+    notes: string | null;
+  }
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const { data: curProfile } = await supabase
+    .from('user_profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (curProfile?.role !== 'admin' && curProfile?.role !== 'supervisor') {
+    return { error: 'Only admins and supervisors can edit block configuration' }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('blocks') as any)
+    .update({
+      field_capacity: params.fieldCapacity,
+      wilting_point: params.wiltingPoint,
+      notes: params.notes,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', blockId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/blocks')
+  revalidatePath('/settings')
+  return { success: 'Block configuration saved' }
+}

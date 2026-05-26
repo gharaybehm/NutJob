@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { Asset, Consumable, MaintenanceEntry, UsageEntry } from './types';
 import AssetCard from './AssetCard';
 import ConsumableRow from './ConsumableRow';
-import { Search, Plus, Filter, AlertTriangle } from 'lucide-react';
+import { Search, Plus, AlertTriangle } from 'lucide-react';
 import AddAssetModal from './AddAssetModal';
 import AddConsumableModal from './AddConsumableModal';
 import LogMaintenanceModal from './LogMaintenanceModal';
@@ -20,7 +20,7 @@ export default function InventoryPage({
 }: {
   initialAssets: Asset[];
   initialConsumables: Consumable[];
-  recentCalendarEvents: any[];
+  recentCalendarEvents: { id: string; title: string; date: Date; type: string }[];
   userRole: 'admin' | 'supervisor' | 'worker';
   blocks: string[];
 }) {
@@ -30,7 +30,7 @@ export default function InventoryPage({
   // State
   const [assets, setAssets] = useState<Asset[]>(initialAssets);
   const [consumables, setConsumables] = useState<Consumable[]>(initialConsumables);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   // Modals
   const [showAddAsset, setShowAddAsset] = useState(false);

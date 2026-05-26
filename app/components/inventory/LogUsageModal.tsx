@@ -9,7 +9,7 @@ export default function LogUsageModal({
   onSave
 }: {
   consumable: Consumable;
-  events: any[];
+  events: { id: string; title: string; date: Date; type: string }[];
   blocks: string[];
   onClose: () => void;
   onSave: (data: Omit<UsageEntry, 'id' | 'consumableId' | 'calendarEventTitle' | 'loggedBy'>, eventTitle?: string) => void;

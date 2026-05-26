@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { revalidatePath } from "next/cache";
 
 export type ActivityLogEntry = {
   id: string;
@@ -63,4 +65,37 @@ export async function getBlocks() {
     .select("id, name")
     .order("name");
   return data ?? [];
+}
+
+export async function logActivity(params: {
+  title: string;
+  activity_type: ActivityLogEntry["activity_type"];
+  block_id: string | null;
+  description: string | null;
+  performed_at: string;
+}): Promise<{ id: string }> {
+  const supabase = await createClient();
+  const admin = createAdminClient();
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) throw new Error("Unauthorised");
+
+  const { data, error } = await admin
+    .from("activity_log")
+    .insert({
+      title: params.title,
+      activity_type: params.activity_type,
+      block_id: params.block_id,
+      description: params.description,
+      performed_at: params.performed_at,
+      performed_by: user.id,
+      details: { source: "manual" },
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/activity");
+  return { id: data.id };
 }

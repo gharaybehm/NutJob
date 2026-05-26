@@ -1,4 +1,4 @@
-import { Asset, ASSET_SUGGESTIONS } from './types';
+import { Asset } from './types';
 import { Settings, Toolbox as Tool, Truck, Tractor } from 'lucide-react';
 import { useState } from 'react';
 

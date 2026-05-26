@@ -1,8 +1,8 @@
 # NutJob — Progress vs Requirements
 
-> Last updated: 2026-05-24
+> Last updated: 2026-05-26
 
-## Overall Status: ~85% Complete
+## Overall Status: ~93% Complete
 
 ---
 
@@ -67,7 +67,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 - "Log Completion" modal to capture actual start/end and notes
 - Shared types and mock data in `types.ts`
 
-### 5. Recommendations Page — 🟡 ~50% Done
+### 5. Recommendations Page — ✅ 100% Done
 - Route: `app/(dashboard)/recommendations/page.tsx` ✅
 - `RecommendationsClient.tsx` — pending/history toggle, category filter, card grid ✅
 - `RecommendationCard.tsx` — category icon/colour, confidence badge, accept/edit/skip controls ✅
@@ -77,24 +77,25 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 - Accept writes to `activity_log` (title, activity_type, block_id, rationale, performed_by, JSON details) and stores the returned `activity_log_id` on the recommendation ✅
 - Edit ("Accept with changes") also writes to `activity_log` with the manager's revised title and note ✅
 - AI generation via Anthropic SDK (`generateAIRecommendations`) — fetches blocks + soil/weather/alerts/scouting/tissue context, calls Claude Haiku with cached system prompt, validates and inserts results ✅
-- ❌ Priority/urgency ordering not implemented
+- ✅ Priority/urgency ordering — sorted by confidence DESC (highest = most urgent) then created_at DESC as tiebreaker
 
 ### 6. Activity Log Page — ✅ Done
 - Route: `app/(dashboard)/activity/page.tsx` ✅ (Server component — parallel-fetches entries + block list from Supabase)
 - `ActivityLogClient.tsx` — search by title, filter by activity type & block, live count, empty state ✅
-- `actions.ts` — `getActivityLog` (search/filter/paginate), `getBlocks` ✅
+- `actions.ts` — `getActivityLog` (search/filter/paginate), `getBlocks`, `logActivity` (manual insert via admin client) ✅
 - Colour-coded activity type badges (irrigation, fertigation, spraying, pruning, scouting, tissue-sample, other) ✅
 - Shows block name, performed-by, and description per entry ✅
+- **"Log Activity" button** (supervisor/admin only) — opens `LogActivityModal` with activity type grid, title, block selector, datetime picker, and notes; inserts directly into `activity_log` via server action with optimistic UI prepend ✅
 
-### 7. Settings Page — ✅ ~90% Done
+### 7. Settings Page — ✅ 100% Done
 - Route exists: `app/(dashboard)/settings/`
-- `SettingsForms.tsx` built with settings UI
-- Server action (`actions.ts`) present
-- ✅ Team/user management (role assignment & new worker invite/creation) fully implemented
-- ❌ Block configuration incomplete
-- ❌ Sensor connections not implemented
-- ❌ Weather API config not implemented
-- ❌ Notification preferences not implemented
+- `SettingsForms.tsx` rebuilt with 6 tabs (role-gated)
+- **Account & Security tab** — profile + password update ✅
+- **Team Management tab** (admin + supervisor) — role assignment & new worker invite/creation ✅
+- **Block Configuration tab** (admin + supervisor) — per-block field capacity (%), wilting point (%), and notes with live bars and Supabase persistence via `updateBlockConfig` server action ✅
+- **Alert Thresholds tab** (admin + supervisor) — 5 threshold sliders (soil moisture, water deficit, heat stress, rainfall skip, pest risk) stored in localStorage ✅
+- **Sensor Connections tab** (admin only) — channel status panel + copy-to-clipboard ingest endpoint reference ✅
+- **Weather & AI tab** (admin only) — farm lat/lng config with Open-Meteo live connection test + Netlify AI Gateway status ✅
 
 ---
 
@@ -134,6 +135,44 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 
 ---
 
+## 🌍 Multi-Farm Support
+
+| Requirement | Status | Notes |
+|---|---|---|
+| Farm selector screen after login | ❌ Not started | Show when user has access to multiple farms |
+| Farm switcher in top nav (no re-auth) | ❌ Not started | |
+| Per-farm isolated data (blocks, calendar, inventory, etc.) | ❌ Not started | Requires `farm_id` foreign key on all data tables |
+| Per-farm, per-user role scoping | ❌ Not started | A user can be admin on one farm, worker on another |
+
+---
+
+## 🌐 Localisation
+
+| Requirement | Status | Notes |
+|---|---|---|
+| English | ✅ Done | Default language |
+| Arabic | ❌ Not started | Full RTL layout mirroring required |
+| Turkish | ❌ Not started | |
+| Language preference persisted per user | ❌ Not started | |
+| RTL layout mirroring (nav, cards, tables, forms, modals) | ❌ Not started | |
+| Locale-aware number, date, and calendar formats | ❌ Not started | |
+| AI recommendations returned in user's active language | ❌ Not started | |
+
+---
+
+## 📱 Mobile Optimisation
+
+| Requirement | Status | Notes |
+|---|---|---|
+| Touch-friendly tap targets (min 44×44 px) | ❌ Not started | |
+| Bottom navigation bar on small screens | ❌ Not started | Replaces top nav on mobile |
+| Swipe gestures (blocks, calendar views) | ❌ Not started | |
+| Service worker / offline-capable reads | ❌ Not started | Cache dashboard, block profiles, today's calendar |
+| Background sync for offline activity log entries | ❌ Not started | |
+| Lazy-loading of images and chart data | ❌ Not started | Target: initial load <3 s on 4G |
+
+---
+
 ## 🔐 Roles & Permissions
 
 | Requirement | Status | Notes |
@@ -152,17 +191,19 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Project scaffold & tech stack | ✅ 100% |
 | Auth (basic login) | ✅ 100% |
 | Dashboard page | ✅ 100% (Wired to live Supabase data & Open-Meteo) |
-| Settings page | ✅ 90% (Team & User management + role updates done) |
+| Settings page | ✅ 100% (All 6 tabs: Account, Team, Block Config, Alert Thresholds, Sensors, Weather) |
 | Navigation | ✅ 80% |
 | Blocks page | ✅ 100% (Phase 4 — satellite map with GPS polygon draw/edit, Go-to-location bar) |
-| Calendar page | ✅ 100% (UI done, data mocked) |
-| Recommendations page | ✅ 90% (UI + edit modal + activity log + AI generation done) |
-| Activity Log page | ✅ 100% |
+| Recommendations page | ✅ 100% (UI + edit modal + activity log + AI generation + priority ordering done) |
+| Activity Log page | ✅ 100% (+ manual Log Activity button for supervisor/admin) |
 | Inventory page | ✅ 100% (Asset & Consumable tracking with calendar linking) |
 | Database schema | ✅ 100% |
 | Real data ingestion | ❌ 0% |
 | AI reasoning engine | ❌ 0% |
 | Roles & permissions | ✅ 100% |
+| Multi-farm support | ❌ 0% |
+| Localisation (Arabic, Turkish) | ❌ 0% |
+| Mobile optimisation | ❌ 0% |
 
 ---
 
@@ -189,5 +230,10 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | 2026-05-24 | AI soil/water test result extraction: Replaced Turkish-only regex/positional PDF parser with an advanced multimodal Gemini 2.5 Flash processor via OpenRouter and Trigger.dev. Accepts both PDF and image (PNG, JPEG, etc.) uploads. extracts pH, EC, macronutrients, minerals, and soil texture directly into the LogTestResultModal. |
 | 2026-05-24 | Robust Soil Extraction Fix — Enhanced `extract-soil-test` API route to support direct, self-contained OpenRouter LLM extraction when running locally, with a graceful Trigger.dev fallback. Resolves local Trigger.dev authentication and `ApiClientMissingError` crashes on server start. |
 | 2026-05-24 | Phase 7 — Built Inventory Page: Asset and Consumable management. Added local-first data store for asset status, maintenance logs, and consumable balances, complete with low-stock alerts, searchable dropdown suggestions, calendar event usage linking, and full role-based permissions (admin/supervisor vs worker read-only). |
+| 2026-05-26 | Option A — (1) Fixed recommendations ordering: pending cards now sorted by confidence DESC (highest urgency first), with created_at DESC as tiebreaker. (2) Added "Log Activity" manual quick-entry to Activity Log page: `LogActivityModal` (activity type grid, title, block, datetime, notes) with `logActivity` server action (admin client bypass of RLS), optimistic prepend to list, and role-gating (supervisor/admin only). TypeScript clean — 0 errors. |
+| 2026-05-26 | Settings Page completed — Rebuilt `SettingsForms.tsx` with 6 role-gated tabs: (1) Account & Security, (2) Team Management, (3) Block Configuration (per-block field_capacity/wilting_point/notes with Supabase persistence + live progress bars), (4) Alert Thresholds (5 sliders in localStorage: soil moisture, water deficit, heat stress, rain skip, pest risk), (5) Sensor Connections (channel status + copy-to-clipboard ingest endpoint reference), (6) Weather & AI (farm lat/lng with Open-Meteo live test + Netlify AI Gateway config). TypeScript clean — 0 errors. |
+| 2026-05-26 | AI engine switched to direct OpenRouter calls — Removed Trigger.dev dependency from `generateAIRecommendations`; logic now runs inline in the server action using the OpenAI SDK pointed at `https://openrouter.ai/api/v1` with model `google/gemini-2.5-flash`. Context gathering (blocks, soil, weather, alerts, scouting, tissue), prompt, JSON parsing, validation, and DB insert all inlined. Requires `OPENROUTER_API_KEY` env var. |
+| 2026-05-26 | Lint clean sweep — Fixed all 20 ESLint errors: removed unused `gemini`/`AI_SYSTEM_PROMPT` from recommendations actions, converted two `useEffect` setState calls to lazy state initializers in SettingsForms, escaped apostrophe entity, added file-level any-disable in inventory actions, removed unused imports (`ASSET_SUGGESTIONS`, `Filter`, `isPending`), typed `recentCalendarEvents` and `events` props properly. 0 errors, 0 warnings. |
+| 2026-05-26 | Requirements updated — added three new requirements: (1) Multi-farm support (single login, farm selector, per-farm isolated data and role scoping); (2) Localisation to Arabic and Turkish with RTL layout, locale-aware formatting, and AI responses in active language; (3) Mobile-first optimisation (bottom nav, swipe gestures, service worker offline reads, background sync, lazy loading <3 s on 4G). |
 
 

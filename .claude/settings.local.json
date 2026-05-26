@@ -13,7 +13,8 @@
       "Bash(node -e \"require\\('pdf-parse'\\)\")",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('exports',{}\\), indent=2\\)\\)\")",
       "Bash(node -e \"const p = require\\('/c/Users/mhrg7/Documents/NutJob/node_modules/pdf-parse'\\); console.log\\(typeof p, Object.keys\\(p\\).slice\\(0,10\\)\\)\")",
-      "Bash(node -e \"console.log\\(require\\('c:/Users/mhrg7/Documents/NutJob/node_modules/pdf-parse/package.json'\\).version\\)\")"
+      "Bash(node -e \"console.log\\(require\\('c:/Users/mhrg7/Documents/NutJob/node_modules/pdf-parse/package.json'\\).version\\)\")",
+      "Bash(npx eslint *)"
     ]
   }
 }

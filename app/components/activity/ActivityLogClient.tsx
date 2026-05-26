@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition, useCallback } from "react";
-import { Search, Filter, Droplets, Sprout, Bug, Scissors, FlaskConical, Activity, Leaf } from "lucide-react";
+import { Search, Filter, Droplets, Sprout, Bug, Scissors, FlaskConical, Activity, Leaf, PlusCircle } from "lucide-react";
 import { getActivityLog, type ActivityLogEntry } from "@/app/(dashboard)/activity/actions";
+import LogActivityModal from "./LogActivityModal";
 
 type ActivityType = ActivityLogEntry["activity_type"] | "all";
 
@@ -54,15 +55,17 @@ interface Props {
   initialEntries: ActivityLogEntry[];
   initialTotal: number;
   blocks: Block[];
+  userRole?: "admin" | "supervisor" | "worker";
 }
 
-export default function ActivityLogClient({ initialEntries, initialTotal, blocks }: Props) {
+export default function ActivityLogClient({ initialEntries, initialTotal, blocks, userRole = "worker" }: Props) {
   const [entries, setEntries] = useState(initialEntries);
   const [total, setTotal] = useState(initialTotal);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<ActivityType>("all");
   const [blockFilter, setBlockFilter] = useState("all");
   const [isPending, startTransition] = useTransition();
+  const [showLogModal, setShowLogModal] = useState(false);
 
   const applyFilters = useCallback(
     (newSearch: string, newType: ActivityType, newBlock: string) => {
@@ -94,6 +97,11 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
     setBlockFilter(value);
     applyFilters(search, typeFilter, value);
   };
+
+  const handleSaved = useCallback((entry: ActivityLogEntry) => {
+    setEntries((prev) => [entry, ...prev]);
+    setTotal((prev) => prev + 1);
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -136,6 +144,17 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
             <option key={b.id} value={b.id}>{b.name}</option>
           ))}
         </select>
+
+        {/* Log Activity button — visible to supervisor and admin */}
+        {userRole !== "worker" && (
+          <button
+            onClick={() => setShowLogModal(true)}
+            className="flex items-center gap-2 shrink-0 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Log Activity
+          </button>
+        )}
       </div>
 
       {/* Count */}
@@ -213,6 +232,15 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
             })}
           </ul>
         </div>
+      )}
+
+      {/* Log Activity Modal */}
+      {showLogModal && (
+        <LogActivityModal
+          blocks={blocks}
+          onClose={() => setShowLogModal(false)}
+          onSaved={handleSaved}
+        />
       )}
     </div>
   );

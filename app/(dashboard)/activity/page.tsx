@@ -1,5 +1,6 @@
 import { getActivityLog, getBlocks } from "./actions";
 import ActivityLogClient from "@/app/components/activity/ActivityLogClient";
+import { createClient } from "@/utils/supabase/server";
 
 export const metadata = {
   title: "Activity Log | NutJob",
@@ -7,10 +8,17 @@ export const metadata = {
 };
 
 export default async function ActivityLogPage() {
-  const [{ entries, total }, blocks] = await Promise.all([
+  const supabase = await createClient();
+
+  const [{ entries, total }, blocks, { data: { user } }] = await Promise.all([
     getActivityLog({ limit: 50 }),
     getBlocks(),
+    supabase.auth.getUser(),
   ]);
+
+  const { data: profile } = user
+    ? await supabase.from("user_profiles").select("role").eq("id", user.id).single()
+    : { data: null };
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
@@ -23,7 +31,13 @@ export default async function ActivityLogPage() {
         </p>
       </div>
 
-      <ActivityLogClient initialEntries={entries} initialTotal={total} blocks={blocks} />
+      <ActivityLogClient
+        initialEntries={entries}
+        initialTotal={total}
+        blocks={blocks}
+        userRole={profile?.role ?? "worker"}
+      />
     </div>
   );
 }
+
