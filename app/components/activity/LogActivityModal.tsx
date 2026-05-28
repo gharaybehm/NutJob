@@ -12,8 +12,20 @@ import {
   FlaskConical,
   Activity,
   Sprout,
+  WifiOff,
 } from "lucide-react";
 import { logActivity, type ActivityLogEntry } from "@/app/(dashboard)/activity/actions";
+
+interface QueuedActivity {
+  id: string;
+  title: string;
+  activity_type: ActivityLogEntry["activity_type"];
+  block_id: string | null;
+  description: string | null;
+  performed_at: string;
+  block_name: string | null;
+  saved_at: string;
+}
 
 type ActivityType = ActivityLogEntry["activity_type"];
 
@@ -25,7 +37,8 @@ interface Block {
 interface Props {
   blocks: Block[];
   onClose: () => void;
-  onSaved: (entry: { id: string; title: string; activity_type: ActivityType; block_id: string | null; description: string | null; performed_at: string; blocks: { name: string } | null; created_at: string; performed_by: string | null }) => void;
+  onSaved: (entry: ActivityLogEntry) => void;
+  onSavedOffline: (entry: ActivityLogEntry, queued: QueuedActivity) => void;
 }
 
 const ACTIVITY_TYPES: { id: ActivityType; label: string; icon: React.ElementType; color: string }[] = [
@@ -48,7 +61,7 @@ function toLocalISOString(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default function LogActivityModal({ blocks, onClose, onSaved }: Props) {
+export default function LogActivityModal({ blocks, onClose, onSaved, onSavedOffline }: Props) {
   const [activityType, setActivityType] = useState<ActivityType>("irrigation");
   const [blockId, setBlockId] = useState<string>("");
   const [title, setTitle] = useState("");
@@ -75,29 +88,48 @@ export default function LogActivityModal({ blocks, onClose, onSaved }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      setError("Title is required.");
-      return;
-    }
+    if (!title.trim()) { setError("Title is required."); return; }
+
     setIsSaving(true);
     setError(null);
-    try {
-      const result = await logActivity({
-        title: title.trim(),
-        activity_type: activityType,
-        block_id: blockId || null,
-        description: description.trim() || null,
-        performed_at: new Date(performedAt).toISOString(),
-      });
 
-      const block = blocks.find((b) => b.id === blockId) ?? null;
+    const block = blocks.find((b) => b.id === blockId) ?? null;
+    const payload = {
+      title: title.trim(),
+      activity_type: activityType,
+      block_id: blockId || null,
+      description: description.trim() || null,
+      performed_at: new Date(performedAt).toISOString(),
+    };
+
+    // ── Offline path ──────────────────────────────────────────────────────────
+    if (!navigator.onLine) {
+      const pendingId = `pending_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const fakeEntry: ActivityLogEntry = {
+        id: pendingId,
+        ...payload,
+        blocks: block ? { name: block.name } : null,
+        created_at: new Date().toISOString(),
+        performed_by: null,
+      };
+      const queued: QueuedActivity = {
+        id: pendingId,
+        ...payload,
+        block_name: block?.name ?? null,
+        saved_at: new Date().toISOString(),
+      };
+      onSavedOffline(fakeEntry, queued);
+      onClose();
+      setIsSaving(false);
+      return;
+    }
+
+    // ── Online path ───────────────────────────────────────────────────────────
+    try {
+      const result = await logActivity(payload);
       onSaved({
         id: result.id,
-        title: title.trim(),
-        activity_type: activityType,
-        block_id: blockId || null,
-        description: description.trim() || null,
-        performed_at: new Date(performedAt).toISOString(),
+        ...payload,
         blocks: block ? { name: block.name } : null,
         created_at: new Date().toISOString(),
         performed_by: null,
@@ -180,7 +212,7 @@ export default function LogActivityModal({ blocks, onClose, onSaved }: Props) {
             </div>
 
             {/* Block + Date row */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="log-block" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                   Block <span className="font-normal normal-case text-slate-400">(optional)</span>
@@ -253,10 +285,12 @@ export default function LogActivityModal({ blocks, onClose, onSaved }: Props) {
             >
               {isSaving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
+              ) : typeof window !== "undefined" && !navigator.onLine ? (
+                <WifiOff className="h-4 w-4" />
               ) : (
                 <ClipboardPen className="h-4 w-4" />
               )}
-              {isSaving ? "Saving…" : "Save Activity"}
+              {isSaving ? "Saving…" : typeof window !== "undefined" && !navigator.onLine ? "Save Offline" : "Save Activity"}
             </button>
           </div>
         </form>

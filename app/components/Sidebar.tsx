@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Map, 
-  CalendarDays, 
-  Lightbulb, 
-  ActivitySquare, 
+import {
+  LayoutDashboard,
+  Map,
+  CalendarDays,
+  Lightbulb,
+  ActivitySquare,
   Settings,
   Warehouse
 } from "lucide-react";
@@ -53,15 +54,10 @@ export default function Sidebar({ userEmail, userName, userRole }: SidebarProps)
   });
 
   return (
-    <div className="flex h-full w-64 flex-col border-r border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800">
+    <div className="hidden md:flex h-full w-64 flex-col border-r border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800">
       <div className="flex h-16 shrink-0 items-center px-6">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-brand-600 flex items-center justify-center text-white font-bold text-xl">
-            N
-          </div>
-          <span className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
-            NutJob
-          </span>
+          <Image src="/icon.png" alt="NutJob" width={36} height={40} className="object-contain" />
         </div>
       </div>
       

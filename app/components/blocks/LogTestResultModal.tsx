@@ -298,7 +298,7 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
         <div className="overflow-y-auto px-6 py-4 flex flex-col gap-5">
 
           {/* Sample info */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <SectionHeader title="Sample Information" />
             <div className="col-span-3 flex flex-col gap-1.5">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Block / Scope</label>
@@ -318,7 +318,7 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
           </div>
 
           {/* Basic properties — soil pH/EC + water EC in one section */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <SectionHeader title="Basic Properties" />
             <ParamInput label="pH" value={ph} onChange={setPh} unit="" benchmarkKey="ph" />
             <ParamInput label="Soil EC" value={soilEc} onChange={setSoilEc} unit="ms/cm" benchmarkKey="ec_soil" />
@@ -326,7 +326,7 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
           </div>
 
           {/* Macronutrients & chemistry */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <SectionHeader title="Macronutrients & Chemistry" />
             <ParamInput label="Organic Matter" value={soil.organicMatter} onChange={setSoilField('organicMatter')} unit="%" benchmarkKey="organic_matter" />
             <ParamInput label="Phosphorus (P₂O₅)" value={soil.phosphorus} onChange={setSoilField('phosphorus')} unit="kg/da" benchmarkKey="phosphorus" />
@@ -336,7 +336,7 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
           </div>
 
           {/* Minerals */}
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <SectionHeader title="Minerals" />
             <ParamInput label="Calcium" value={soil.calcium} onChange={setSoilField('calcium')} unit="ppm" benchmarkKey="calcium" />
             <ParamInput label="Magnesium" value={soil.magnesium} onChange={setSoilField('magnesium')} unit="ppm" benchmarkKey="magnesium" />
@@ -349,7 +349,7 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
           </div>
 
           {/* Soil texture */}
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <SectionHeader title="Soil Texture" />
             <ParamInput label="Sand" value={soil.sand} onChange={setSoilField('sand')} unit="%" />
             <ParamInput label="Clay" value={soil.clay} onChange={setSoilField('clay')} unit="%" />
@@ -373,7 +373,7 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
           </div>
 
           {/* Optional sensor readings */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <SectionHeader title="Optional Sensor Readings" />
             <ParamInput label="Soil Moisture" value={soilMoisture} onChange={setSoilMoisture} unit="% vol" />
             <ParamInput label="Root Zone Temp" value={rootZoneTemp} onChange={setRootZoneTemp} unit="°C" />

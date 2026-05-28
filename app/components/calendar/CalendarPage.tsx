@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useTransition } from 'react';
+import { useState, useCallback, useTransition, useRef } from 'react';
 import CalendarHeader, { CalendarView } from './CalendarHeader';
 import MonthView from './MonthView';
 import WeekView from './WeekView';
@@ -177,6 +177,19 @@ export default function CalendarPage({
   const handleNext  = useCallback(() => setCurrentDate((d) => navigate(view, d,  1)), [view]);
   const handleToday = useCallback(() => setCurrentDate(new Date()), []);
 
+  const swipeTouchX = useRef<number | null>(null);
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    swipeTouchX.current = e.touches[0].clientX;
+  }, []);
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (swipeTouchX.current === null) return;
+    const delta = e.changedTouches[0].clientX - swipeTouchX.current;
+    swipeTouchX.current = null;
+    if (Math.abs(delta) < 50) return;
+    if (delta < 0) handleNext();
+    else handlePrev();
+  }, [handleNext, handlePrev]);
+
   const handleDayClick = useCallback((date: Date) => {
     if (userRole === "worker") return;
     setAddDefaultDate(date);
@@ -268,7 +281,8 @@ export default function CalendarPage({
         onAddEvent={userRole !== "worker" ? () => { setAddDefaultDate(undefined); setShowAdd(true); } : undefined}
       />
 
-      {/* Views */}
+      {/* Views — swipe left = next period, right = prev period */}
+      <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {view === 'month' && (
         <MonthView
           currentDate={currentDate}
@@ -292,6 +306,7 @@ export default function CalendarPage({
           onLogCompletion={(e) => setCompletionEvent(e)}
         />
       )}
+      </div>
 
       {/* Modals */}
       {showAdd && (

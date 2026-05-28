@@ -1,5 +1,6 @@
 import Sidebar from "@/app/components/Sidebar";
 import TopNav from "@/app/components/TopNav";
+import BottomNav from "@/app/components/BottomNav";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -57,12 +58,13 @@ export default async function DashboardLayout({
       <Sidebar userEmail={user.email} userName={profile.full_name ?? fullName} userRole={profile.role} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopNav />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 pb-24 md:p-6 md:pb-6">
           <div className="mx-auto max-w-7xl">
             {children}
           </div>
         </main>
       </div>
+      <BottomNav userRole={profile.role} />
     </>
   );
 }

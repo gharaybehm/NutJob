@@ -101,7 +101,7 @@ export default function BlockDetailPanel({ profile, onEdit, onDelete }: Props) {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium transition-colors ${
+                className={`relative flex items-center gap-1 sm:gap-1.5 whitespace-nowrap border-b-2 px-2 sm:px-3 py-2.5 sm:py-3 text-xs sm:text-sm font-medium transition-colors ${
                   isActive
                     ? 'border-brand-600 text-brand-700 dark:text-brand-400 dark:border-brand-400'
                     : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'

@@ -220,7 +220,7 @@ function ReadingCard({ r }: { r: ManualReading }) {
 
       {/* Row 3: extended soil params grid */}
       {!isWater && SOIL_CHIPS.some(c => p[c.key] != null) && (
-        <div className="grid grid-cols-4 gap-1 px-1">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 px-1">
           {SOIL_CHIPS.map(c => {
             const v = p[c.key];
             if (v == null || typeof v !== 'number') return null;

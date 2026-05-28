@@ -1,0 +1,19 @@
+{
+  "name": "NutJob Farm Management",
+  "short_name": "NutJob",
+  "description": "AI-powered farm management system for multi-block almond farms",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"]
+}

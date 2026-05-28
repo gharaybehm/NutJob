@@ -30,7 +30,7 @@ export default function CalendarHeader({
   onAddEvent,
 }: CalendarHeaderProps) {
   return (
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div className="mb-3 md:mb-6 flex flex-wrap items-center justify-between gap-2 md:gap-3">
       {/* Left: nav */}
       <div className="flex items-center gap-2">
         <button
@@ -42,14 +42,14 @@ export default function CalendarHeader({
         <div className="flex items-center rounded-md border border-slate-200 dark:border-slate-700 overflow-hidden">
           <button
             onClick={onPrev}
-            className="flex h-8 w-8 items-center justify-center bg-white hover:bg-slate-50 text-slate-600 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300"
+            className="flex h-11 w-11 md:h-8 md:w-8 items-center justify-center bg-white hover:bg-slate-50 text-slate-600 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300"
             aria-label="Previous"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             onClick={onNext}
-            className="flex h-8 w-8 items-center justify-center bg-white hover:bg-slate-50 text-slate-600 transition-colors border-l border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700"
+            className="flex h-11 w-11 md:h-8 md:w-8 items-center justify-center bg-white hover:bg-slate-50 text-slate-600 transition-colors border-l border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700"
             aria-label="Next"
           >
             <ChevronRight className="h-4 w-4" />

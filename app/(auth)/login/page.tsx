@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { Leaf, LockKeyhole, Mail } from 'lucide-react'
+import { LockKeyhole, Mail } from 'lucide-react'
 import { login } from './actions'
 
 export default async function LoginPage({
@@ -11,7 +11,7 @@ export default async function LoginPage({
   const message = resolvedSearchParams?.message as string | undefined
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex h-full overflow-hidden bg-white">
       {/* Left side - Image & Branding */}
       <div className="relative hidden w-1/2 lg:flex lg:flex-col lg:justify-between p-12 overflow-hidden bg-emerald-900">
         <Image
@@ -25,11 +25,12 @@ export default async function LoginPage({
         {/* Subtle gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/90 via-emerald-900/50 to-transparent mix-blend-multiply" />
 
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 shadow-lg shadow-emerald-500/30">
-            <Leaf className="h-6 w-6 text-white" />
-          </div>
-          <span className="text-2xl font-bold tracking-tight text-white">NutJob</span>
+        <div className="relative z-10">
+          <div
+            className="absolute -inset-12 rounded-full"
+            style={{ background: "radial-gradient(ellipse at center, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.25) 45%, transparent 72%)" }}
+          />
+          <Image src="/logo-full.png" alt="NutJob" width={180} height={254} className="relative object-contain" />
         </div>
 
         <div className="relative z-10 max-w-lg pb-12">
@@ -43,14 +44,11 @@ export default async function LoginPage({
       </div>
 
       {/* Right side - Login Form */}
-      <div className="flex w-full flex-col justify-center px-4 py-12 sm:px-6 lg:w-1/2 lg:px-20 xl:px-32 relative bg-zinc-50">
+      <div className="flex w-full flex-col overflow-y-auto px-4 py-12 sm:px-6 lg:w-1/2 lg:px-20 lg:justify-center xl:px-32 relative bg-zinc-50">
         <div className="mx-auto w-full max-w-sm lg:max-w-md">
           {/* Mobile branding */}
-          <div className="mb-10 flex items-center justify-center gap-3 lg:hidden">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 shadow-md">
-              <Leaf className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold tracking-tight text-zinc-900">NutJob</span>
+          <div className="mb-10 flex items-center justify-center lg:hidden">
+            <Image src="/logo-full.png" alt="NutJob" width={130} height={183} className="object-contain" />
           </div>
 
           <div className="mb-10">

@@ -798,7 +798,7 @@ export default function SettingsForms({
           const isActive = activeTab === tab.id
           return (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold tracking-tight whitespace-nowrap border-b-2 transition-all -mb-px ${
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold tracking-tight whitespace-nowrap border-b-2 transition-all -mb-px ${
                 isActive
                   ? 'border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400'
                   : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
