@@ -1,8 +1,10 @@
 import Sidebar from "@/app/components/Sidebar";
 import TopNav from "@/app/components/TopNav";
 import BottomNav from "@/app/components/BottomNav";
+import FarmTabs from "@/app/components/farms/FarmTabs";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import { getFarms } from "@/app/actions/farms";
 
 export default async function DashboardLayout({
   children,
@@ -74,6 +76,9 @@ export default async function DashboardLayout({
   // Per-farm role takes precedence for UI gating
   const effectiveRole = (membership.role as "admin" | "supervisor" | "worker") ?? profile.role;
 
+  // All farms for the tab bar
+  const allFarms = await getFarms();
+
   return (
     <>
       <Sidebar
@@ -85,13 +90,14 @@ export default async function DashboardLayout({
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopNav farmId={farmId} />
-        <main className="flex-1 overflow-y-auto p-4 pb-24 md:p-6 md:pb-6">
+        <main className="flex-1 overflow-y-auto p-4 pb-24 md:p-6 md:pb-6 md:pr-14">
           <div className="mx-auto max-w-7xl">
             {children}
           </div>
         </main>
       </div>
       <BottomNav userRole={effectiveRole} farmId={farmId} />
+      <FarmTabs farms={allFarms} currentFarmId={farmId} maxFarms={3} />
     </>
   );
 }

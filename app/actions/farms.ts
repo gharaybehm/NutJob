@@ -30,6 +30,15 @@ export async function createFarm(values: {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { error: 'Not authenticated' };
 
+  // Enforce 3-farm maximum
+  const { count } = await (supabase as any)
+    .from('farm_members')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id);
+  if ((count ?? 0) >= 3) {
+    return { error: 'You have reached the maximum of 3 farms.' };
+  }
+
   const slug = toSlug(values.name);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
