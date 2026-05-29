@@ -86,7 +86,6 @@ export default async function DashboardLayout({
         userName={profile.full_name ?? fullName}
         userRole={effectiveRole}
         farmId={farmId}
-        farmName={farm.name}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopNav farmId={farmId} />

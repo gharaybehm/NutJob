@@ -4,8 +4,8 @@
 //   /dashboard, /blocks, /calendar  → network-first (fresh data, offline fallback)
 //   Everything else                 → network-only
 
-const STATIC_CACHE = 'nutjob-static-v1';
-const PAGE_CACHE   = 'nutjob-pages-v1';
+const STATIC_CACHE = 'nutjob-static-v2';
+const PAGE_CACHE   = 'nutjob-pages-v2';
 const ALL_CACHES   = [STATIC_CACHE, PAGE_CACHE];
 
 const OFFLINE_PAGES = ['/dashboard', '/blocks', '/calendar'];

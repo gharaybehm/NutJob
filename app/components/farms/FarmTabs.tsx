@@ -47,9 +47,8 @@ export default function FarmTabs({ farms, currentFarmId, maxFarms = 3 }: Props) 
     router.push(`/${farmId}/${pageSlug}`);
   }
 
-  const showEmptySlot = farms.length < maxFarms;
-  // The next empty slot index determines its color
-  const nextSlotIndex = farms.length;
+  // Always show exactly maxFarms slots — filled or empty
+  const visibleFarms = farms.slice(0, maxFarms);
 
   return (
     <>
@@ -58,64 +57,67 @@ export default function FarmTabs({ farms, currentFarmId, maxFarms = 3 }: Props) 
         className="hidden md:flex fixed right-0 z-50 flex-col gap-2"
         style={{ top: '40%', transform: 'translateY(-50%)' }}
       >
-        {/* Filled farm tabs */}
-        {farms.map((farm, i) => {
-          const isActive = farm.id === currentFarmId;
+        {Array.from({ length: maxFarms }, (_, i) => {
+          const farm = visibleFarms[i];
           const styles = SLOT_STYLES[i % SLOT_STYLES.length];
-          const label = farm.name.length > 10 ? farm.name.slice(0, 10) : farm.name;
 
+          if (farm) {
+            const isActive = farm.id === currentFarmId;
+            const label = farm.name.length > 10 ? farm.name.slice(0, 10) : farm.name;
+            return (
+              <button
+                key={farm.id}
+                onClick={() => switchFarm(farm.id)}
+                title={farm.name}
+                className={`
+                  flex items-center justify-center
+                  w-11
+                  border border-r-0
+                  shadow-sm transition-all duration-200
+                  ${isActive
+                    ? `${styles.active} shadow-md translate-x-0`
+                    : `${styles.inactive} translate-x-1 hover:translate-x-0 hover:shadow-md`
+                  }
+                `}
+                style={{
+                  height: '96px',
+                  borderRadius: '10px 0 0 10px',
+                }}
+              >
+                <span
+                  className="text-[11px] font-semibold tracking-wide select-none"
+                  style={{ writingMode: 'vertical-rl', overflow: 'hidden', maxHeight: '80px' }}
+                >
+                  {label}
+                </span>
+              </button>
+            );
+          }
+
+          // Empty slot — click to create a new farm
           return (
             <button
-              key={farm.id}
-              onClick={() => switchFarm(farm.id)}
-              title={farm.name}
+              key={`empty-${i}`}
+              onClick={() => setWizardOpen(true)}
+              title="Create new farm"
               className={`
                 flex items-center justify-center
                 w-11
-                border border-r-0
-                shadow-sm transition-all duration-200
-                ${isActive
-                  ? `${styles.active} shadow-md translate-x-0`
-                  : `${styles.inactive} translate-x-1 hover:translate-x-0 hover:shadow-md`
-                }
+                border border-r-0 border-dashed
+                bg-white dark:bg-slate-900
+                transition-all duration-200
+                translate-x-1 hover:translate-x-0 hover:shadow-md
+                ${styles.empty}
               `}
               style={{
-                height: '96px',
+                height: '56px',
                 borderRadius: '10px 0 0 10px',
               }}
             >
-              <span
-                className="text-[11px] font-semibold tracking-wide select-none"
-                style={{ writingMode: 'vertical-rl', overflow: 'hidden', maxHeight: '80px' }}
-              >
-                {label}
-              </span>
+              <Plus className="h-4 w-4" />
             </button>
           );
         })}
-
-        {/* Empty slot — create new farm */}
-        {showEmptySlot && (
-          <button
-            onClick={() => setWizardOpen(true)}
-            title="Create new farm"
-            className={`
-              flex items-center justify-center
-              w-11
-              border border-r-0 border-dashed
-              bg-white dark:bg-slate-900
-              transition-all duration-200
-              translate-x-1 hover:translate-x-0 hover:shadow-md
-              ${SLOT_STYLES[nextSlotIndex % SLOT_STYLES.length].empty}
-            `}
-            style={{
-              height: '56px',
-              borderRadius: '10px 0 0 10px',
-            }}
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        )}
       </div>
 
       <CreateFarmWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />

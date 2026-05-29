@@ -60,6 +60,12 @@ export default async function SettingsPage({
     .eq('farm_id', farmId)
     .order('name')
 
+  // Fetch farm name and address for the Farm Identity section
+  const { data: farmData } = await db.from('farms')
+    .select('name, address')
+    .eq('id', farmId)
+    .single()
+
   return (
     <div className="max-w-5xl space-y-10">
       <div>
@@ -76,6 +82,9 @@ export default async function SettingsPage({
         userRole={profile?.role || 'worker'}
         allUsers={allUsers as { id: string; full_name: string | null; phone: string | null; role: 'admin' | 'supervisor' | 'worker'; created_at: string }[]}
         blocks={blocks as { id: string; name: string; crop_type: string; variety: string; area: number; area_unit: string; field_capacity: number | null; wilting_point: number | null; notes: string | null }[]}
+        farmId={farmId}
+        farmName={farmData?.name ?? ''}
+        farmAddress={farmData?.address ?? ''}
       />
     </div>
   )

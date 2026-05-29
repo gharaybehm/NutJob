@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, MapPin, Loader2, CheckCircle2, ChevronRight } from 'lucide-react';
+import { X, MapPin, Loader2, ChevronRight } from 'lucide-react';
 import { createFarm } from '@/app/actions/farms';
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
   onClose: () => void;
 }
 
-type Step = 'identity' | 'gps' | 'success';
+type Step = 'identity' | 'gps';
 
 export default function CreateFarmWizard({ open, onClose }: Props) {
   const router = useRouter();
@@ -23,7 +23,6 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
   const [lng, setLng] = useState('');
   const [locError, setLocError] = useState('');
   const [serverError, setServerError] = useState('');
-  const [newFarmId, setNewFarmId] = useState('');
   const [gettingLocation, setGettingLocation] = useState(false);
 
   if (!open) return null;
@@ -32,7 +31,7 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
     if (isPending) return;
     setStep('identity');
     setName(''); setAddress(''); setLat(''); setLng('');
-    setLocError(''); setServerError(''); setNewFarmId('');
+    setLocError(''); setServerError('');
     onClose();
   }
 
@@ -70,13 +69,10 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
         setServerError(result.error);
         return;
       }
-      setNewFarmId(result.farmId!);
-      setStep('success');
+      // Go straight to the new farm's dashboard — it shows the setup steps
+      router.push(`/${result.farmId}/dashboard`);
+      handleClose();
     });
-  }
-
-  function goToDashboard() {
-    router.push(`/${newFarmId}/dashboard`);
   }
 
   return (
@@ -86,13 +82,11 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
           <div>
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-              {step === 'success' ? 'Farm created!' : 'Create a new farm'}
+              Create a new farm
             </h2>
-            {step !== 'success' && (
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Step {step === 'identity' ? '1' : '2'} of 2
-              </p>
-            )}
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Step {step === 'identity' ? '1' : '2'} of 2
+            </p>
           </div>
           <button
             onClick={handleClose}
@@ -103,7 +97,7 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
           </button>
         </div>
 
-        {/* Step 1 — Identity */}
+        {/* Step 1 — Name & location */}
         {step === 'identity' && (
           <div className="px-6 py-5 flex flex-col gap-4">
             <div>
@@ -216,27 +210,6 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
                 Create Farm
               </button>
             </div>
-          </div>
-        )}
-
-        {/* Step 3 — Success */}
-        {step === 'success' && (
-          <div className="px-6 py-8 flex flex-col items-center text-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center">
-              <CheckCircle2 className="h-9 w-9 text-brand-600 dark:text-brand-400" />
-            </div>
-            <div>
-              <p className="text-lg font-semibold text-slate-900 dark:text-white">{name}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Your farm has been created. Add blocks, sensors, and soil data from the dashboard.
-              </p>
-            </div>
-            <button
-              onClick={goToDashboard}
-              className="mt-2 w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
-            >
-              Go to Dashboard
-            </button>
           </div>
         )}
       </div>

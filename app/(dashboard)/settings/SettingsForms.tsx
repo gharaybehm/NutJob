@@ -32,7 +32,9 @@ import {
   WifiOff,
   Save,
   RefreshCw,
+  Building2,
 } from 'lucide-react'
+import { updateFarm } from '@/app/actions/farms'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -59,6 +61,9 @@ interface SettingsFormsProps {
     created_at: string
   }[]
   blocks?: Block[]
+  farmId?: string
+  farmName?: string
+  farmAddress?: string
 }
 
 type TabId = 'profile' | 'team' | 'blocks' | 'alerts' | 'sensors' | 'weather'
@@ -656,11 +661,32 @@ function SensorConnectionsTab() {
 
 const DEFAULT_WEATHER = { lat: '36.8969', lng: '30.7133' } // Antalya default
 
-function WeatherAPITab() {
+function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initialAddress = '' }: {
+  farmId?: string
+  farmName?: string
+  farmAddress?: string
+}) {
   const [coords, setCoords] = useState(() => loadFromStorage(STORAGE_KEY_WEATHER, DEFAULT_WEATHER))
   const [saved, setSaved] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<'ok' | 'error' | null>(null)
+
+  const [farmName, setFarmName] = useState(initialName)
+  const [farmAddress, setFarmAddressState] = useState(initialAddress)
+  const [farmSaving, setFarmSaving] = useState(false)
+  const [farmStatus, setFarmStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  async function handleFarmSave() {
+    if (!farmId || !farmName.trim()) return
+    setFarmSaving(true)
+    setFarmStatus(null)
+    const result = await updateFarm(farmId, { name: farmName.trim(), address: farmAddress.trim() || undefined })
+    setFarmSaving(false)
+    setFarmStatus(result.error
+      ? { type: 'error', message: result.error }
+      : { type: 'success', message: 'Farm profile updated.' }
+    )
+  }
 
   function handleSave() {
     localStorage.setItem(STORAGE_KEY_WEATHER, JSON.stringify(coords))
@@ -680,6 +706,44 @@ function WeatherAPITab() {
 
   return (
     <div className="space-y-8">
+      <SectionCard title="Farm Identity" icon={Building2}
+        description="Update the name and address shown on the farm tab and throughout the app.">
+        <div className="space-y-4 max-w-lg">
+          <StatusBanner status={farmStatus} />
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+              Farm name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={farmName}
+              onChange={e => setFarmName(e.target.value)}
+              placeholder="e.g. Sunrise Almonds"
+              className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+              Address / location
+            </label>
+            <input
+              type="text"
+              value={farmAddress}
+              onChange={e => setFarmAddressState(e.target.value)}
+              placeholder="e.g. Jericho, West Bank"
+              className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+            />
+          </div>
+          <button
+            onClick={handleFarmSave}
+            disabled={farmSaving || !farmName.trim()}
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {farmSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Save Farm Profile
+          </button>
+        </div>
+      </SectionCard>
       <SectionCard title="Open-Meteo Weather" icon={Cloud}
         description="Open-Meteo is a free, open-source weather API used for the dashboard weather strip and 7-day forecast. No API key required.">
         <div className="space-y-6 max-w-lg">
@@ -777,6 +841,9 @@ export default function SettingsForms({
   userRole = 'worker',
   allUsers = [],
   blocks = [],
+  farmId,
+  farmName,
+  farmAddress,
 }: SettingsFormsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('profile')
 
@@ -816,7 +883,7 @@ export default function SettingsForms({
       {activeTab === 'blocks'  && <BlockConfigTab blocks={blocks} />}
       {activeTab === 'alerts'  && <NotificationAlertsTab />}
       {activeTab === 'sensors' && <SensorConnectionsTab />}
-      {activeTab === 'weather' && <WeatherAPITab />}
+      {activeTab === 'weather' && <WeatherAPITab farmId={farmId} farmName={farmName} farmAddress={farmAddress} />}
     </div>
   )
 }

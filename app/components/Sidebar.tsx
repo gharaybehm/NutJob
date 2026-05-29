@@ -11,20 +11,17 @@ import {
   ActivitySquare,
   Settings,
   Warehouse,
-  Building2,
 } from "lucide-react";
 import SignOutButton from "./auth/SignOutButton";
-import FarmSwitcher from "./farms/FarmSwitcher";
 
 interface SidebarProps {
   userEmail?: string;
   userName?: string;
   userRole?: "admin" | "supervisor" | "worker";
   farmId: string;
-  farmName: string;
 }
 
-export default function Sidebar({ userEmail, userName, userRole, farmId, farmName }: SidebarProps) {
+export default function Sidebar({ userEmail, userName, userRole, farmId }: SidebarProps) {
   const pathname = usePathname();
 
   const navigation = [
@@ -63,20 +60,8 @@ export default function Sidebar({ userEmail, userName, userRole, farmId, farmNam
         </div>
       </div>
 
-      {/* Farm switcher */}
-      <FarmSwitcher farmId={farmId} farmName={farmName} />
-
-      <div className="flex flex-1 flex-col overflow-y-auto">
+<div className="flex flex-1 flex-col overflow-y-auto">
         <nav className="flex-1 space-y-1 px-4 py-2">
-          {/* All Farms link */}
-          <Link
-            href="/farms"
-            className="group flex items-center rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors mb-1"
-          >
-            <Building2 className="mr-3 h-4 w-4 flex-shrink-0" aria-hidden="true" />
-            All Farms
-          </Link>
-
           {/* Farm nav links */}
           {visibleNavigation.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
