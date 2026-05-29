@@ -1,5 +1,6 @@
 import { CheckCircle2, FlaskConical, Tractor, Droplets, Sprout, ShieldAlert } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/utils/supabase/server";
 
 interface ActivityItem {
   id: string;
@@ -10,8 +11,45 @@ interface ActivityItem {
   type: string;
 }
 
-interface ActivityFeedProps {
-  activities: ActivityItem[];
+function relativeTime(dateStr: string): string {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60_000);
+  const hrs = Math.floor(mins / 60);
+  if (hrs >= 24) { const d = Math.floor(hrs / 24); return d === 1 ? "Yesterday" : `${d} days ago`; }
+  if (hrs > 0) return `${hrs} hour${hrs > 1 ? 's' : ''} ago`;
+  if (mins > 0) return `${mins} min${mins > 1 ? 's' : ''} ago`;
+  return "Just now";
+}
+
+async function getActivities(farmId: string): Promise<ActivityItem[]> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: farmBlocks } = await (supabase.from("blocks") as any)
+    .select("id")
+    .eq("farm_id", farmId);
+  const blockIds: string[] = (farmBlocks ?? []).map((b: { id: string }) => b.id);
+
+  let query = supabase
+    .from("activity_log")
+    .select("id, title, activity_type, performed_at, performed_by, blocks(name)")
+    .order("performed_at", { ascending: false })
+    .limit(5);
+
+  if (blockIds.length > 0) {
+    query = query.or(`block_id.in.(${blockIds.join(",")}),block_id.is.null`);
+  }
+
+  const { data } = await query;
+
+  return (data ?? []).map(act => ({
+    id: act.id,
+    action: act.title,
+    blockName: (act.blocks as { name: string } | null)?.name ?? null,
+    user: act.performed_by || "System",
+    time: relativeTime(act.performed_at),
+    type: act.activity_type,
+  }));
 }
 
 function getActivityIcon(type: string) {
@@ -30,15 +68,16 @@ function getActivityColor(type: string) {
   return 'text-slate-500 bg-slate-50 dark:bg-slate-800';
 }
 
-export default function ActivityFeed({ activities = [] }: ActivityFeedProps) {
+export default async function ActivityFeed({ farmId }: { farmId: string }) {
+  const activities = await getActivities(farmId);
   const count = activities.length;
 
   return (
     <div className="flex flex-col rounded-xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
       <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
         <h2 className="text-base font-semibold text-slate-900 dark:text-white">Recent Activity</h2>
-        <Link 
-          href="/activity" 
+        <Link
+          href={`/${farmId}/activity`}
           className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline"
         >
           View Log

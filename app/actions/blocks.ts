@@ -24,6 +24,7 @@ function nextMapPos(existing: Block[]): { col: number; row: number } {
 export async function createBlock(
   values: BlockFormValues,
   existingBlocks: Block[],
+  farmId: string,
 ): Promise<{ error?: string; id?: string }> {
   const supabase = await createClient();
 
@@ -39,6 +40,7 @@ export async function createBlock(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('blocks') as any).insert({
     id,
+    farm_id:       farmId,
     name:          values.name.trim(),
     crop_type:     values.cropType,
     variety:       values.variety,
@@ -58,13 +60,14 @@ export async function createBlock(
 
   if (error) return { error: error.message };
 
-  revalidatePath('/blocks');
+  revalidatePath(`/${farmId}/blocks`);
   return { id };
 }
 
 export async function updateBlock(
   id: string,
   values: BlockFormValues,
+  farmId: string,
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
 
@@ -91,13 +94,14 @@ export async function updateBlock(
 
   if (error) return { error: error.message };
 
-  revalidatePath('/blocks');
+  revalidatePath(`/${farmId}/blocks`);
   return {};
 }
 
 export async function updateBlockBoundary(
   id: string,
   boundary: LatLng[],
+  farmId: string,
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
 
@@ -108,17 +112,17 @@ export async function updateBlockBoundary(
 
   if (error) return { error: error.message };
 
-  revalidatePath('/blocks');
+  revalidatePath(`/${farmId}/blocks`);
   return {};
 }
 
-export async function deleteBlock(id: string): Promise<{ error?: string }> {
+export async function deleteBlock(id: string, farmId: string): Promise<{ error?: string }> {
   const supabase = await createClient();
 
   const { error } = await supabase.from('blocks').delete().eq('id', id);
 
   if (error) return { error: error.message };
 
-  revalidatePath('/blocks');
+  revalidatePath(`/${farmId}/blocks`);
   return {};
 }

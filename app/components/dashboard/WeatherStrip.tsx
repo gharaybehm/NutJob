@@ -12,7 +12,8 @@ function getWeatherIcon(code: number) {
   return Sun;
 }
 
-export default async function WeatherStrip() {
+// farmId reserved for future GPS-based weather lookup per farm
+export default async function WeatherStrip({ farmId: _farmId }: { farmId: string }) {
   let forecast: { day: string; date: string; icon: ReturnType<typeof getWeatherIcon>; tempH: number; tempL: number; rain: number; rawDate: string }[] = [];
   try {
     const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=38.08&longitude=33.57&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto', { next: { revalidate: 3600 } });

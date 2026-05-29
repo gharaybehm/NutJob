@@ -10,39 +10,40 @@ import {
   Lightbulb,
   ActivitySquare,
   Settings,
-  Warehouse
+  Warehouse,
+  Building2,
 } from "lucide-react";
 import SignOutButton from "./auth/SignOutButton";
-
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Blocks", href: "/blocks", icon: Map },
-  { name: "Calendar", href: "/calendar", icon: CalendarDays },
-  { name: "Recommendations", href: "/recommendations", icon: Lightbulb },
-  { name: "Activity Log", href: "/activity", icon: ActivitySquare },
-  { name: "Inventory", href: "/inventory", icon: Warehouse },
-  { name: "Settings", href: "/settings", icon: Settings },
-];
+import FarmSwitcher from "./farms/FarmSwitcher";
 
 interface SidebarProps {
   userEmail?: string;
   userName?: string;
   userRole?: "admin" | "supervisor" | "worker";
+  farmId: string;
+  farmName: string;
 }
 
-export default function Sidebar({ userEmail, userName, userRole }: SidebarProps) {
+export default function Sidebar({ userEmail, userName, userRole, farmId, farmName }: SidebarProps) {
   const pathname = usePathname();
-  
-  // Create initials from name or email
+
+  const navigation = [
+    { name: "Dashboard",       href: `/${farmId}/dashboard`,       icon: LayoutDashboard },
+    { name: "Blocks",          href: `/${farmId}/blocks`,          icon: Map },
+    { name: "Calendar",        href: `/${farmId}/calendar`,        icon: CalendarDays },
+    { name: "Recommendations", href: `/${farmId}/recommendations`, icon: Lightbulb },
+    { name: "Activity Log",    href: `/${farmId}/activity`,        icon: ActivitySquare },
+    { name: "Inventory",       href: `/${farmId}/inventory`,       icon: Warehouse },
+    { name: "Settings",        href: `/${farmId}/settings`,        icon: Settings },
+  ];
+
   const getInitials = () => {
     if (userName) {
       const parts = userName.split(' ');
       if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
       return userName.substring(0, 2).toUpperCase();
     }
-    if (userEmail) {
-      return userEmail.substring(0, 2).toUpperCase();
-    }
+    if (userEmail) return userEmail.substring(0, 2).toUpperCase();
     return "U";
   };
 
@@ -55,14 +56,28 @@ export default function Sidebar({ userEmail, userName, userRole }: SidebarProps)
 
   return (
     <div className="hidden md:flex h-full w-64 flex-col border-r border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800">
+      {/* Logo */}
       <div className="flex h-16 shrink-0 items-center px-6">
         <div className="flex items-center gap-2">
           <Image src="/icon.png" alt="NutJob" width={36} height={40} className="object-contain" />
         </div>
       </div>
-      
+
+      {/* Farm switcher */}
+      <FarmSwitcher farmId={farmId} farmName={farmName} />
+
       <div className="flex flex-1 flex-col overflow-y-auto">
-        <nav className="flex-1 space-y-1 px-4 py-4">
+        <nav className="flex-1 space-y-1 px-4 py-2">
+          {/* All Farms link */}
+          <Link
+            href="/farms"
+            className="group flex items-center rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors mb-1"
+          >
+            <Building2 className="mr-3 h-4 w-4 flex-shrink-0" aria-hidden="true" />
+            All Farms
+          </Link>
+
+          {/* Farm nav links */}
           {visibleNavigation.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
@@ -89,7 +104,8 @@ export default function Sidebar({ userEmail, userName, userRole }: SidebarProps)
           })}
         </nav>
       </div>
-      
+
+      {/* User profile footer */}
       <div className="border-t border-slate-200 p-4 dark:border-slate-800">
         <div className="mb-4">
           <SignOutButton />

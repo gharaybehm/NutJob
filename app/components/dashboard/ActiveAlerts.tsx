@@ -1,4 +1,5 @@
 import { AlertCircle, AlertTriangle, Info, CheckCircle } from "lucide-react";
+import { createClient } from "@/utils/supabase/server";
 
 interface AlertItem {
   id: string;
@@ -7,10 +8,6 @@ interface AlertItem {
   created_at: string;
   domain: 'soil-water' | 'phenology' | 'nutrition' | 'pest-disease' | 'weather';
   blockName: string | null;
-}
-
-interface ActiveAlertsProps {
-  alerts: AlertItem[];
 }
 
 function getAlertIcon(severity: string) {
@@ -35,21 +32,45 @@ function formatRelativeTime(dateStr: string) {
   const diffMs = Date.now() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHrs = Math.floor(diffMins / 60);
-  
+
   if (diffHrs >= 24) {
     const days = Math.floor(diffHrs / 24);
     return days === 1 ? "Yesterday" : `${days} days ago`;
   }
-  if (diffHrs > 0) {
-    return `${diffHrs} hour${diffHrs > 1 ? 's' : ''} ago`;
-  }
-  if (diffMins > 0) {
-    return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-  }
+  if (diffHrs > 0) return `${diffHrs} hour${diffHrs > 1 ? 's' : ''} ago`;
+  if (diffMins > 0) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
   return "Just now";
 }
 
-export default function ActiveAlerts({ alerts = [] }: ActiveAlertsProps) {
+async function getAlerts(farmId: string): Promise<AlertItem[]> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: farmBlocks } = await (supabase.from("blocks") as any)
+    .select("id")
+    .eq("farm_id", farmId);
+  const blockIds: string[] = (farmBlocks ?? []).map((b: { id: string }) => b.id);
+  if (blockIds.length === 0) return [];
+
+  const { data } = await supabase
+    .from("block_alerts")
+    .select("id, message, severity, created_at, domain, blocks(name)")
+    .in("block_id", blockIds)
+    .eq("resolved", false)
+    .order("created_at", { ascending: false });
+
+  return (data ?? []).map(a => ({
+    id: a.id,
+    message: a.message,
+    severity: a.severity as AlertItem['severity'],
+    created_at: a.created_at,
+    domain: a.domain as AlertItem['domain'],
+    blockName: (a.blocks as { name: string } | null)?.name ?? null,
+  }));
+}
+
+export default async function ActiveAlerts({ farmId }: { farmId: string }) {
+  const alerts = await getAlerts(farmId);
   const count = alerts.length;
 
   return (
@@ -57,8 +78,8 @@ export default function ActiveAlerts({ alerts = [] }: ActiveAlertsProps) {
       <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
         <h2 className="text-base font-semibold text-slate-900 dark:text-white">Active Alerts</h2>
         <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-          count > 0 
-            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' 
+          count > 0
+            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
             : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
         }`}>
           {count > 0 ? `${count} Active` : "Clear"}
@@ -82,24 +103,24 @@ export default function ActiveAlerts({ alerts = [] }: ActiveAlertsProps) {
 
               return (
                 <li key={alert.id} className={`rounded-lg border p-4 ${
-                  isCritical 
-                    ? 'border-red-200 bg-red-50/50 dark:border-red-900/30 dark:bg-red-950/10' 
+                  isCritical
+                    ? 'border-red-200 bg-red-50/50 dark:border-red-900/30 dark:bg-red-950/10'
                     : alert.severity === 'warning'
                     ? 'border-amber-200 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-950/10'
                     : 'border-slate-200 bg-slate-50/50 dark:border-slate-800/30 dark:bg-slate-900/10'
                 }`}>
                   <div className="flex items-start gap-3">
                     <Icon className={`h-5 w-5 mt-0.5 ${
-                      isCritical 
-                        ? 'text-red-600 dark:text-red-500' 
+                      isCritical
+                        ? 'text-red-600 dark:text-red-500'
                         : alert.severity === 'warning'
                         ? 'text-amber-600 dark:text-amber-500'
                         : 'text-blue-500 dark:text-blue-400'
                     }`} />
                     <div className="flex-1">
                       <h3 className={`text-sm font-semibold ${
-                        isCritical 
-                          ? 'text-red-800 dark:text-red-300' 
+                        isCritical
+                          ? 'text-red-800 dark:text-red-300'
                           : alert.severity === 'warning'
                           ? 'text-amber-800 dark:text-amber-300'
                           : 'text-slate-800 dark:text-slate-300'

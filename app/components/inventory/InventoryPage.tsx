@@ -5,10 +5,11 @@ import { Asset, Consumable, MaintenanceEntry, UsageEntry } from './types';
 import AssetCard from './AssetCard';
 import ConsumableRow from './ConsumableRow';
 import { Search, Plus, AlertTriangle } from 'lucide-react';
-import AddAssetModal from './AddAssetModal';
-import AddConsumableModal from './AddConsumableModal';
-import LogMaintenanceModal from './LogMaintenanceModal';
-import LogUsageModal from './LogUsageModal';
+import dynamic from 'next/dynamic';
+const AddAssetModal = dynamic(() => import('./AddAssetModal'), { ssr: false });
+const AddConsumableModal = dynamic(() => import('./AddConsumableModal'), { ssr: false });
+const LogMaintenanceModal = dynamic(() => import('./LogMaintenanceModal'), { ssr: false });
+const LogUsageModal = dynamic(() => import('./LogUsageModal'), { ssr: false });
 import { createAsset, createConsumable, logMaintenance, logUsage } from '@/app/(dashboard)/inventory/actions';
 
 export default function InventoryPage({
@@ -16,13 +17,15 @@ export default function InventoryPage({
   initialConsumables,
   recentCalendarEvents,
   userRole,
-  blocks
+  blocks,
+  farmId: _farmId,
 }: {
   initialAssets: Asset[];
   initialConsumables: Consumable[];
   recentCalendarEvents: { id: string; title: string; date: Date; type: string }[];
   userRole: 'admin' | 'supervisor' | 'worker';
   blocks: string[];
+  farmId?: string;
 }) {
   const [activeTab, setActiveTab] = useState<'assets' | 'consumables'>('assets');
   const [searchQuery, setSearchQuery] = useState('');

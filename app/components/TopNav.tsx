@@ -4,27 +4,32 @@ import { Bell, Search, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 
-const PAGE_TITLES: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/blocks": "Blocks",
-  "/calendar": "Calendar",
-  "/recommendations": "Recommendations",
-  "/activity": "Activity Log",
-  "/inventory": "Inventory",
-  "/settings": "Settings",
-};
-
-function getPageTitle(pathname: string): string {
-  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
-  const match = Object.keys(PAGE_TITLES).find((k) => k !== "/dashboard" && pathname.startsWith(k));
-  return match ? PAGE_TITLES[match] : "";
+interface TopNavProps {
+  farmId: string;
 }
 
-export default function TopNav() {
+const PAGE_SLUG_TITLES: Record<string, string> = {
+  dashboard:       "Dashboard",
+  blocks:          "Blocks",
+  calendar:        "Calendar",
+  recommendations: "Recommendations",
+  activity:        "Activity Log",
+  inventory:       "Inventory",
+  settings:        "Settings",
+};
+
+export default function TopNav({ farmId }: TopNavProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const isHome = pathname === "/dashboard";
-  const pageTitle = getPageTitle(pathname);
+
+  // Derive page title from path segment after farmId
+  // pathname looks like: /{farmId}/dashboard or /{farmId}/blocks/...
+  const segments = pathname.split('/').filter(Boolean);
+  const farmIndex = segments.indexOf(farmId);
+  const pageSlug = farmIndex >= 0 ? segments[farmIndex + 1] : undefined;
+  const pageTitle = pageSlug ? (PAGE_SLUG_TITLES[pageSlug] ?? '') : '';
+
+  const isHome = pageSlug === 'dashboard';
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800">
@@ -73,7 +78,7 @@ export default function TopNav() {
           </button>
         )}
 
-        {/* Notification bell — 44×44 tap target */}
+        {/* Notification bell */}
         <button className="relative h-11 w-11 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
           <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-900">
             3

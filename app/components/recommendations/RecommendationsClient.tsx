@@ -38,6 +38,7 @@ interface Recommendation {
 
 interface Props {
   initialRecommendations: Recommendation[];
+  farmId?: string;
 }
 
 interface EditTarget {
@@ -56,7 +57,7 @@ const CATEGORIES: { id: Category | "all"; label: string }[] = [
   { id: "prune", label: "Prune" },
 ];
 
-export default function RecommendationsClient({ initialRecommendations }: Props) {
+export default function RecommendationsClient({ initialRecommendations, farmId: _farmId }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());

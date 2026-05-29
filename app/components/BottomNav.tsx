@@ -18,24 +18,25 @@ import SignOutButton from "./auth/SignOutButton";
 
 interface BottomNavProps {
   userRole?: "admin" | "supervisor" | "worker";
+  farmId: string;
 }
 
-const primaryNav = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Blocks", href: "/blocks", icon: Map },
-  { name: "Calendar", href: "/calendar", icon: CalendarDays },
-  { name: "Activity", href: "/activity", icon: ActivitySquare },
-];
-
-const secondaryNav = [
-  { name: "Recommendations", href: "/recommendations", icon: Lightbulb, workerHidden: true },
-  { name: "Inventory", href: "/inventory", icon: Warehouse, workerHidden: false },
-  { name: "Settings", href: "/settings", icon: Settings, workerHidden: true },
-];
-
-export default function BottomNav({ userRole }: BottomNavProps) {
+export default function BottomNav({ userRole, farmId }: BottomNavProps) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const primaryNav = [
+    { name: "Dashboard", href: `/${farmId}/dashboard`, icon: LayoutDashboard },
+    { name: "Blocks",    href: `/${farmId}/blocks`,    icon: Map },
+    { name: "Calendar",  href: `/${farmId}/calendar`,  icon: CalendarDays },
+    { name: "Activity",  href: `/${farmId}/activity`,  icon: ActivitySquare },
+  ];
+
+  const secondaryNav = [
+    { name: "Recommendations", href: `/${farmId}/recommendations`, icon: Lightbulb,  workerHidden: true },
+    { name: "Inventory",       href: `/${farmId}/inventory`,       icon: Warehouse,  workerHidden: false },
+    { name: "Settings",        href: `/${farmId}/settings`,        icon: Settings,   workerHidden: true },
+  ];
 
   const visibleSecondary = secondaryNav.filter(
     (item) => !(item.workerHidden && userRole === "worker")

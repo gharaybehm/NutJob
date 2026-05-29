@@ -9,16 +9,21 @@ import { createBlock, updateBlock, deleteBlock, updateBlockBoundary } from '@/ap
 import BlockSatelliteMap from './BlockSatelliteMap';
 import type { MapHandle } from './BlockSatelliteMap';
 import GoToLocationBar from './GoToLocationBar';
-import BlockDetailPanel from './BlockDetailPanel';
-import BlockFormModal from './BlockFormModal';
-import LogTestResultModal from './LogTestResultModal';
+import dynamic from 'next/dynamic';
+const BlockDetailPanel = dynamic(() => import('./BlockDetailPanel'), {
+  ssr: false,
+  loading: () => <div className="h-full animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />,
+});
+const BlockFormModal = dynamic(() => import('./BlockFormModal'), { ssr: false });
+const LogTestResultModal = dynamic(() => import('./LogTestResultModal'), { ssr: false });
 
 interface Props {
   initialBlocks?: Block[];
   userRole?: "admin" | "supervisor" | "worker";
+  farmId: string;
 }
 
-export default function BlocksPage({ initialBlocks, userRole = "worker" }: Props) {
+export default function BlocksPage({ initialBlocks, userRole = "worker", farmId }: Props) {
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks ?? []);
   const [profiles, setProfiles] = useState<Record<string, BlockProfile>>(() => {
     const seed: Record<string, BlockProfile> = { ...BLOCK_PROFILES };
@@ -101,7 +106,7 @@ export default function BlocksPage({ initialBlocks, userRole = "worker" }: Props
       setProfiles(prev => ({ ...prev, [updatedBlock.id]: makeDefaultProfile(updatedBlock) }));
 
       startTransition(async () => {
-        const result = await updateBlock(updatedBlock.id, values);
+        const result = await updateBlock(updatedBlock.id, values, farmId);
         if (result.error) {
           setSaveError(result.error);
           setBlocks(prev => prev.map(b => b.id === editingBlock.id ? editingBlock : b));
@@ -143,7 +148,7 @@ export default function BlocksPage({ initialBlocks, userRole = "worker" }: Props
       if (Object.keys(pendingBoundaries).length === 0) setIsEditingMap(false);
 
       startTransition(async () => {
-        const result = await createBlock(values, blocks);
+        const result = await createBlock(values, blocks, farmId);
         if (result.error) {
           setSaveError(result.error);
           setBlocks(prev => prev.filter(b => b.id !== tempId));
@@ -192,7 +197,7 @@ export default function BlocksPage({ initialBlocks, userRole = "worker" }: Props
     }
 
     startTransition(async () => {
-      const result = await deleteBlock(id);
+      const result = await deleteBlock(id, farmId);
       if (result.error) {
         setSaveError(result.error);
         setBlocks(prev => [...prev, blockToDelete].sort((a, b) => a.mapPos.row - b.mapPos.row || a.mapPos.col - b.mapPos.col));
@@ -234,7 +239,7 @@ export default function BlocksPage({ initialBlocks, userRole = "worker" }: Props
 
     startTransition(async () => {
       const results = await Promise.all(
-        entries.map(([id, boundary]) => updateBlockBoundary(id, boundary)),
+        entries.map(([id, boundary]) => updateBlockBoundary(id, boundary, farmId)),
       );
       const firstError = results.find(r => r.error);
       if (firstError) {

@@ -1,8 +1,8 @@
 # NutJob — Progress vs Requirements
 
-> Last updated: 2026-05-28
+> Last updated: 2026-05-29
 
-## Overall Status: ~93% Complete
+## Overall Status: ~96% Complete
 
 ---
 
@@ -139,10 +139,13 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 
 | Requirement | Status | Notes |
 |---|---|---|
-| Farm selector screen after login | ❌ Not started | Show when user has access to multiple farms |
-| Farm switcher in top nav (no re-auth) | ❌ Not started | |
-| Per-farm isolated data (blocks, calendar, inventory, etc.) | ❌ Not started | Requires `farm_id` foreign key on all data tables |
-| Per-farm, per-user role scoping | ❌ Not started | A user can be admin on one farm, worker on another |
+| Farm selector screen after login | ✅ Done | `/farms` page with card grid; auto-opens wizard if 0 farms |
+| Create farm wizard (name + GPS) | ✅ Done | 3-step modal: name/address → GPS coordinates → success |
+| Farm switcher in sidebar | ✅ Done | FarmSwitcher compact widget + "All Farms" link in Sidebar |
+| Farm ID in URL (bookmarkable) | ✅ Done | All routes under `/{farmId}/...` (e.g. `/{farmId}/dashboard`) |
+| Per-farm isolated data (blocks, dashboard, calendar, activity, inventory) | ✅ Done | All server queries filtered by `farm_id` via `farm_members` membership |
+| Per-farm, per-user role scoping | ✅ Done | `farm_members` table with per-farm role; layout enforces membership |
+| **Requires DB migration** | ⚠️ Pending | Run SQL migration in Supabase — see plan file for full SQL |
 
 ---
 
@@ -169,7 +172,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Swipe gestures (blocks, calendar views) | 🟡 Partial | Calendar: left/right swipe navigates periods; Blocks pending |
 | Service worker / offline-capable reads | ✅ Done | `public/sw.js` — cache-first for static assets, network-first for /dashboard /blocks /calendar; `manifest.json` for PWA install |
 | Background sync for offline activity log entries | ✅ Done | `localStorage` queue + `online` event retry; pending entries shown with amber badge; synced flash on reconnect |
-| Lazy-loading of images and chart data | ❌ Not started | Target: initial load <3 s on 4G |
+| Lazy-loading of images and chart data | ✅ Done | Modal dynamic imports (9 modals); BlockDetailPanel dynamic import; Dashboard Suspense streaming per section |
 
 ---
 
@@ -201,9 +204,9 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Real data ingestion | ❌ 0% |
 | AI reasoning engine | ❌ 0% |
 | Roles & permissions | ✅ 100% |
-| Multi-farm support | ❌ 0% |
+| Multi-farm support | ✅ 90% (DB migration pending) |
 | Localisation (Arabic, Turkish) | ❌ 0% |
-| Mobile optimisation | 🟡 90% (bottom nav, tap targets, swipe, service worker, per-page layout, offline sync done; lazy-load pending) |
+| Mobile optimisation | ✅ 100% (bottom nav, tap targets, swipe, service worker, per-page layout, offline sync, lazy-load all done) |
 
 ---
 
@@ -237,9 +240,11 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | 2026-05-26 | Requirements updated — added three new requirements: (1) Multi-farm support (single login, farm selector, per-farm isolated data and role scoping); (2) Localisation to Arabic and Turkish with RTL layout, locale-aware formatting, and AI responses in active language; (3) Mobile-first optimisation (bottom nav, swipe gestures, service worker offline reads, background sync, lazy loading <3 s on 4G). |
 | 2026-05-26 | Branding — Replaced placeholder "N" icon in Sidebar and Leaf icon in Login page with the NutJob tree+almond logo mark (cropped from brand asset, saved as `public/icon.png`). |
 | 2026-05-26 | Branding refinement — Login splash screen updated to use full logo (`logo-full.png`: tree+almond mark + "NutJob almond farms" + "HARVESTED WITH CARE") with transparent background. Added radial back-light glow behind the logo on the dark green panel. Sidebar retains icon-only mark with transparent background. |
+| 2026-05-29 | Lazy-loading — 9 modal components converted to `next/dynamic` (ssr: false) across InventoryPage, CalendarPage, BlocksPage, ActivityLogClient. BlockDetailPanel dynamically imported with pulse skeleton in BlocksPage. Dashboard refactored: each section (KPIGrid, ActiveAlerts, BlockStatusGrid, UpcomingCalendar, ActivityFeed) now self-fetches its own data as an async server component, wrapped in individual `<Suspense>` boundaries with pulse skeletons so the page shell renders instantly. Build clean — 0 errors. |
 | 2026-05-28 | Mobile optimisation phase 4 — Per-page layout audit and fixes for 375px viewport: LogTestResultModal all multi-column grids → responsive (`grid-cols-1 sm:grid-cols-3`, `grid-cols-2 sm:grid-cols-4`); SoilWaterTab param-chips grid `grid-cols-4` → `grid-cols-2 sm:grid-cols-4`; BlockDetailPanel 5-tab bar reduced to `px-2 sm:px-3 text-xs sm:text-sm`; Settings 6-tab bar reduced to `px-3 sm:px-4 text-xs sm:text-sm`; all inventory modals (AddAsset, AddConsumable, LogMaintenance, LogUsage) and LogActivityModal block/date grid → `grid-cols-1 sm:grid-cols-2`. Build clean — 0 errors. |
 | 2026-05-28 | Mobile optimisation phase 3 — Service worker (`public/sw.js`): cache-first for `/_next/static/` and public images; network-first with offline HTML fallback for /dashboard, /blocks, /calendar; skips RSC navigation payloads to avoid breaking Next.js routing. Added `public/manifest.json` (PWA install, standalone display, brand green theme). `ServiceWorkerRegistration.tsx` client component registers SW on mount. Root layout exports `appleWebApp` metadata for iOS add-to-home-screen. Build clean. |
 | 2026-05-28 | Mobile optimisation phase 2 — Calendar swipe gestures (left = next period, right = prev, 50 px threshold); CalendarHeader prev/next buttons enlarged to 44×44 px on mobile; TopNav converted to client component with ← page-title back button on sub-pages (logo shown on dashboard only). |
 | 2026-05-28 | Mobile optimisation phase 1 — Added `BottomNav.tsx`: fixed bottom bar with Dashboard, Blocks, Calendar, Activity primary items + "More" slide-up drawer (Recommendations, Inventory, Settings, Sign Out), role-gated for workers. Sidebar hidden on mobile (`hidden md:flex`). TopNav updated: brand logo on mobile, collapsible search icon, bell tap target enlarged to 44×44 px. Dashboard layout adds `pb-24` on mobile for bottom nav clearance. Root layout exports `viewport` with `viewportFit: "cover"` for iOS safe areas. Build clean — 0 TS errors. |
+| 2026-05-29 | Multi-farm support — Full architecture implemented. New `farms` + `farm_members` tables with RLS. All routes restructured to `/{farmId}/dashboard`, `/{farmId}/blocks`, etc. Farm picker page (`/farms`) with card grid and "New Farm" 3-step wizard (name → GPS → success). Farm switcher widget in sidebar. All dashboard widgets, blocks page, calendar, activity, and inventory queries scoped to the current farm via `farm_members` membership. Login redirects to `/farms` after auth. **Requires DB migration** — SQL in plan file. |
 
 

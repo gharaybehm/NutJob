@@ -1,18 +1,79 @@
 import { Droplets, CloudRain, AlertTriangle, Timer } from "lucide-react";
+import { createClient } from "@/utils/supabase/server";
 
-interface KPIGridProps {
-  avgSoilMoisture: number | null;
-  rainForecastMm: number;
-  activeAlertsCount: number;
-  nextIrrigationStr: string;
+async function getKPIData(farmId: string) {
+  const supabase = await createClient();
+
+  // Get block IDs for this farm
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: farmBlocks } = await (supabase.from("blocks") as any)
+    .select("id")
+    .eq("farm_id", farmId);
+  const blockIds: string[] = (farmBlocks ?? []).map((b: { id: string }) => b.id);
+
+  const blockFilter = blockIds.length > 0 ? blockIds : ["__none__"];
+
+  const [
+    { data: soilLatest },
+    { count: alertCount },
+    { data: upcomingIrrigation },
+  ] = await Promise.all([
+    supabase
+      .from("soil_water_latest")
+      .select("soil_moisture, block_id")
+      .in("block_id", blockFilter),
+    supabase
+      .from("block_alerts")
+      .select("*", { count: "exact", head: true })
+      .in("block_id", blockFilter)
+      .eq("resolved", false),
+    supabase
+      .from("calendar_events")
+      .select("start_date")
+      .eq("type", "irrigation")
+      .gte("start_date", new Date().toISOString())
+      .or(`block_id.in.(${blockFilter.join(",")}),block_id.is.null`)
+      .order("start_date", { ascending: true })
+      .limit(1),
+  ]);
+
+  const validMoisture = (soilLatest ?? [])
+    .map(r => r.soil_moisture)
+    .filter((v): v is number => v !== null);
+  const avgSoilMoisture = validMoisture.length > 0
+    ? Math.round(validMoisture.reduce((sum, v) => sum + v, 0) / validMoisture.length)
+    : null;
+
+  let rainForecastMm = 0;
+  try {
+    const res = await fetch(
+      "https://api.open-meteo.com/v1/forecast?latitude=38.08&longitude=33.57&daily=precipitation_sum&timezone=auto",
+      { next: { revalidate: 3600 } }
+    );
+    if (res.ok) {
+      const json = await res.json();
+      rainForecastMm = Math.round(
+        (json.daily?.precipitation_sum ?? []).reduce((acc: number, v: number) => acc + (v || 0), 0)
+      );
+    }
+  } catch {
+    // Open-Meteo unavailable — 0 shown
+  }
+
+  const nextIrrig = upcomingIrrigation?.[0];
+  let nextIrrigationStr = "None scheduled";
+  if (nextIrrig) {
+    const diffHrs = Math.round((new Date(nextIrrig.start_date).getTime() - Date.now()) / 3_600_000);
+    if (diffHrs <= 0) nextIrrigationStr = "Ongoing";
+    else if (diffHrs < 24) nextIrrigationStr = `In ${diffHrs}h`;
+    else nextIrrigationStr = `In ${Math.round(diffHrs / 24)}d`;
+  }
+
+  return { avgSoilMoisture, rainForecastMm, activeAlertsCount: alertCount ?? 0, nextIrrigationStr };
 }
 
-export default function KPIGrid({
-  avgSoilMoisture,
-  rainForecastMm,
-  activeAlertsCount,
-  nextIrrigationStr,
-}: KPIGridProps) {
+export default async function KPIGrid({ farmId }: { farmId: string }) {
+  const { avgSoilMoisture, rainForecastMm, activeAlertsCount, nextIrrigationStr } = await getKPIData(farmId);
   const kpis = [
     {
       name: "Avg Soil Moisture",

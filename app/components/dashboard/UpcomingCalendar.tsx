@@ -1,5 +1,6 @@
 import { Calendar, Droplet, ThermometerSun, Bug, Sprout } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/utils/supabase/server";
 
 interface CalendarEventItem {
   id: string;
@@ -8,8 +9,30 @@ interface CalendarEventItem {
   type: string;
 }
 
-interface UpcomingCalendarProps {
-  events: CalendarEventItem[];
+async function getUpcomingEvents(farmId: string): Promise<CalendarEventItem[]> {
+  const supabase = await createClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: farmBlocks } = await (supabase.from("blocks") as any)
+    .select("id")
+    .eq("farm_id", farmId);
+  const blockIds: string[] = (farmBlocks ?? []).map((b: { id: string }) => b.id);
+
+  let query = supabase
+    .from("calendar_events")
+    .select("id, title, start_date, type")
+    .gte("start_date", new Date().toISOString())
+    .order("start_date", { ascending: true })
+    .limit(5);
+
+  if (blockIds.length > 0) {
+    query = query.or(`block_id.in.(${blockIds.join(",")}),block_id.is.null`);
+  } else {
+    query = query.is("block_id", null);
+  }
+
+  const { data } = await query;
+  return (data ?? []).map(e => ({ id: e.id, title: e.title, startDate: e.start_date, type: e.type }));
 }
 
 function getEventIcon(type: string) {
@@ -30,30 +53,27 @@ function getEventTheme(type: string) {
 function formatEventTime(dateStr: string) {
   const date = new Date(dateStr);
   const now = new Date();
-  
+
   const dateDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
+
   const diffTime = dateDay.getTime() - nowDay.getTime();
   const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-  
+
   const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-  
-  if (diffDays === 0) {
-    return `Today, ${timeString}`;
-  } else if (diffDays === 1) {
-    return `Tomorrow, ${timeString}`;
-  } else if (diffDays === -1) {
-    return `Yesterday, ${timeString}`;
-  } else {
-    const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date);
-    const day = new Intl.DateTimeFormat('en-US', { day: 'numeric' }).format(date);
-    const month = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(date);
-    return `${weekday} ${day} ${month}, ${timeString}`;
-  }
+
+  if (diffDays === 0) return `Today, ${timeString}`;
+  if (diffDays === 1) return `Tomorrow, ${timeString}`;
+  if (diffDays === -1) return `Yesterday, ${timeString}`;
+
+  const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date);
+  const day = new Intl.DateTimeFormat('en-US', { day: 'numeric' }).format(date);
+  const month = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(date);
+  return `${weekday} ${day} ${month}, ${timeString}`;
 }
 
-export default function UpcomingCalendar({ events = [] }: UpcomingCalendarProps) {
+export default async function UpcomingCalendar({ farmId }: { farmId: string }) {
+  const events = await getUpcomingEvents(farmId);
   const count = events.length;
 
   return (
@@ -73,7 +93,7 @@ export default function UpcomingCalendar({ events = [] }: UpcomingCalendarProps)
             {events.slice(0, 3).map((event) => {
               const Icon = getEventIcon(event.type);
               const theme = getEventTheme(event.type);
-              
+
               return (
                 <li key={event.id} className="flex items-center gap-4 rounded-lg p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${theme}`}>
@@ -88,8 +108,8 @@ export default function UpcomingCalendar({ events = [] }: UpcomingCalendarProps)
             })}
           </ul>
         )}
-        <Link 
-          href="/calendar" 
+        <Link
+          href={`/${farmId}/calendar`}
           className="block mt-4 w-full text-center rounded-md bg-slate-50 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors"
         >
           View Full Calendar

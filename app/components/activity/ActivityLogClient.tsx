@@ -2,8 +2,9 @@
 
 import { useState, useTransition, useCallback, useEffect } from "react";
 import { Search, Filter, Droplets, Sprout, Bug, Scissors, FlaskConical, Activity, Leaf, PlusCircle, WifiOff, RefreshCw, CheckCircle } from "lucide-react";
-import { getActivityLog, logActivity, type ActivityLogEntry } from "@/app/(dashboard)/activity/actions";
-import LogActivityModal from "./LogActivityModal";
+import { getActivityLog, logActivity, type ActivityLogEntry } from "@/app/[farmId]/(dashboard)/activity/actions";
+import dynamic from 'next/dynamic';
+const LogActivityModal = dynamic(() => import('./LogActivityModal'), { ssr: false });
 
 type ActivityType = ActivityLogEntry["activity_type"] | "all";
 
@@ -85,9 +86,10 @@ interface Props {
   initialTotal: number;
   blocks: Block[];
   userRole?: "admin" | "supervisor" | "worker";
+  farmId?: string;
 }
 
-export default function ActivityLogClient({ initialEntries, initialTotal, blocks, userRole = "worker" }: Props) {
+export default function ActivityLogClient({ initialEntries, initialTotal, blocks, userRole = "worker", farmId }: Props) {
   const [entries, setEntries] = useState(initialEntries);
   const [total, setTotal] = useState(initialTotal);
   const [search, setSearch] = useState("");
@@ -179,6 +181,7 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
           activity_type: newType !== "all" ? newType : undefined,
           block_id: newBlock !== "all" ? newBlock : undefined,
           limit: 50,
+          farmId,
         });
         setEntries(result.entries);
         setTotal(result.total);

@@ -5,8 +5,9 @@ import CalendarHeader, { CalendarView } from './CalendarHeader';
 import MonthView from './MonthView';
 import WeekView from './WeekView';
 import DayView from './DayView';
-import AddEventModal from './AddEventModal';
-import LogCompletionModal from './LogCompletionModal';
+import dynamic from 'next/dynamic';
+const AddEventModal = dynamic(() => import('./AddEventModal'), { ssr: false });
+const LogCompletionModal = dynamic(() => import('./LogCompletionModal'), { ssr: false });
 import { CalendarEvent, ACTIVITY_COLORS, ACTIVITY_LABELS } from './types';
 import { createEvent, logEventCompletion } from '@/app/(dashboard)/calendar/actions';
 
@@ -153,12 +154,14 @@ const LEGEND_ITEMS = (
 
 // ─── Main page component ──────────────────────────────────────────────────────
 
-export default function CalendarPage({ 
+export default function CalendarPage({
   initialEvents = [],
   userRole = "worker",
-}: { 
+  farmId,
+}: {
   initialEvents?: CalendarEvent[];
   userRole?: "admin" | "supervisor" | "worker";
+  farmId?: string;
 }) {
   const [view, setView]       = useState<CalendarView>('month');
   const [currentDate, setCurrentDate] = useState(() => new Date());
