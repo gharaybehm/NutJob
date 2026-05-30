@@ -2,7 +2,7 @@
 
 > Last updated: 2026-05-30
 
-## Overall Status: ~98% Complete
+## Overall Status: ~98% Complete  <!-- multi-farm migration done 2026-05-30 -->
 
 ---
 
@@ -146,7 +146,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Farm ID in URL (bookmarkable) | ✅ Done | All routes under `/{farmId}/...` (e.g. `/{farmId}/dashboard`) |
 | Per-farm isolated data (blocks, dashboard, calendar, activity, inventory) | ✅ Done | All server queries filtered by `farm_id` via `farm_members` membership |
 | Per-farm, per-user role scoping | ✅ Done | `farm_members` table with per-farm role; layout enforces membership |
-| **Requires DB migration** | ⚠️ Pending | Run SQL migration in Supabase — see plan file for full SQL |
+| **DB migration** | ✅ Done | `farms`, `farm_members` tables + `blocks.farm_id` column created with RLS policies applied 2026-05-30 |
 
 ---
 
@@ -208,7 +208,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Real data ingestion | ❌ 0% |
 | AI reasoning engine | ❌ 0% |
 | Roles & permissions | ✅ 100% |
-| Multi-farm support | ✅ 90% (DB migration pending) |
+| Multi-farm support | ✅ 100% |
 | Localisation (Arabic, Turkish) | ❌ 0% |
 | Mobile optimisation | ✅ 100% (bottom nav, tap targets, swipe, service worker, per-page layout, offline sync, lazy-load all done) |
 
@@ -253,5 +253,6 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | 2026-05-29 | Farm tab bar UX fix — FarmTabs now always renders exactly 3 slots (filled or empty). Empty slots use a dashed "+" placeholder styled per-slot colour; clicking any empty slot opens the CreateFarmWizard. Fixes the 4-tab bug (was rendering filled farms + a separate empty slot, totalling more than 3 when at capacity). |
 | 2026-05-29 | Farm rename in Settings — Added "Farm Identity" section at the top of the Weather & AI tab (admin only). Shows current farm name and address with Save button wired to the existing `updateFarm` server action. Farm name in the right-edge tab bar updates on next navigation. |
 | 2026-05-29 | Farm creation flow simplified — CreateFarmWizard reduced to 2 steps (name/location → GPS). On completion it navigates directly to the new farm's dashboard, which already shows the "Welcome" onboarding cards (Add block, Log soil tests, etc.). Removed redundant success step that duplicated the same setup cards. Also removed FarmSwitcher from Sidebar (caused hydration error and showed a confusing "All Farms" link); farm switching is now handled exclusively by the right-edge tab bar. |
+| 2026-05-30 | DB migration applied — `farms` and `farm_members` tables created with full RLS policies; `farm_id` FK column added to `blocks`. Multi-farm support now fully operational end-to-end. |
 
 
