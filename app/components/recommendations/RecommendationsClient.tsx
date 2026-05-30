@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import RecommendationCard from "./RecommendationCard";
 import {
   updateRecommendationStatus,
@@ -48,54 +49,41 @@ interface EditTarget {
   blockName?: string;
 }
 
-const CATEGORIES: { id: Category | "all"; label: string }[] = [
-  { id: "all", label: "All Types" },
-  { id: "irrigate", label: "Irrigate" },
-  { id: "fertilize", label: "Fertilize" },
-  { id: "spray", label: "Spray" },
-  { id: "scout", label: "Scout" },
-  { id: "prune", label: "Prune" },
-];
-
 export default function RecommendationsClient({ initialRecommendations, farmId: _farmId }: Props) {
   const router = useRouter();
+  const t = useTranslations('recommendations');
   const [isPending, startTransition] = useTransition();
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
-  // Filters
   const [statusFilter, setStatusFilter] = useState<"pending" | "acted">("pending");
   const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
 
-  // Edit modal
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editNote, setEditNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const noteRef = useRef<HTMLTextAreaElement>(null);
 
-  // Focus note textarea when modal opens
   useEffect(() => {
-    if (editTarget) {
-      noteRef.current?.focus();
-    }
+    if (editTarget) noteRef.current?.focus();
   }, [editTarget]);
 
+  const CATEGORIES: { id: Category | "all"; label: string }[] = [
+    { id: "all",       label: t('categories.all')      },
+    { id: "irrigate",  label: t('categories.irrigate') },
+    { id: "fertilize", label: t('categories.fertilize')},
+    { id: "spray",     label: t('categories.spray')    },
+    { id: "scout",     label: t('categories.scout')    },
+    { id: "prune",     label: t('categories.prune')    },
+  ];
+
   const openEdit = (rec: Recommendation) => {
-    setEditTarget({
-      id: rec.id,
-      title: rec.title,
-      rationale: rec.rationale,
-      blockName: rec.blocks?.name,
-    });
+    setEditTarget({ id: rec.id, title: rec.title, rationale: rec.rationale, blockName: rec.blocks?.name });
     setEditTitle(rec.title);
     setEditNote("");
   };
 
-  const closeEdit = () => {
-    setEditTarget(null);
-    setEditTitle("");
-    setEditNote("");
-  };
+  const closeEdit = () => { setEditTarget(null); setEditTitle(""); setEditNote(""); };
 
   const handleSaveEdit = async () => {
     if (!editTarget) return;
@@ -105,9 +93,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
         title: editTitle.trim() || editTarget.title,
         manager_note: editNote.trim() || undefined,
       });
-      startTransition(() => {
-        router.refresh();
-      });
+      startTransition(() => { router.refresh(); });
       closeEdit();
     } catch (error) {
       console.error("Failed to save edit:", error);
@@ -121,19 +107,13 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
     setProcessingIds((prev) => new Set(prev).add(id));
     try {
       await updateRecommendationStatus(id, newStatus);
-      startTransition(() => {
-        router.refresh();
-      });
+      startTransition(() => { router.refresh(); });
     } catch (error) {
       console.error("Failed to update status:", error);
       alert("Failed to update recommendation status. Please try again.");
     } finally {
       setTimeout(() => {
-        setProcessingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
+        setProcessingIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
       }, 500);
     }
   };
@@ -147,15 +127,10 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
         alert("The AI found no new recommendations needed based on current block data.");
       }
     } catch (error: unknown) {
-      console.error("AI generation failed:", error);
       const msg = error instanceof Error ? error.message : "Unknown error";
       alert(`AI generation failed: ${msg}`);
     } finally {
-      setProcessingIds((prev) => {
-        const next = new Set(prev);
-        next.delete("ai-generate");
-        return next;
-      });
+      setProcessingIds((prev) => { const next = new Set(prev); next.delete("ai-generate"); return next; });
     }
   };
 
@@ -163,32 +138,23 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
     setProcessingIds((prev) => new Set(prev).add("generate"));
     try {
       await generateMockRecommendations();
-      startTransition(() => {
-        router.refresh();
-      });
+      startTransition(() => { router.refresh(); });
     } catch (error) {
-      console.error("Failed to generate mock data:", error);
       const msg = error instanceof Error ? error.message : String(error);
       alert(`Failed to generate mock data: ${msg}`);
     } finally {
-      setProcessingIds((prev) => {
-        const next = new Set(prev);
-        next.delete("generate");
-        return next;
-      });
+      setProcessingIds((prev) => { const next = new Set(prev); next.delete("generate"); return next; });
     }
   };
 
   const filteredRecommendations = initialRecommendations.filter((rec) => {
-    const matchesStatus =
-      statusFilter === "pending" ? rec.status === "pending" : rec.status !== "pending";
+    const matchesStatus = statusFilter === "pending" ? rec.status === "pending" : rec.status !== "pending";
     const matchesCategory = categoryFilter === "all" || rec.category === categoryFilter;
     return matchesStatus && matchesCategory;
   });
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
         {/* Status Toggle */}
         <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
@@ -201,7 +167,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
             }`}
           >
             <Clock className="h-4 w-4" />
-            Pending
+            {t('pending')}
           </button>
           <button
             onClick={() => setStatusFilter("acted")}
@@ -212,7 +178,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
             }`}
           >
             <CheckCircle2 className="h-4 w-4" />
-            History
+            {t('history')}
           </button>
         </div>
 
@@ -227,27 +193,24 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
           ) : (
             <Cpu className="h-4 w-4" />
           )}
-          {processingIds.has("ai-generate") ? "Generating…" : "Generate AI Insights"}
+          {processingIds.has("ai-generate") ? t('generating') : t('generateAI')}
         </button>
 
         {/* Category Filter */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
-          <Filter className="h-4 w-4 text-slate-400 shrink-0 ml-1" />
+          <Filter className="h-4 w-4 text-slate-400 shrink-0 ms-1" />
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value as Category | "all")}
-            className="bg-slate-50 dark:bg-slate-800 border-none text-sm font-medium text-slate-700 dark:text-slate-300 rounded-lg py-2 pl-3 pr-8 focus:ring-2 focus:ring-brand-500 cursor-pointer"
+            className="bg-slate-50 dark:bg-slate-800 border-none text-sm font-medium text-slate-700 dark:text-slate-300 rounded-lg py-2 ps-3 pe-8 focus:ring-2 focus:ring-brand-500 cursor-pointer"
           >
             {CATEGORIES.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.label}
-              </option>
+              <option key={cat.id} value={cat.id}>{cat.label}</option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Grid of Cards */}
       {filteredRecommendations.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRecommendations.map((rec) => (
@@ -274,14 +237,11 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
             <Activity className="h-8 w-8 text-brand-600 dark:text-brand-400" />
           </div>
           <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-            No {statusFilter} recommendations
+            {statusFilter === "pending" ? t('noPending') : t('noHistory')}
           </h3>
           <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-8 leading-relaxed">
-            {statusFilter === "pending"
-              ? "The AI engine hasn't generated any new actionable insights for your blocks at this time."
-              : "You haven't accepted or skipped any recommendations yet."}
+            {statusFilter === "pending" ? t('pendingDesc') : t('historyDesc')}
           </p>
-
           <button
             onClick={handleGenerateMock}
             disabled={processingIds.has("generate") || isPending}
@@ -292,7 +252,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
             ) : (
               <Sparkles className="h-5 w-5" />
             )}
-            Generate Mock Insights
+            {t('generateMock')}
           </button>
         </div>
       )}
@@ -304,32 +264,25 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
           onClick={(e) => { if (e.target === e.currentTarget) closeEdit(); }}
         >
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-            {/* Modal header */}
             <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2 text-slate-900 dark:text-white font-semibold">
                 <Edit2 className="h-4 w-4 text-brand-600 dark:text-brand-400" />
-                Edit Recommendation
+                {t('editTitle')}
               </div>
-              <button
-                onClick={closeEdit}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
+              <button onClick={closeEdit} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                 <XIcon className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Modal body */}
             <div className="p-5 space-y-4">
               {editTarget.blockName && (
                 <p className="text-sm font-medium text-brand-600 dark:text-brand-400">
-                  Target: {editTarget.blockName}
+                  {t('target', { name: editTarget.blockName })}
                 </p>
               )}
-
-              {/* Editable title */}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                  Action title
+                  {t('actionTitle')}
                 </label>
                 <input
                   type="text"
@@ -338,53 +291,42 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
                   className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
                 />
               </div>
-
-              {/* AI rationale (read-only) */}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                  AI rationale
+                  {t('aiRationale')}
                 </label>
                 <p className="text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 rounded-lg px-3 py-2.5 leading-relaxed">
                   {editTarget.rationale}
                 </p>
               </div>
-
-              {/* Manager note */}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                  Your note <span className="font-normal normal-case">(optional)</span>
+                  {t('managerNote')} <span className="font-normal normal-case">{t('managerNoteOptional')}</span>
                 </label>
                 <textarea
                   ref={noteRef}
                   value={editNote}
                   onChange={(e) => setEditNote(e.target.value)}
                   rows={3}
-                  placeholder="Add context, adjustments, or reasons for the change…"
+                  placeholder={t('managerNotePlaceholder')}
                   className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition resize-none placeholder:text-slate-400"
                 />
               </div>
             </div>
 
-            {/* Modal footer */}
             <div className="flex gap-3 p-5 border-t border-slate-100 dark:border-slate-800">
-              <button
-                onClick={closeEdit}
-                disabled={isSaving}
-                className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
-              >
-                Cancel
+              <button onClick={closeEdit} disabled={isSaving}
+                className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50">
+                {t('cancel')}
               </button>
-              <button
-                onClick={handleSaveEdit}
-                disabled={isSaving}
-                className="flex-1 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-              >
+              <button onClick={handleSaveEdit} disabled={isSaving}
+                className="flex-1 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
                 {isSaving ? (
                   <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 ) : (
                   <CheckCircle2 className="h-4 w-4" />
                 )}
-                Accept with changes
+                {t('acceptWithChanges')}
               </button>
             </div>
           </div>

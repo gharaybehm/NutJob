@@ -1,8 +1,8 @@
 # NutJob — Progress vs Requirements
 
-> Last updated: 2026-05-29
+> Last updated: 2026-05-30
 
-## Overall Status: ~96% Complete
+## Overall Status: ~98% Complete
 
 ---
 
@@ -89,13 +89,14 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 
 ### 7. Settings Page — ✅ 100% Done
 - Route exists: `app/(dashboard)/settings/`
-- `SettingsForms.tsx` rebuilt with 6 tabs (role-gated)
+- `SettingsForms.tsx` rebuilt with 7 tabs (role-gated)
 - **Account & Security tab** — profile + password update ✅
 - **Team Management tab** (admin + supervisor) — role assignment & new worker invite/creation ✅
 - **Block Configuration tab** (admin + supervisor) — per-block field capacity (%), wilting point (%), and notes with live bars and Supabase persistence via `updateBlockConfig` server action ✅
 - **Alert Thresholds tab** (admin + supervisor) — 5 threshold sliders (soil moisture, water deficit, heat stress, rainfall skip, pest risk) stored in localStorage ✅
 - **Sensor Connections tab** (admin only) — channel status panel + copy-to-clipboard ingest endpoint reference ✅
 - **Weather & AI tab** (admin only) — farm lat/lng config with Open-Meteo live connection test + Netlify AI Gateway status ✅
+- **Language tab** (all roles) — globe icon + dropdown to switch between English / العربية / Türkçe; saves to cookie + triggers full reload ✅
 
 ---
 
@@ -154,10 +155,13 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Requirement | Status | Notes |
 |---|---|---|
 | English | ✅ Done | Default language |
-| Arabic | ❌ Not started | Full RTL layout mirroring required |
-| Turkish | ❌ Not started | |
-| Language preference persisted per user | ❌ Not started | |
-| RTL layout mirroring (nav, cards, tables, forms, modals) | ❌ Not started | |
+| Arabic | ✅ Done | Full translations for all UI text; RTL layout throughout; locale-aware dates/day names via Intl |
+| Turkish | ✅ Done | Full translations for all UI text; locale-aware dates/day names via Intl |
+| Language preference persisted per user | ✅ Done | Cookie-based (`NUTJOB_LOCALE`) via `setLocale` server action in Settings → Language tab |
+| RTL layout mirroring (nav, sidebar, bottom nav, modals, forms) | ✅ Done | `dir="rtl"` on `<html>`, logical Tailwind props (`me-`, `ps-`, `pe-`, `border-e`, `start-*`, `end-*`), `rtl:rotate-180` on directional icons |
+| Arabic font | ✅ Done | Noto Sans Arabic loaded conditionally when `locale === 'ar'`; Geist with `latin-ext` for Turkish |
+| Language switcher UI | ✅ Done | Globe icon + one-click dropdown in **TopNav** (visible on every page); simplified mirror in Settings → Language tab |
+| Locale-aware date/weekday formatting | ✅ Done | `Intl.DateTimeFormat(locale, ...)` in WeatherStrip and UpcomingCalendar |
 | Locale-aware number, date, and calendar formats | ❌ Not started | |
 | AI recommendations returned in user's active language | ❌ Not started | |
 

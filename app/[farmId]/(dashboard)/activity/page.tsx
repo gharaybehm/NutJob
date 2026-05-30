@@ -1,6 +1,7 @@
 import { getActivityLog, getBlocks } from "./actions";
 import ActivityLogClient from "@/app/components/activity/ActivityLogClient";
 import { createClient } from "@/utils/supabase/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 export const metadata = {
   title: "Activity Log | NutJob",
@@ -15,10 +16,12 @@ export default async function ActivityLogPage({
   const { farmId } = await params;
   const supabase = await createClient();
 
-  const [{ entries, total }, blocks, { data: { user } }] = await Promise.all([
+  const [{ entries, total }, blocks, { data: { user } }, t, locale] = await Promise.all([
     getActivityLog({ limit: 50, farmId }),
     getBlocks(farmId),
     supabase.auth.getUser(),
+    getTranslations('activity'),
+    getLocale(),
   ]);
 
   const { data: profile } = user
@@ -29,10 +32,10 @@ export default async function ActivityLogPage({
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-          Activity Log
+          {t('title')}
         </h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1">
-          Complete history of all actions taken across every block.
+          {t('pageSubtitle')}
         </p>
       </div>
 
@@ -42,6 +45,7 @@ export default async function ActivityLogPage({
         blocks={blocks}
         userRole={profile?.role ?? "worker"}
         farmId={farmId}
+        locale={locale}
       />
     </div>
   );

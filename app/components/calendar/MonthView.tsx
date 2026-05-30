@@ -2,6 +2,7 @@
 
 import { CalendarEvent } from './types';
 import EventPill from './EventPill';
+import { useLocale } from 'next-intl';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -10,8 +11,6 @@ interface MonthViewProps {
   onEventClick: (event: CalendarEvent) => void;
 }
 
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
 function isSameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
@@ -19,6 +18,12 @@ function isSameDay(a: Date, b: Date) {
 }
 
 export default function MonthView({ currentDate, events, onDayClick, onEventClick }: MonthViewProps) {
+  const locale = useLocale();
+  // Jan 7–13, 2024 = Sun–Sat reference week; Intl handles abbreviation for every locale
+  const DAY_NAMES = [0,1,2,3,4,5,6].map(i =>
+    new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2024, 0, 7 + i))
+  );
+
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
@@ -105,8 +110,8 @@ export default function MonthView({ currentDate, events, onDayClick, onEventClic
                   />
                 ))}
                 {overflow > 0 && (
-                  <p className="pl-1 text-xs text-slate-500 dark:text-slate-400">
-                    +{overflow} more
+                  <p className="ps-1 text-xs text-slate-500 dark:text-slate-400">
+                    +{overflow}
                   </p>
                 )}
               </div>

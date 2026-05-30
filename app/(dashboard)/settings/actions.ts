@@ -1,8 +1,28 @@
 'use server'
 
+import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { routing, LOCALE_COOKIE, type Locale } from '@/i18n/routing'
+
+export async function setLocale(locale: string) {
+  if (!routing.locales.includes(locale as Locale)) {
+    return { error: 'Invalid locale' }
+  }
+
+  const cookieStore = await cookies()
+  cookieStore.set(LOCALE_COOKIE, locale, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: false,
+  })
+
+  revalidatePath('/', 'layout')
+  return { success: true }
+}
 
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient()

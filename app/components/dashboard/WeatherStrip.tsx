@@ -1,6 +1,6 @@
 import { Sun, Cloud, CloudRain, CloudLightning, CloudSnow, CloudDrizzle, CloudFog } from "lucide-react";
+import { getTranslations, getLocale } from "next-intl/server";
 
-// WMO Weather interpretation codes
 function getWeatherIcon(code: number) {
   if (code === 0) return Sun;
   if (code === 1 || code === 2 || code === 3) return Cloud;
@@ -12,8 +12,9 @@ function getWeatherIcon(code: number) {
   return Sun;
 }
 
-// farmId reserved for future GPS-based weather lookup per farm
 export default async function WeatherStrip({ farmId: _farmId }: { farmId: string }) {
+  const [t, locale] = await Promise.all([getTranslations('dashboard.weather'), getLocale()]);
+
   let forecast: { day: string; date: string; icon: ReturnType<typeof getWeatherIcon>; tempH: number; tempL: number; rain: number; rawDate: string }[] = [];
   try {
     const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=38.08&longitude=33.57&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto', { next: { revalidate: 3600 } });
@@ -21,21 +22,13 @@ export default async function WeatherStrip({ farmId: _farmId }: { farmId: string
       const data = await res.json();
       forecast = data.daily.time.map((timeStr: string, index: number) => {
         const dateObj = new Date(timeStr);
-        const day = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(dateObj);
-        const date = new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short' }).format(dateObj);
+        const day = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(dateObj);
+        const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(dateObj);
         const code = data.daily.weather_code[index];
         const tempH = Math.round(data.daily.temperature_2m_max[index]);
         const tempL = Math.round(data.daily.temperature_2m_min[index]);
         const rain = data.daily.precipitation_probability_max[index];
-        return {
-          day,
-          date,
-          icon: getWeatherIcon(code),
-          tempH,
-          tempL,
-          rain,
-          rawDate: timeStr
-        };
+        return { day, date, icon: getWeatherIcon(code), tempH, tempL, rain, rawDate: timeStr };
       });
     }
   } catch (error) {
@@ -46,10 +39,10 @@ export default async function WeatherStrip({ farmId: _farmId }: { farmId: string
     return (
       <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <div className="flex items-center justify-between mb-4 px-2">
-          <h2 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">7-Day Weather Forecast</h2>
+          <h2 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">{t('title')}</h2>
           <span className="text-sm text-slate-500">38.08°N, 33.57°E</span>
         </div>
-        <div className="text-sm text-slate-500 px-2">Failed to load weather data.</div>
+        <div className="text-sm text-slate-500 px-2">{t('failedToLoad')}</div>
       </div>
     );
   }
@@ -57,7 +50,7 @@ export default async function WeatherStrip({ farmId: _farmId }: { farmId: string
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
       <div className="flex items-center justify-between mb-4 px-2">
-        <h2 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">7-Day Weather Forecast</h2>
+        <h2 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">{t('title')}</h2>
         <span className="text-sm text-slate-500">38.08°N, 33.57°E</span>
       </div>
       <div className="flex w-full overflow-x-auto gap-4 pb-2">
@@ -69,11 +62,11 @@ export default async function WeatherStrip({ farmId: _farmId }: { farmId: string
               <span className="text-xs text-slate-500 mb-2">{day.date}</span>
               <Icon className={`h-8 w-8 mb-2 ${day.rain > 50 ? 'text-blue-500' : day.rain > 0 ? 'text-slate-400' : 'text-amber-400'}`} />
               <div className="flex gap-2 text-sm font-medium">
-                <span className="text-slate-900 dark:text-white">{day.tempH}°</span>
-                <span className="text-slate-400">{day.tempL}°</span>
+                <span className="text-slate-900 dark:text-white" dir="ltr">{day.tempH}°</span>
+                <span className="text-slate-400" dir="ltr">{day.tempL}°</span>
               </div>
               {day.rain > 0 && (
-                <span className="text-xs text-blue-500 font-medium mt-1">{day.rain}%</span>
+                <span className="text-xs text-blue-500 font-medium mt-1" dir="ltr">{day.rain}%</span>
               )}
             </div>
           );

@@ -1,10 +1,10 @@
 import { Droplets, CloudRain, AlertTriangle, Timer } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { getTranslations } from "next-intl/server";
 
 async function getKPIData(farmId: string) {
   const supabase = await createClient();
 
-  // Get block IDs for this farm
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: farmBlocks } = await (supabase.from("blocks") as any)
     .select("id")
@@ -61,51 +61,60 @@ async function getKPIData(farmId: string) {
   }
 
   const nextIrrig = upcomingIrrigation?.[0];
-  let nextIrrigationStr = "None scheduled";
-  if (nextIrrig) {
-    const diffHrs = Math.round((new Date(nextIrrig.start_date).getTime() - Date.now()) / 3_600_000);
-    if (diffHrs <= 0) nextIrrigationStr = "Ongoing";
-    else if (diffHrs < 24) nextIrrigationStr = `In ${diffHrs}h`;
-    else nextIrrigationStr = `In ${Math.round(diffHrs / 24)}d`;
-  }
+  const diffHrs = nextIrrig
+    ? Math.round((new Date(nextIrrig.start_date).getTime() - Date.now()) / 3_600_000)
+    : null;
 
-  return { avgSoilMoisture, rainForecastMm, activeAlertsCount: alertCount ?? 0, nextIrrigationStr };
+  return { avgSoilMoisture, rainForecastMm, activeAlertsCount: alertCount ?? 0, diffHrs };
 }
 
 export default async function KPIGrid({ farmId }: { farmId: string }) {
-  const { avgSoilMoisture, rainForecastMm, activeAlertsCount, nextIrrigationStr } = await getKPIData(farmId);
+  const t = await getTranslations('dashboard.kpi');
+  const { avgSoilMoisture, rainForecastMm, activeAlertsCount, diffHrs } = await getKPIData(farmId);
+
+  let nextIrrigationStr: string;
+  if (diffHrs === null) {
+    nextIrrigationStr = t('noneScheduled');
+  } else if (diffHrs <= 0) {
+    nextIrrigationStr = t('ongoing');
+  } else if (diffHrs < 24) {
+    nextIrrigationStr = t('inHours', { hours: diffHrs });
+  } else {
+    nextIrrigationStr = t('inDays', { days: Math.round(diffHrs / 24) });
+  }
+
   const kpis = [
     {
-      name: "Avg Soil Moisture",
+      name: t('avgSoilMoisture'),
       value: avgSoilMoisture !== null ? `${avgSoilMoisture}%` : "N/A",
-      change: "Live sensor average",
+      change: t('liveSensorAverage'),
       changeType: "neutral",
       icon: Droplets,
       color: "text-blue-500",
       bg: "bg-blue-100 dark:bg-blue-900/30",
     },
     {
-      name: "7-Day Rain Forecast",
+      name: t('rainForecast'),
       value: `${rainForecastMm} mm`,
-      change: "Expected total",
+      change: t('expectedTotal'),
       changeType: rainForecastMm > 0 ? "positive" : "neutral",
       icon: CloudRain,
       color: "text-brand-500",
       bg: "bg-brand-100 dark:bg-brand-900/30",
     },
     {
-      name: "Active Alerts",
+      name: t('activeAlerts'),
       value: String(activeAlertsCount),
-      change: activeAlertsCount > 0 ? `${activeAlertsCount} unresolved` : "All systems nominal",
+      change: activeAlertsCount > 0 ? t('unresolved', { count: activeAlertsCount }) : t('allSystemsNominal'),
       changeType: activeAlertsCount > 0 ? "negative" : "positive",
       icon: AlertTriangle,
       color: activeAlertsCount > 0 ? "text-red-500" : "text-slate-400",
       bg: activeAlertsCount > 0 ? "bg-red-100 dark:bg-red-900/30" : "bg-slate-100 dark:bg-slate-800/30",
     },
     {
-      name: "Next Irrigation",
+      name: t('nextIrrigation'),
       value: nextIrrigationStr,
-      change: "Scheduled queue",
+      change: t('scheduledQueue'),
       changeType: "neutral",
       icon: Timer,
       color: "text-amber-500",
@@ -124,16 +133,16 @@ export default async function KPIGrid({ farmId }: { farmId: string }) {
             <div className={`absolute rounded-lg p-3 ${kpi.bg}`}>
               <kpi.icon className={`h-6 w-6 ${kpi.color}`} aria-hidden="true" />
             </div>
-            <p className="ml-16 truncate text-sm font-medium text-slate-500 dark:text-slate-400">
+            <p className="ms-16 truncate text-sm font-medium text-slate-500 dark:text-slate-400">
               {kpi.name}
             </p>
           </dt>
-          <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
+          <dd className="ms-16 flex items-baseline pb-1 sm:pb-2">
             <p className="text-2xl font-semibold text-slate-900 dark:text-white">
               {kpi.value}
             </p>
             <p
-              className={`ml-2 flex items-baseline text-sm font-semibold ${
+              className={`ms-2 flex items-baseline text-sm font-semibold ${
                 kpi.changeType === "positive"
                   ? "text-brand-600 dark:text-brand-400"
                   : kpi.changeType === "negative"

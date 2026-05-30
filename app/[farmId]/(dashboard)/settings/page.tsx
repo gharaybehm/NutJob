@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — SettingsForms lives in the old route group; its internal action imports resolve correctly
 import SettingsForms from '@/app/(dashboard)/settings/SettingsForms'
@@ -66,14 +67,16 @@ export default async function SettingsPage({
     .eq('id', farmId)
     .single()
 
+  const t = await getTranslations('settings');
+
   return (
     <div className="max-w-5xl space-y-10">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Settings
+          {t('title')}
         </h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Manage your account, team, blocks, alerts, sensors, and weather integration.
+          {t('description')}
         </p>
       </div>
 

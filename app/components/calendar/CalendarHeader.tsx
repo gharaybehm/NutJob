@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export type CalendarView = 'month' | 'week' | 'day';
 
@@ -14,12 +15,6 @@ interface CalendarHeaderProps {
   onAddEvent?: () => void;
 }
 
-const VIEWS: { key: CalendarView; label: string }[] = [
-  { key: 'month', label: 'Month' },
-  { key: 'week',  label: 'Week'  },
-  { key: 'day',   label: 'Day'   },
-];
-
 export default function CalendarHeader({
   view,
   onViewChange,
@@ -29,6 +24,14 @@ export default function CalendarHeader({
   onToday,
   onAddEvent,
 }: CalendarHeaderProps) {
+  const t = useTranslations('calendar.header');
+
+  const VIEWS: { key: CalendarView; label: string }[] = [
+    { key: 'month', label: t('month') },
+    { key: 'week',  label: t('week')  },
+    { key: 'day',   label: t('day')   },
+  ];
+
   return (
     <div className="mb-3 md:mb-6 flex flex-wrap items-center justify-between gap-2 md:gap-3">
       {/* Left: nav */}
@@ -37,22 +40,22 @@ export default function CalendarHeader({
           onClick={onToday}
           className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 active:scale-95 transition-all dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
         >
-          Today
+          {t('today')}
         </button>
         <div className="flex items-center rounded-md border border-slate-200 dark:border-slate-700 overflow-hidden">
           <button
             onClick={onPrev}
             className="flex h-11 w-11 md:h-8 md:w-8 items-center justify-center bg-white hover:bg-slate-50 text-slate-600 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300"
-            aria-label="Previous"
+            aria-label={t('previous')}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
           </button>
           <button
             onClick={onNext}
-            className="flex h-11 w-11 md:h-8 md:w-8 items-center justify-center bg-white hover:bg-slate-50 text-slate-600 transition-colors border-l border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700"
-            aria-label="Next"
+            className="flex h-11 w-11 md:h-8 md:w-8 items-center justify-center bg-white hover:bg-slate-50 text-slate-600 transition-colors border-s border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700"
+            aria-label={t('next')}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4 rtl:rotate-180" />
           </button>
         </div>
         <h1 className="text-lg font-semibold text-slate-900 dark:text-white">{label}</h1>
@@ -60,7 +63,6 @@ export default function CalendarHeader({
 
       {/* Right: view toggle + add */}
       <div className="flex items-center gap-3">
-        {/* Segmented control */}
         <div className="flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-700 dark:bg-slate-800">
           {VIEWS.map((v) => (
             <button
@@ -77,7 +79,6 @@ export default function CalendarHeader({
           ))}
         </div>
 
-        {/* Add event */}
         {onAddEvent && (
           <button
             id="add-event-btn"
@@ -85,7 +86,7 @@ export default function CalendarHeader({
             className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 active:scale-95 transition-all"
           >
             <Plus className="h-4 w-4" />
-            Add Event
+            {t('addEvent')}
           </button>
         )}
       </div>

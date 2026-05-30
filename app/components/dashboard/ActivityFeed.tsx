@@ -1,24 +1,15 @@
 import { CheckCircle2, FlaskConical, Tractor, Droplets, Sprout, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
+import { getTranslations } from "next-intl/server";
 
 interface ActivityItem {
   id: string;
   action: string;
   blockName: string | null;
   user: string;
-  time: string;
+  performed_at: string;
   type: string;
-}
-
-function relativeTime(dateStr: string): string {
-  const diffMs = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diffMs / 60_000);
-  const hrs = Math.floor(mins / 60);
-  if (hrs >= 24) { const d = Math.floor(hrs / 24); return d === 1 ? "Yesterday" : `${d} days ago`; }
-  if (hrs > 0) return `${hrs} hour${hrs > 1 ? 's' : ''} ago`;
-  if (mins > 0) return `${mins} min${mins > 1 ? 's' : ''} ago`;
-  return "Just now";
 }
 
 async function getActivities(farmId: string): Promise<ActivityItem[]> {
@@ -47,7 +38,7 @@ async function getActivities(farmId: string): Promise<ActivityItem[]> {
     action: act.title,
     blockName: (act.blocks as { name: string } | null)?.name ?? null,
     user: act.performed_by || "System",
-    time: relativeTime(act.performed_at),
+    performed_at: act.performed_at,
     type: act.activity_type,
   }));
 }
@@ -69,25 +60,41 @@ function getActivityColor(type: string) {
 }
 
 export default async function ActivityFeed({ farmId }: { farmId: string }) {
-  const activities = await getActivities(farmId);
+  const [activities, t] = await Promise.all([
+    getActivities(farmId),
+    getTranslations('dashboard.activityFeed'),
+  ]);
   const count = activities.length;
+
+  function relativeTime(dateStr: string) {
+    const diffMs = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diffMs / 60_000);
+    const hrs = Math.floor(mins / 60);
+    if (hrs >= 24) {
+      const d = Math.floor(hrs / 24);
+      return d === 1 ? t('timeYesterday') : t('timeDaysAgo', { count: d });
+    }
+    if (hrs > 0) return hrs === 1 ? t('timeHourAgo', { count: hrs }) : t('timeHoursAgo', { count: hrs });
+    if (mins > 0) return mins === 1 ? t('timeMinAgo', { count: mins }) : t('timeMinsAgo', { count: mins });
+    return t('timeJustNow');
+  }
 
   return (
     <div className="flex flex-col rounded-xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
       <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
-        <h2 className="text-base font-semibold text-slate-900 dark:text-white">Recent Activity</h2>
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">{t('title')}</h2>
         <Link
           href={`/${farmId}/activity`}
           className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline"
         >
-          View Log
+          {t('viewLog')}
         </Link>
       </div>
       <div className="p-4 min-h-[200px]">
         {count === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center gap-1 text-slate-400 dark:text-slate-500">
             <ShieldAlert className="h-8 w-8 stroke-1" />
-            <p className="text-sm font-medium">No recent activities recorded</p>
+            <p className="text-sm font-medium">{t('noActivities')}</p>
           </div>
         ) : (
           <div className="flow-root">
@@ -95,13 +102,13 @@ export default async function ActivityFeed({ farmId }: { farmId: string }) {
               {activities.slice(0, 4).map((activity, activityIdx) => {
                 const Icon = getActivityIcon(activity.type);
                 const colorTheme = getActivityColor(activity.type);
-                const locationStr = activity.blockName ? ` in ${activity.blockName}` : "";
+                const locationStr = activity.blockName ? ` ${t('inBlock', { name: activity.blockName })}` : "";
 
                 return (
                   <li key={activity.id}>
                     <div className="relative pb-8">
                       {activityIdx !== activities.length - 1 ? (
-                        <span className="absolute left-4 top-4 -ml-px h-full w-0.5 bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
+                        <span className="absolute start-4 top-4 -ms-px h-full w-0.5 bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
                       ) : null}
                       <div className="relative flex space-x-3">
                         <div>
@@ -118,11 +125,11 @@ export default async function ActivityFeed({ farmId }: { farmId: string }) {
                               </span>
                             </p>
                             <p className="text-[11px] text-slate-400 mt-0.5">
-                              by {activity.user}
+                              {t('by', { user: activity.user })}
                             </p>
                           </div>
                           <div className="whitespace-nowrap text-right text-xs text-slate-400 dark:text-slate-500">
-                            {activity.time}
+                            {relativeTime(activity.performed_at)}
                           </div>
                         </div>
                       </div>

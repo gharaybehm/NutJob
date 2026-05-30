@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { Asset, Consumable, MaintenanceEntry, UsageEntry } from './types';
 import AssetCard from './AssetCard';
 import ConsumableRow from './ConsumableRow';
@@ -27,6 +28,7 @@ export default function InventoryPage({
   blocks: string[];
   farmId?: string;
 }) {
+  const t = useTranslations('inventory');
   const [activeTab, setActiveTab] = useState<'assets' | 'consumables'>('assets');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -135,8 +137,8 @@ export default function InventoryPage({
     <div className="space-y-6 max-w-7xl mx-auto p-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Inventory</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage farm assets, maintenance, and consumable materials.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('title')}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t('description')}</p>
         </div>
         
         {/* Top actions */}
@@ -146,7 +148,7 @@ export default function InventoryPage({
               onClick={() => setShowAddAsset(true)}
               className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700"
             >
-              <Plus className="h-4 w-4" /> Add Asset
+              <Plus className="h-4 w-4" /> {t('addAsset')}
             </button>
           )}
           {activeTab === 'consumables' && canAdd && (
@@ -154,7 +156,7 @@ export default function InventoryPage({
               onClick={() => setShowAddConsumable(true)}
               className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700"
             >
-              <Plus className="h-4 w-4" /> Add Consumable
+              <Plus className="h-4 w-4" /> {t('addConsumable')}
             </button>
           )}
         </div>
@@ -163,11 +165,11 @@ export default function InventoryPage({
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Assets</p>
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('stats.totalAssets')}</p>
           <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{assets.length}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Needs Maintenance</p>
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('stats.needsMaintenance')}</p>
           <div className="mt-1 flex items-baseline gap-2">
             <p className={`text-2xl font-semibold ${assetsNeedingMaint > 0 ? 'text-amber-600 dark:text-amber-500' : 'text-slate-900 dark:text-white'}`}>
               {assetsNeedingMaint}
@@ -175,12 +177,12 @@ export default function InventoryPage({
           </div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Consumables</p>
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('stats.consumables')}</p>
           <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{consumables.length}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1">
-            Low Stock Alerts
+            {t('stats.lowStockAlerts')}
             {lowStockCount > 0 && <AlertTriangle className="h-3 w-3 text-red-500" />}
           </p>
           <div className="mt-1 flex items-baseline gap-2">
@@ -202,7 +204,7 @@ export default function InventoryPage({
                 : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50'
             }`}
           >
-            Assets
+            {t('tabs.assets')}
           </button>
           <button
             onClick={() => setActiveTab('consumables')}
@@ -212,7 +214,7 @@ export default function InventoryPage({
                 : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50'
             }`}
           >
-            Consumables
+            {t('tabs.consumables')}
             {lowStockCount > 0 && (
               <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-[10px] font-bold text-red-700 dark:bg-red-900/50 dark:text-red-400">
                 {lowStockCount}
@@ -222,15 +224,15 @@ export default function InventoryPage({
         </div>
         
         <div className="w-full sm:w-72 relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+          <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3">
             <Search className="h-4 w-4 text-slate-400" />
           </div>
           <input
             type="text"
-            placeholder={`Search ${activeTab}...`}
+            placeholder={activeTab === 'assets' ? t('searchAssetsPlaceholder') : t('searchConsumablesPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full rounded-lg border-0 py-2 pl-9 pr-3 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 dark:bg-slate-800 dark:text-white dark:ring-slate-700 dark:focus:ring-brand-500"
+            className="block w-full rounded-lg border-0 py-2 ps-9 pe-3 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 dark:bg-slate-800 dark:text-white dark:ring-slate-700 dark:focus:ring-brand-500"
           />
         </div>
       </div>
@@ -241,7 +243,7 @@ export default function InventoryPage({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredAssets.length === 0 ? (
               <div className="col-span-full py-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                <p className="text-slate-500 dark:text-slate-400">No assets found.</p>
+                <p className="text-slate-500 dark:text-slate-400">{t('noAssetsFound')}</p>
               </div>
             ) : (
               filteredAssets.map(asset => (
@@ -253,7 +255,7 @@ export default function InventoryPage({
           <div className="space-y-3">
             {filteredConsumables.length === 0 ? (
               <div className="py-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                <p className="text-slate-500 dark:text-slate-400">No consumables found.</p>
+                <p className="text-slate-500 dark:text-slate-400">{t('noConsumablesFound')}</p>
               </div>
             ) : (
               filteredConsumables.map(cons => (

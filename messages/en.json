@@ -1,0 +1,344 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "blocks": "Blocks",
+    "calendar": "Calendar",
+    "recommendations": "Recommendations",
+    "activityLog": "Activity Log",
+    "activity": "Activity",
+    "inventory": "Inventory",
+    "settings": "Settings",
+    "more": "More",
+    "signOut": "Sign Out",
+    "goBack": "Go back"
+  },
+  "topNav": {
+    "searchPlaceholder": "Search blocks, actions, or recommendations...",
+    "viewNotifications": "View notifications",
+    "search": "Search",
+    "selectLanguage": "Select language"
+  },
+  "dashboard": {
+    "kpi": {
+      "avgSoilMoisture": "Avg Soil Moisture",
+      "liveSensorAverage": "Live sensor average",
+      "rainForecast": "7-Day Rain Forecast",
+      "expectedTotal": "Expected total",
+      "activeAlerts": "Active Alerts",
+      "allSystemsNominal": "All systems nominal",
+      "nextIrrigation": "Next Irrigation",
+      "scheduledQueue": "Scheduled queue",
+      "noneScheduled": "None scheduled",
+      "ongoing": "Ongoing",
+      "inHours": "In {hours}h",
+      "inDays": "In {days}d",
+      "unresolved": "{count} unresolved"
+    },
+    "alerts": {
+      "title": "Active Alerts",
+      "statusActive": "{count} Active",
+      "statusClear": "Clear",
+      "allNominal": "All systems nominal",
+      "nominalDescription": "No active alerts detected. Orchard parameters are within healthy thresholds.",
+      "domains": {
+        "soil-water": "Soil & Water",
+        "phenology": "Phenology",
+        "nutrition": "Nutrition",
+        "pest-disease": "Pest & Disease",
+        "weather": "Weather Alert",
+        "system": "System Alert"
+      },
+      "timeJustNow": "Just now",
+      "timeMinutesAgo": "{count} minute ago",
+      "timeMinutesAgoPlural": "{count} minutes ago",
+      "timeHoursAgo": "{count} hour ago",
+      "timeHoursAgoPlural": "{count} hours ago",
+      "timeYesterday": "Yesterday",
+      "timeDaysAgo": "{count} days ago"
+    },
+    "blockStatus": {
+      "title": "Block Status",
+      "overview": "Overview of {count} Block",
+      "overviewPlural": "Overview of {count} Blocks",
+      "noBlocks": "No blocks configured yet",
+      "goToBlocks": "Go to Blocks page to configure",
+      "moisture": "Moisture: {value}",
+      "issue": "Issue: {text}"
+    },
+    "activityFeed": {
+      "title": "Recent Activity",
+      "viewLog": "View Log",
+      "noActivities": "No recent activities recorded",
+      "by": "by {user}",
+      "inBlock": "in {name}",
+      "timeJustNow": "Just now",
+      "timeMinAgo": "{count} min ago",
+      "timeMinsAgo": "{count} mins ago",
+      "timeHourAgo": "{count} hour ago",
+      "timeHoursAgo": "{count} hours ago",
+      "timeYesterday": "Yesterday",
+      "timeDaysAgo": "{count} days ago"
+    },
+    "weather": {
+      "title": "7-Day Weather Forecast",
+      "failedToLoad": "Failed to load weather data."
+    },
+    "upcomingCalendar": {
+      "title": "Upcoming Events",
+      "noEvents": "No upcoming tasks scheduled",
+      "viewFullCalendar": "View Full Calendar",
+      "today": "Today, {time}",
+      "tomorrow": "Tomorrow, {time}",
+      "yesterday": "Yesterday, {time}"
+    },
+    "page": {
+      "title": "Dashboard",
+      "subtitle": "Farm overview and actionable insights.",
+      "welcomeTitle": "Welcome to your new farm",
+      "welcomeSubtitle": "Follow the steps below to get your farm up and running.",
+      "emptyHint": "Your dashboard will populate with live data once you add blocks and start logging activity.",
+      "steps": {
+        "blocks": { "title": "Add your first block", "desc": "Draw your block boundaries on the satellite map and enter crop details." },
+        "soilTest": { "title": "Log soil & water tests", "desc": "Enter soil test results per block to baseline your agronomic data." },
+        "calendar": { "title": "Schedule your first event", "desc": "Add irrigation, spraying, or scouting events to the farm calendar." },
+        "sensors": { "title": "Connect sensors", "desc": "Link IoT soil moisture and weather sensors for live data feeds." }
+      }
+    }
+  },
+  "blocks": {
+    "tabs": {
+      "soilWater": "Soil & Water",
+      "phenology": "Phenology",
+      "nutrition": "Nutrition",
+      "pestDisease": "Pest & Disease",
+      "weather": "Weather"
+    },
+    "status": {
+      "healthy": "Healthy",
+      "attention": "Attention",
+      "critical": "Critical"
+    },
+    "detail": {
+      "edit": "Edit",
+      "delete": "Delete"
+    }
+  },
+  "activityTypes": {
+    "irrigation": "Irrigation",
+    "fertigation": "Fertigation",
+    "spraying": "Spraying",
+    "pruning": "Pruning",
+    "scouting": "Scouting",
+    "pollinating": "Pollinating",
+    "tilling": "Tilling",
+    "plowing": "Plowing",
+    "weeding": "Weeding",
+    "tissue-sample": "Tissue Sample",
+    "other": "Other"
+  },
+  "calendar": {
+    "header": {
+      "today": "Today",
+      "previous": "Previous",
+      "next": "Next",
+      "addEvent": "Add Event",
+      "month": "Month",
+      "week": "Week",
+      "day": "Day"
+    },
+    "overflow": "+{count} more",
+    "page": {
+      "title": "Farm Calendar",
+      "subtitle": "Irrigation · Fertigation · Spraying · Pruning · Scouting",
+      "notes": "Notes",
+      "completed": "✓ Completed",
+      "logCompletion": "Log Completion",
+      "saving": "Saving…"
+    },
+    "dayView": {
+      "today": "Today",
+      "noEvents": "No events scheduled",
+      "eventCount": "{count} event scheduled",
+      "eventCountPlural": "{count} events scheduled",
+      "details": "Details",
+      "logCompletion": "Log Completion",
+      "completed": "Completed"
+    },
+    "addEvent": {
+      "title": "Add Event",
+      "fieldTitle": "Title",
+      "titlePlaceholder": "e.g. Irrigation Run — Block A",
+      "activityType": "Activity Type",
+      "block": "Block",
+      "allBlocks": "All / Not applicable",
+      "start": "Start",
+      "end": "End",
+      "notes": "Notes (optional)",
+      "notesPlaceholder": "Additional instructions or observations…",
+      "cancel": "Cancel",
+      "save": "Save Event",
+      "irrigationDetails": "Irrigation Details",
+      "durationHrs": "Duration (hrs)",
+      "litresPerTree": "L/tree",
+      "repeatDays": "Repeat (days)",
+      "fertigationDetails": "Fertigation Details",
+      "fertilizerType": "Fertilizer type",
+      "fertilizerPlaceholder": "e.g. Calcium Nitrate",
+      "amountKgPerTree": "Amount (kg/tree)",
+      "growthStageNote": "Growth stage note",
+      "growthStagePlaceholder": "e.g. Nut fill",
+      "growthStagePostHarvest": "e.g. Post-harvest",
+      "sprayingDetails": "Spraying Details",
+      "pesticideProduct": "Pesticide / product",
+      "pesticidePlaceholder": "e.g. Mancozeb",
+      "amountLPerHa": "Amount (L/ha)",
+      "targetPest": "Target pest / disease",
+      "targetPestPlaceholder": "e.g. Alternaria",
+      "pruningDetails": "Pruning Details",
+      "pruningType": "Pruning type",
+      "selectType": "Select type…",
+      "pruningThinning": "Thinning (canopy light)",
+      "pruningSkirting": "Skirting (skirt lift)",
+      "pruningHeading": "Heading back (height reduction)",
+      "pruningRenewal": "Renewal pruning",
+      "pruningCorrective": "Corrective pruning"
+    },
+    "logCompletion": {
+      "title": "Log Completion",
+      "actualStart": "Actual start",
+      "actualEnd": "Actual end",
+      "notes": "Completion notes",
+      "notesPlaceholder": "What was done, any observations, issues encountered…",
+      "cancel": "Cancel",
+      "markComplete": "Mark Complete"
+    }
+  },
+  "inventory": {
+    "title": "Inventory",
+    "description": "Manage farm assets, maintenance, and consumable materials.",
+    "addAsset": "Add Asset",
+    "addConsumable": "Add Consumable",
+    "tabs": {
+      "assets": "Assets",
+      "consumables": "Consumables"
+    },
+    "searchAssetsPlaceholder": "Search assets...",
+    "searchConsumablesPlaceholder": "Search consumables...",
+    "noAssetsFound": "No assets found.",
+    "noConsumablesFound": "No consumables found.",
+    "stats": {
+      "totalAssets": "Total Assets",
+      "needsMaintenance": "Needs Maintenance",
+      "consumables": "Consumables",
+      "lowStockAlerts": "Low Stock Alerts"
+    }
+  },
+  "recommendations": {
+    "pageTitle": "Recommendations",
+    "pageSubtitle": "Review and act on prioritized agronomic insights generated by the NutJob AI engine.",
+    "accept": "Accept",
+    "skip": "Skip",
+    "edit": "Edit",
+    "confidenceMatch": "{value}% Match",
+    "logged": "Logged",
+    "statusAccepted": "Accepted",
+    "statusSkipped": "Skipped",
+    "statusEdited": "Edited",
+    "categories": {
+      "all": "All Types",
+      "irrigate": "Irrigate",
+      "fertilize": "Fertilize",
+      "spray": "Spray",
+      "scout": "Scout",
+      "prune": "Prune"
+    },
+    "pending": "Pending",
+    "history": "History",
+    "generateAI": "Generate AI Insights",
+    "generating": "Generating…",
+    "target": "Target: {name}",
+    "noPending": "No pending recommendations",
+    "noHistory": "No history yet",
+    "pendingDesc": "The AI engine hasn't generated any new actionable insights for your blocks at this time.",
+    "historyDesc": "You haven't accepted or skipped any recommendations yet.",
+    "generateMock": "Generate Mock Insights",
+    "editTitle": "Edit Recommendation",
+    "actionTitle": "Action title",
+    "aiRationale": "AI rationale",
+    "managerNote": "Your note",
+    "managerNoteOptional": "(optional)",
+    "managerNotePlaceholder": "Add context, adjustments, or reasons for the change…",
+    "cancel": "Cancel",
+    "acceptWithChanges": "Accept with changes"
+  },
+  "activity": {
+    "title": "Activity Log",
+    "pageSubtitle": "Complete history of all actions taken across every block.",
+    "searchPlaceholder": "Search activities…",
+    "allTypes": "All Types",
+    "allBlocks": "All Blocks",
+    "logActivity": "Log Activity",
+    "noResults": "No activity found",
+    "noResultsDesc": "Accept recommendations or log calendar events to start building your farm history.",
+    "loading": "Loading…",
+    "entryCount": "{count} entry",
+    "entryCountPlural": "{count} entries",
+    "pendingSync": "{count} pending sync",
+    "offlineBanner": "{count} {count, plural, one {activity} other {activities}} saved offline — will sync automatically when reconnected.",
+    "syncingBanner": "Syncing offline activities…",
+    "syncedBanner": "{count} {count, plural, one {activity} other {activities}} synced successfully.",
+    "pendingSyncBadge": "Pending sync"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your account, team, blocks, alerts, sensors, and weather integration.",
+    "language": {
+      "title": "Language & Region",
+      "description": "Choose the display language for the app. Your input fields (farm names, notes, etc.) can always be written in any language.",
+      "label": "Display Language",
+      "save": "Save Language",
+      "options": {
+        "en": "English",
+        "ar": "العربية",
+        "tr": "Türkçe"
+      },
+      "saved": "Language updated. Reloading…",
+      "tabLabel": "Language",
+      "topNavHint": "Use the globe icon (🌐) in the top navigation bar to switch languages instantly."
+    }
+  },
+  "auth": {
+    "login": {
+      "orchardAlt": "Almond Orchard",
+      "logoAlt": "NutJob",
+      "tagline": "Cultivate insights. Grow with intelligence.",
+      "taglineSubtitle": "An AI-powered farm management system for multi-block almond farms. Real-time data, smarter agronomic decisions.",
+      "title": "Welcome back",
+      "subtitle": "Sign in to your account to manage your farm.",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "manager@farm.com",
+      "passwordLabel": "Password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "signIn": "Sign in to command center"
+    },
+    "signOut": "Sign out"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete",
+    "loading": "Loading…",
+    "error": "Something went wrong.",
+    "na": "N/A",
+    "farmManager": "Farm Manager",
+    "notLoggedIn": "Not logged in",
+    "roles": {
+      "admin": "Admin",
+      "supervisor": "Supervisor",
+      "worker": "Worker"
+    }
+  }
+}

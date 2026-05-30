@@ -7,6 +7,7 @@ import {
   updateUserRole,
   createWorker,
   updateBlockConfig,
+  setLocale,
 } from './actions'
 import {
   User,
@@ -33,7 +34,9 @@ import {
   Save,
   RefreshCw,
   Building2,
+  Globe,
 } from 'lucide-react'
+import { useTranslations, useLocale } from 'next-intl'
 import { updateFarm } from '@/app/actions/farms'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -66,7 +69,7 @@ interface SettingsFormsProps {
   farmAddress?: string
 }
 
-type TabId = 'profile' | 'team' | 'blocks' | 'alerts' | 'sensors' | 'weather'
+type TabId = 'profile' | 'team' | 'blocks' | 'alerts' | 'sensors' | 'weather' | 'language'
 
 // ─── Notification default prefs ───────────────────────────────────────────────
 
@@ -834,6 +837,58 @@ function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initia
   )
 }
 
+// ── Tab 7: Language ───────────────────────────────────────────────────────────
+
+const LOCALE_OPTIONS = [
+  { value: 'en', label: 'English', flag: '🇬🇧' },
+  { value: 'ar', label: 'العربية', flag: '🇸🇦' },
+  { value: 'tr', label: 'Türkçe', flag: '🇹🇷' },
+]
+
+function LanguageTab() {
+  const t = useTranslations('settings.language')
+  const currentLocale = useLocale()
+  const [isPending, setIsPending] = useState(false)
+
+  async function handleSelect(value: string) {
+    if (value === currentLocale || isPending) return
+    setIsPending(true)
+    await setLocale(value)
+    window.location.reload()
+  }
+
+  return (
+    <SectionCard title={t('title')} description={t('description')} icon={Globe}>
+      <div className="space-y-4 max-w-xs">
+        <div className="flex items-start gap-2 rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800/50 p-3">
+          <Globe className="h-4 w-4 text-brand-600 dark:text-brand-400 mt-0.5 shrink-0" />
+          <p className="text-xs text-brand-700 dark:text-brand-300">{t('topNavHint')}</p>
+        </div>
+        <div className="grid grid-cols-1 gap-2">
+          {LOCALE_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => handleSelect(opt.value)}
+              disabled={isPending}
+              className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-sm text-start transition-all disabled:opacity-60 ${
+                currentLocale === opt.value
+                  ? 'border-brand-500 bg-brand-50 text-brand-700 dark:border-brand-400 dark:bg-brand-900/20 dark:text-brand-300 font-medium'
+                  : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
+              }`}
+            >
+              <span className="text-xl leading-none">{opt.flag}</span>
+              <span>{opt.label}</span>
+              {currentLocale === opt.value && <Check className="ms-auto h-4 w-4" />}
+              {isPending && currentLocale !== opt.value && <Loader2 className="ms-auto h-3 w-3 animate-spin opacity-50" />}
+            </button>
+          ))}
+        </div>
+      </div>
+    </SectionCard>
+  )
+}
+
 // ─── Main SettingsForms component ─────────────────────────────────────────────
 
 export default function SettingsForms({
@@ -854,6 +909,7 @@ export default function SettingsForms({
     { id: 'alerts'  as TabId,  label: 'Alert Thresholds',   icon: Bell,       show: userRole === 'admin' || userRole === 'supervisor' },
     { id: 'sensors' as TabId,  label: 'Sensors',             icon: Cpu,        show: userRole === 'admin' },
     { id: 'weather' as TabId,  label: 'Weather & AI',        icon: Cloud,      show: userRole === 'admin' },
+    { id: 'language' as TabId, label: 'Language',            icon: Globe,      show: true },
   ].filter(t => t.show)
 
   return (
@@ -878,12 +934,13 @@ export default function SettingsForms({
       </div>
 
       {/* Tab content */}
-      {activeTab === 'profile' && <AccountTab initialProfile={initialProfile} />}
-      {activeTab === 'team'    && <TeamTab userRole={userRole} initialProfile={initialProfile} allUsers={allUsers} />}
-      {activeTab === 'blocks'  && <BlockConfigTab blocks={blocks} />}
-      {activeTab === 'alerts'  && <NotificationAlertsTab />}
-      {activeTab === 'sensors' && <SensorConnectionsTab />}
-      {activeTab === 'weather' && <WeatherAPITab farmId={farmId} farmName={farmName} farmAddress={farmAddress} />}
+      {activeTab === 'profile'  && <AccountTab initialProfile={initialProfile} />}
+      {activeTab === 'team'     && <TeamTab userRole={userRole} initialProfile={initialProfile} allUsers={allUsers} />}
+      {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} />}
+      {activeTab === 'alerts'   && <NotificationAlertsTab />}
+      {activeTab === 'sensors'  && <SensorConnectionsTab />}
+      {activeTab === 'weather'  && <WeatherAPITab farmId={farmId} farmName={farmName} farmAddress={farmAddress} />}
+      {activeTab === 'language' && <LanguageTab />}
     </div>
   )
 }

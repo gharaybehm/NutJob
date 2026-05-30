@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
+import { getTranslations } from "next-intl/server";
 
 interface BlockStatusItem {
   id: string;
@@ -42,26 +43,28 @@ async function getBlocks(farmId: string): Promise<BlockStatusItem[]> {
 }
 
 export default async function BlockStatusGrid({ farmId }: { farmId: string }) {
-  const blocks = await getBlocks(farmId);
+  const [blocks, t] = await Promise.all([getBlocks(farmId), getTranslations('dashboard.blockStatus')]);
   const count = blocks.length;
   const blocksHref = `/${farmId}/blocks`;
 
   return (
     <div className="flex flex-col rounded-xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
       <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
-        <h2 className="text-base font-semibold text-slate-900 dark:text-white">Block Status</h2>
-        <span className="text-sm text-slate-500">Overview of {count} Block{count !== 1 ? 's' : ''}</span>
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">{t('title')}</h2>
+        <span className="text-sm text-slate-500">
+          {count === 1 ? t('overview', { count }) : t('overviewPlural', { count })}
+        </span>
       </div>
       <div className="p-4">
         {count === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <span className="text-2xl">🌱</span>
-            <p className="mt-2 text-sm font-medium text-slate-500">No blocks configured yet</p>
+            <p className="mt-2 text-sm font-medium text-slate-500">{t('noBlocks')}</p>
             <Link
               href={blocksHref}
               className="mt-3 text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline"
             >
-              Go to Blocks page to configure
+              {t('goToBlocks')}
             </Link>
           </div>
         ) : (
@@ -88,13 +91,13 @@ export default async function BlockStatusGrid({ farmId }: { farmId: string }) {
                   {block.variety} • {block.area} {block.areaUnit}
                 </div>
                 <div className="mt-4 flex items-center justify-between text-xs font-medium">
-                  <span className="text-slate-600 dark:text-slate-300">Moisture: {block.moisture}</span>
+                  <span className="text-slate-600 dark:text-slate-300">{t('moisture', { value: block.moisture })}</span>
                 </div>
                 {block.issue && (
                   <div className={`mt-2 text-xs font-medium truncate ${
                     block.status === 'red' ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'
                   }`} title={block.issue}>
-                    Issue: {block.issue}
+                    {t('issue', { text: block.issue })}
                   </div>
                 )}
               </Link>

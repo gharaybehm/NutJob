@@ -1,15 +1,16 @@
 import React from "react";
-import { 
-  Droplets, 
-  FlaskConical, 
-  ShieldAlert, 
-  Search, 
-  Scissors, 
+import {
+  Droplets,
+  FlaskConical,
+  ShieldAlert,
+  Search,
+  Scissors,
   Lightbulb,
   Check,
   X,
   Edit2
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 type Category = "irrigate" | "fertilize" | "spray" | "scout" | "prune" | "other";
 type Status = "pending" | "accepted" | "edited" | "skipped";
@@ -43,7 +44,8 @@ export default function RecommendationCard({
   onEdit,
   isProcessing = false
 }: RecommendationCardProps) {
-  
+  const t = useTranslations('recommendations');
+
   const getCategoryIcon = (cat: Category) => {
     switch (cat) {
       case "irrigate": return <Droplets className="h-5 w-5" />;
@@ -66,7 +68,6 @@ export default function RecommendationCard({
     }
   };
 
-  // confidence is stored as 0.0–1.0 in the DB
   const confidencePct = confidence !== null ? Math.round(confidence * 100) : null;
 
   const getConfidenceColor = (pct: number | null) => {
@@ -74,6 +75,13 @@ export default function RecommendationCard({
     if (pct >= 90) return "text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400";
     if (pct >= 75) return "text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400";
     return "text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-400";
+  };
+
+  const STATUS_LABEL: Record<Status, string> = {
+    accepted: t('statusAccepted'),
+    skipped:  t('statusSkipped'),
+    edited:   t('statusEdited'),
+    pending:  '',
   };
 
   return (
@@ -85,26 +93,22 @@ export default function RecommendationCard({
           </div>
           {confidencePct !== null && (
             <div className={`text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1 ${getConfidenceColor(confidencePct)}`}>
-              {confidencePct}% Match
+              {t('confidenceMatch', { value: confidencePct })}
             </div>
           )}
         </div>
-        
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
-          {title}
-        </h3>
-        
+
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{title}</h3>
+
         {blockName && (
           <div className="text-sm font-medium text-brand-600 dark:text-brand-400 mb-3">
-            Target: {blockName}
+            {t('target', { name: blockName })}
           </div>
         )}
-        
-        <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">
-          {rationale}
-        </p>
+
+        <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">{rationale}</p>
       </div>
-      
+
       {status === "pending" ? (
         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 border-t border-slate-100 dark:border-slate-800 flex gap-2">
           <button
@@ -113,13 +117,13 @@ export default function RecommendationCard({
             className="flex-1 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Check className="h-4 w-4" />
-            Accept
+            {t('accept')}
           </button>
           <button
             onClick={() => onEdit(id)}
             disabled={isProcessing}
             className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-            title="Edit"
+            title={t('edit')}
           >
             <Edit2 className="h-4 w-4" />
           </button>
@@ -127,7 +131,7 @@ export default function RecommendationCard({
             onClick={() => onSkip(id)}
             disabled={isProcessing}
             className="bg-white dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-600 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-            title="Skip"
+            title={t('skip')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -143,12 +147,12 @@ export default function RecommendationCard({
               {status === 'accepted' && <Check className="h-4 w-4" />}
               {status === 'skipped' && <X className="h-4 w-4" />}
               {status === 'edited' && <Edit2 className="h-4 w-4" />}
-              {status.charAt(0).toUpperCase() + status.slice(1)}
+              {STATUS_LABEL[status]}
             </span>
-            <span className="text-xs text-slate-400 dark:text-slate-500">Logged</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">{t('logged')}</span>
           </div>
           {managerNote && (
-            <p className="text-xs text-slate-600 dark:text-slate-400 italic border-l-2 border-slate-300 dark:border-slate-600 pl-2">
+            <p className="text-xs text-slate-600 dark:text-slate-400 italic border-s-2 border-slate-300 dark:border-slate-600 ps-2">
               &quot;{managerNote}&quot;
             </p>
           )}

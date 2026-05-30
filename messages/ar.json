@@ -1,0 +1,344 @@
+{
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "blocks": "القطع",
+    "calendar": "التقويم",
+    "recommendations": "التوصيات",
+    "activityLog": "سجل الأنشطة",
+    "activity": "الأنشطة",
+    "inventory": "المخزون",
+    "settings": "الإعدادات",
+    "more": "المزيد",
+    "signOut": "تسجيل الخروج",
+    "goBack": "رجوع"
+  },
+  "topNav": {
+    "searchPlaceholder": "البحث في القطع والإجراءات والتوصيات...",
+    "viewNotifications": "عرض الإشعارات",
+    "search": "بحث",
+    "selectLanguage": "اختر اللغة"
+  },
+  "dashboard": {
+    "kpi": {
+      "avgSoilMoisture": "متوسط رطوبة التربة",
+      "liveSensorAverage": "متوسط المستشعر الحي",
+      "rainForecast": "توقعات المطر (7 أيام)",
+      "expectedTotal": "الإجمالي المتوقع",
+      "activeAlerts": "التنبيهات النشطة",
+      "allSystemsNominal": "جميع الأنظمة طبيعية",
+      "nextIrrigation": "الري القادم",
+      "scheduledQueue": "جدول الانتظار",
+      "noneScheduled": "لا يوجد مجدول",
+      "ongoing": "جارٍ الآن",
+      "inHours": "خلال {hours} ساعة",
+      "inDays": "خلال {days} يوم",
+      "unresolved": "{count} غير محلول"
+    },
+    "alerts": {
+      "title": "التنبيهات النشطة",
+      "statusActive": "{count} نشط",
+      "statusClear": "خالٍ",
+      "allNominal": "جميع الأنظمة طبيعية",
+      "nominalDescription": "لا توجد تنبيهات نشطة. معاملات البستان ضمن الحدود الصحية.",
+      "domains": {
+        "soil-water": "التربة والمياه",
+        "phenology": "فينولوجيا النبات",
+        "nutrition": "التغذية",
+        "pest-disease": "الآفات والأمراض",
+        "weather": "تنبيه الطقس",
+        "system": "تنبيه النظام"
+      },
+      "timeJustNow": "الآن",
+      "timeMinutesAgo": "منذ دقيقة",
+      "timeMinutesAgoPlural": "منذ {count} دقائق",
+      "timeHoursAgo": "منذ ساعة",
+      "timeHoursAgoPlural": "منذ {count} ساعات",
+      "timeYesterday": "أمس",
+      "timeDaysAgo": "منذ {count} أيام"
+    },
+    "blockStatus": {
+      "title": "حالة القطع",
+      "overview": "نظرة عامة على {count} قطعة",
+      "overviewPlural": "نظرة عامة على {count} قطع",
+      "noBlocks": "لم يتم إعداد أي قطع بعد",
+      "goToBlocks": "انتقل إلى صفحة القطع للإعداد",
+      "moisture": "الرطوبة: {value}",
+      "issue": "مشكلة: {text}"
+    },
+    "activityFeed": {
+      "title": "النشاط الأخير",
+      "viewLog": "عرض السجل",
+      "noActivities": "لا توجد أنشطة مسجلة مؤخراً",
+      "by": "بواسطة {user}",
+      "inBlock": "في {name}",
+      "timeJustNow": "الآن",
+      "timeMinAgo": "منذ {count} دقيقة",
+      "timeMinsAgo": "منذ {count} دقائق",
+      "timeHourAgo": "منذ ساعة",
+      "timeHoursAgo": "منذ {count} ساعات",
+      "timeYesterday": "أمس",
+      "timeDaysAgo": "منذ {count} أيام"
+    },
+    "weather": {
+      "title": "توقعات الطقس (7 أيام)",
+      "failedToLoad": "فشل تحميل بيانات الطقس."
+    },
+    "upcomingCalendar": {
+      "title": "المهام القادمة",
+      "noEvents": "لا توجد مهام مجدولة",
+      "viewFullCalendar": "عرض التقويم الكامل",
+      "today": "اليوم، {time}",
+      "tomorrow": "غداً، {time}",
+      "yesterday": "أمس، {time}"
+    },
+    "page": {
+      "title": "لوحة التحكم",
+      "subtitle": "نظرة عامة على المزرعة ورؤى قابلة للتنفيذ.",
+      "welcomeTitle": "مرحباً بك في مزرعتك الجديدة",
+      "welcomeSubtitle": "اتبع الخطوات أدناه لبدء تشغيل مزرعتك.",
+      "emptyHint": "ستمتلئ لوحة التحكم ببيانات حية بمجرد إضافة القطع وبدء تسجيل النشاط.",
+      "steps": {
+        "blocks": { "title": "أضف قطعتك الأولى", "desc": "ارسم حدود القطعة على الخريطة الفضائية وأدخل تفاصيل المحصول." },
+        "soilTest": { "title": "سجّل اختبارات التربة والمياه", "desc": "أدخل نتائج اختبار التربة لكل قطعة لتأسيس بياناتك الزراعية." },
+        "calendar": { "title": "جدول أول حدث", "desc": "أضف أحداث ري أو رش أو مسح ميداني إلى تقويم المزرعة." },
+        "sensors": { "title": "ربط المستشعرات", "desc": "اربط مستشعرات رطوبة التربة والطقس للحصول على بيانات حية." }
+      }
+    }
+  },
+  "blocks": {
+    "tabs": {
+      "soilWater": "التربة والمياه",
+      "phenology": "فينولوجيا النبات",
+      "nutrition": "التغذية",
+      "pestDisease": "الآفات والأمراض",
+      "weather": "الطقس"
+    },
+    "status": {
+      "healthy": "صحي",
+      "attention": "يحتاج انتباهاً",
+      "critical": "حرج"
+    },
+    "detail": {
+      "edit": "تعديل",
+      "delete": "حذف"
+    }
+  },
+  "activityTypes": {
+    "irrigation": "ري",
+    "fertigation": "تسميد مائي",
+    "spraying": "رش",
+    "pruning": "تقليم",
+    "scouting": "مسح ميداني",
+    "pollinating": "تلقيح",
+    "tilling": "حراثة",
+    "plowing": "فلاحة",
+    "weeding": "إزالة الأعشاب",
+    "tissue-sample": "عينة نسيجية",
+    "other": "أخرى"
+  },
+  "calendar": {
+    "header": {
+      "today": "اليوم",
+      "previous": "السابق",
+      "next": "التالي",
+      "addEvent": "إضافة حدث",
+      "month": "شهر",
+      "week": "أسبوع",
+      "day": "يوم"
+    },
+    "overflow": "+{count} أكثر",
+    "page": {
+      "title": "تقويم المزرعة",
+      "subtitle": "ري · تسميد مائي · رش · تقليم · مسح ميداني",
+      "notes": "ملاحظات",
+      "completed": "✓ مكتمل",
+      "logCompletion": "تسجيل الإتمام",
+      "saving": "جارٍ الحفظ…"
+    },
+    "dayView": {
+      "today": "اليوم",
+      "noEvents": "لا توجد أحداث مجدولة",
+      "eventCount": "حدث {count} مجدول",
+      "eventCountPlural": "{count} أحداث مجدولة",
+      "details": "التفاصيل",
+      "logCompletion": "تسجيل الإتمام",
+      "completed": "مكتمل"
+    },
+    "addEvent": {
+      "title": "إضافة حدث",
+      "fieldTitle": "العنوان",
+      "titlePlaceholder": "مثال: دورة ري — القطعة أ",
+      "activityType": "نوع النشاط",
+      "block": "القطعة",
+      "allBlocks": "الكل / غير قابل للتطبيق",
+      "start": "البداية",
+      "end": "النهاية",
+      "notes": "ملاحظات (اختياري)",
+      "notesPlaceholder": "تعليمات أو ملاحظات إضافية…",
+      "cancel": "إلغاء",
+      "save": "حفظ الحدث",
+      "irrigationDetails": "تفاصيل الري",
+      "durationHrs": "المدة (ساعات)",
+      "litresPerTree": "لتر/شجرة",
+      "repeatDays": "التكرار (أيام)",
+      "fertigationDetails": "تفاصيل التسميد المائي",
+      "fertilizerType": "نوع السماد",
+      "fertilizerPlaceholder": "مثال: نترات الكالسيوم",
+      "amountKgPerTree": "الكمية (كغ/شجرة)",
+      "growthStageNote": "ملاحظة مرحلة النمو",
+      "growthStagePlaceholder": "مثال: امتلاء الجوزة",
+      "growthStagePostHarvest": "مثال: ما بعد الحصاد",
+      "sprayingDetails": "تفاصيل الرش",
+      "pesticideProduct": "المبيد / المنتج",
+      "pesticidePlaceholder": "مثال: مانكوزيب",
+      "amountLPerHa": "الكمية (لتر/هكتار)",
+      "targetPest": "الآفة / المرض المستهدف",
+      "targetPestPlaceholder": "مثال: ألترناريا",
+      "pruningDetails": "تفاصيل التقليم",
+      "pruningType": "نوع التقليم",
+      "selectType": "اختر النوع…",
+      "pruningThinning": "تفريق (إضاءة المظلة)",
+      "pruningSkirting": "رفع التنورة",
+      "pruningHeading": "تقصير الارتفاع",
+      "pruningRenewal": "تقليم التجديد",
+      "pruningCorrective": "تقليم تصحيحي"
+    },
+    "logCompletion": {
+      "title": "تسجيل الإتمام",
+      "actualStart": "البداية الفعلية",
+      "actualEnd": "النهاية الفعلية",
+      "notes": "ملاحظات الإتمام",
+      "notesPlaceholder": "ما تم تنفيذه، أي ملاحظات أو مشاكل واجهت…",
+      "cancel": "إلغاء",
+      "markComplete": "تحديد كمكتمل"
+    }
+  },
+  "inventory": {
+    "title": "المخزون",
+    "description": "إدارة أصول المزرعة والصيانة والمواد الاستهلاكية.",
+    "addAsset": "إضافة أصل",
+    "addConsumable": "إضافة مستهلك",
+    "tabs": {
+      "assets": "الأصول",
+      "consumables": "المستهلكات"
+    },
+    "searchAssetsPlaceholder": "البحث في الأصول...",
+    "searchConsumablesPlaceholder": "البحث في المستهلكات...",
+    "noAssetsFound": "لم يتم العثور على أصول.",
+    "noConsumablesFound": "لم يتم العثور على مستهلكات.",
+    "stats": {
+      "totalAssets": "إجمالي الأصول",
+      "needsMaintenance": "يحتاج صيانة",
+      "consumables": "المستهلكات",
+      "lowStockAlerts": "تنبيهات المخزون المنخفض"
+    }
+  },
+  "recommendations": {
+    "pageTitle": "التوصيات",
+    "pageSubtitle": "راجع التوصيات الزراعية المولّدة بالذكاء الاصطناعي وتصرّف بناءً عليها.",
+    "accept": "قبول",
+    "skip": "تخطي",
+    "edit": "تعديل",
+    "confidenceMatch": "{value}% تطابق",
+    "logged": "مسجل",
+    "statusAccepted": "مقبول",
+    "statusSkipped": "متخطى",
+    "statusEdited": "معدّل",
+    "categories": {
+      "all": "جميع الأنواع",
+      "irrigate": "ري",
+      "fertilize": "تسميد",
+      "spray": "رش",
+      "scout": "مسح",
+      "prune": "تقليم"
+    },
+    "pending": "قيد الانتظار",
+    "history": "السجل",
+    "generateAI": "توليد توصيات الذكاء الاصطناعي",
+    "generating": "جارٍ التوليد…",
+    "target": "الهدف: {name}",
+    "noPending": "لا توجد توصيات معلقة",
+    "noHistory": "لا يوجد سجل بعد",
+    "pendingDesc": "لم يولّد محرك الذكاء الاصطناعي أي توصيات جديدة قابلة للتنفيذ لقطعك في الوقت الحالي.",
+    "historyDesc": "لم تقبل أو تتخطَّ أي توصيات بعد.",
+    "generateMock": "توليد بيانات تجريبية",
+    "editTitle": "تعديل التوصية",
+    "actionTitle": "عنوان الإجراء",
+    "aiRationale": "مسوّغ الذكاء الاصطناعي",
+    "managerNote": "ملاحظتك",
+    "managerNoteOptional": "(اختياري)",
+    "managerNotePlaceholder": "أضف سياقاً أو تعديلات أو أسباب التغيير…",
+    "cancel": "إلغاء",
+    "acceptWithChanges": "قبول مع التعديلات"
+  },
+  "activity": {
+    "title": "سجل الأنشطة",
+    "pageSubtitle": "السجل الكامل لجميع الإجراءات المتخذة في كل القطع.",
+    "searchPlaceholder": "البحث في الأنشطة…",
+    "allTypes": "جميع الأنواع",
+    "allBlocks": "جميع القطع",
+    "logActivity": "تسجيل نشاط",
+    "noResults": "لا توجد أنشطة",
+    "noResultsDesc": "اقبل التوصيات أو سجل أحداث التقويم لبدء بناء سجل مزرعتك.",
+    "loading": "جارٍ التحميل…",
+    "entryCount": "{count} إدخال",
+    "entryCountPlural": "{count} إدخالات",
+    "pendingSync": "{count} في انتظار المزامنة",
+    "offlineBanner": "{count} نشاط محفوظ دون اتصال — ستتم المزامنة تلقائياً عند الاتصال.",
+    "syncingBanner": "جارٍ مزامنة الأنشطة غير المتصلة…",
+    "syncedBanner": "تمت مزامنة {count} نشاط بنجاح.",
+    "pendingSyncBadge": "في انتظار المزامنة"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "description": "إدارة حسابك والفريق والقطع والتنبيهات والمستشعرات وتكامل الطقس.",
+    "language": {
+      "title": "اللغة والمنطقة",
+      "description": "اختر لغة العرض للتطبيق. يمكن دائماً كتابة حقول الإدخال (أسماء المزارع والملاحظات وغيرها) بأي لغة.",
+      "label": "لغة العرض",
+      "save": "حفظ اللغة",
+      "options": {
+        "en": "English",
+        "ar": "العربية",
+        "tr": "Türkçe"
+      },
+      "saved": "تم تحديث اللغة. جارٍ إعادة التحميل…",
+      "tabLabel": "اللغة",
+      "topNavHint": "استخدم أيقونة الكرة الأرضية (🌐) في شريط التنقل العلوي للتبديل بين اللغات فوراً."
+    }
+  },
+  "auth": {
+    "login": {
+      "orchardAlt": "بستان اللوز",
+      "logoAlt": "NutJob",
+      "tagline": "زرع الأفكار. نمو بالذكاء.",
+      "taglineSubtitle": "نظام إدارة مزارع مدعوم بالذكاء الاصطناعي للمزارع متعددة القطع. بيانات آنية وقرارات زراعية أذكى.",
+      "title": "مرحباً بعودتك",
+      "subtitle": "سجّل دخولك لإدارة مزرعتك.",
+      "emailLabel": "البريد الإلكتروني",
+      "emailPlaceholder": "manager@farm.com",
+      "passwordLabel": "كلمة المرور",
+      "rememberMe": "تذكّرني",
+      "forgotPassword": "نسيت كلمة المرور؟",
+      "signIn": "الدخول إلى مركز التحكم"
+    },
+    "signOut": "تسجيل الخروج"
+  },
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "close": "إغلاق",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "loading": "جارٍ التحميل…",
+    "error": "حدث خطأ ما.",
+    "na": "غير متوفر",
+    "farmManager": "مدير المزرعة",
+    "notLoggedIn": "غير مسجل الدخول",
+    "roles": {
+      "admin": "مسؤول",
+      "supervisor": "مشرف",
+      "worker": "عامل"
+    }
+  }
+}

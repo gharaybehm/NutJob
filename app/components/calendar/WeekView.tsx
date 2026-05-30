@@ -1,6 +1,7 @@
 'use client';
 
 import { CalendarEvent, ACTIVITY_COLORS } from './types';
+import { useLocale } from 'next-intl';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -13,8 +14,6 @@ const START_HOUR = 5;
 const END_HOUR   = 21;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
 const HOUR_HEIGHT = 64; // px per hour
-
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function getWeekDays(date: Date): Date[] {
   const dow = date.getDay();
@@ -45,6 +44,10 @@ function eventHeight(start: Date, end: Date): number {
 }
 
 export default function WeekView({ currentDate, events, onEventClick }: WeekViewProps) {
+  const locale = useLocale();
+  const DAY_LABELS = [0,1,2,3,4,5,6].map(i =>
+    new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2024, 0, 7 + i))
+  );
   const days = getWeekDays(currentDate);
   const today = new Date();
   const hours = Array.from({ length: TOTAL_HOURS }, (_, i) => i + START_HOUR);

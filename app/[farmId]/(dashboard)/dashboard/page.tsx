@@ -8,6 +8,7 @@ import BlockStatusGrid from "@/app/components/dashboard/BlockStatusGrid";
 import UpcomingCalendar from "@/app/components/dashboard/UpcomingCalendar";
 import ActivityFeed from "@/app/components/dashboard/ActivityFeed";
 import { Layers, CalendarDays, FlaskConical, Cpu, ArrowRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 function KPISkeleton() {
   return (
@@ -32,81 +33,67 @@ async function getBlockCount(farmId: string): Promise<number> {
   return count ?? 0;
 }
 
-const SETUP_STEPS = [
-  {
-    icon: Layers,
-    title: "Add your first block",
-    description: "Draw your block boundaries on the satellite map and enter crop details.",
-    href: "blocks",
-    color: "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400",
-    border: "border-brand-200 dark:border-brand-800 hover:border-brand-400",
-  },
-  {
-    icon: FlaskConical,
-    title: "Log soil & water tests",
-    description: "Enter soil test results per block to baseline your agronomic data.",
-    href: "blocks",
-    color: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
-    border: "border-blue-200 dark:border-blue-800 hover:border-blue-400",
-  },
-  {
-    icon: CalendarDays,
-    title: "Schedule your first event",
-    description: "Add irrigation, spraying, or scouting events to the farm calendar.",
-    href: "calendar",
-    color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400",
-    border: "border-emerald-200 dark:border-emerald-800 hover:border-emerald-400",
-  },
-  {
-    icon: Cpu,
-    title: "Connect sensors",
-    description: "Link IoT soil moisture and weather sensors for live data feeds.",
-    href: "settings",
-    color: "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400",
-    border: "border-amber-200 dark:border-amber-800 hover:border-amber-400",
-  },
+const STEP_ICONS = [Layers, FlaskConical, CalendarDays, Cpu];
+const STEP_HREFS = ["blocks", "blocks", "calendar", "settings"];
+const STEP_COLORS = [
+  "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400",
+  "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
+  "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400",
+  "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400",
+];
+const STEP_BORDERS = [
+  "border-brand-200 dark:border-brand-800 hover:border-brand-400",
+  "border-blue-200 dark:border-blue-800 hover:border-blue-400",
+  "border-emerald-200 dark:border-emerald-800 hover:border-emerald-400",
+  "border-amber-200 dark:border-amber-800 hover:border-amber-400",
 ];
 
-function FarmSetup({ farmId }: { farmId: string }) {
+async function FarmSetup({ farmId }: { farmId: string }) {
+  const t = await getTranslations('dashboard.page');
+  const stepKeys = ['blocks', 'soilTest', 'calendar', 'sensors'] as const;
+
   return (
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Welcome to your new farm
+          {t('welcomeTitle')}
         </h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Follow the steps below to get your farm up and running.
+          {t('welcomeSubtitle')}
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {SETUP_STEPS.map((step, i) => (
-          <Link
-            key={i}
-            href={`/${farmId}/${step.href}`}
-            className={`flex items-start gap-4 rounded-xl border bg-white dark:bg-slate-900 p-5 transition-all hover:shadow-md ${step.border}`}
-          >
-            <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${step.color}`}>
-              <step.icon className="h-5 w-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {step.title}
-                </p>
-                <ArrowRight className="h-4 w-4 text-slate-400 shrink-0" />
+        {stepKeys.map((key, i) => {
+          const Icon = STEP_ICONS[i];
+          return (
+            <Link
+              key={key}
+              href={`/${farmId}/${STEP_HREFS[i]}`}
+              className={`flex items-start gap-4 rounded-xl border bg-white dark:bg-slate-900 p-5 transition-all hover:shadow-md ${STEP_BORDERS[i]}`}
+            >
+              <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${STEP_COLORS[i]}`}>
+                <Icon className="h-5 w-5" />
               </div>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                {step.description}
-              </p>
-            </div>
-          </Link>
-        ))}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                    {t(`steps.${key}.title`)}
+                  </p>
+                  <ArrowRight className="h-4 w-4 text-slate-400 shrink-0 rtl:rotate-180" />
+                </div>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  {t(`steps.${key}.desc`)}
+                </p>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-6 text-center">
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Your dashboard will populate with live data once you add blocks and start logging activity.
+          {t('emptyHint')}
         </p>
       </div>
     </div>
@@ -115,7 +102,10 @@ function FarmSetup({ farmId }: { farmId: string }) {
 
 export default async function Dashboard({ params }: { params: Promise<{ farmId: string }> }) {
   const { farmId } = await params;
-  const blockCount = await getBlockCount(farmId);
+  const [blockCount, t] = await Promise.all([
+    getBlockCount(farmId),
+    getTranslations('dashboard.page'),
+  ]);
 
   if (blockCount === 0) {
     return <FarmSetup farmId={farmId} />;
@@ -125,10 +115,10 @@ export default async function Dashboard({ params }: { params: Promise<{ farmId: 
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Dashboard
+          {t('title')}
         </h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Farm overview and actionable insights.
+          {t('subtitle')}
         </p>
       </div>
 

@@ -1,0 +1,344 @@
+{
+  "nav": {
+    "dashboard": "Gösterge Paneli",
+    "blocks": "Bloklar",
+    "calendar": "Takvim",
+    "recommendations": "Öneriler",
+    "activityLog": "Aktivite Günlüğü",
+    "activity": "Aktivite",
+    "inventory": "Envanter",
+    "settings": "Ayarlar",
+    "more": "Daha Fazla",
+    "signOut": "Çıkış Yap",
+    "goBack": "Geri"
+  },
+  "topNav": {
+    "searchPlaceholder": "Blokları, işlemleri veya önerileri arayın...",
+    "viewNotifications": "Bildirimleri görüntüle",
+    "search": "Ara",
+    "selectLanguage": "Dil seçin"
+  },
+  "dashboard": {
+    "kpi": {
+      "avgSoilMoisture": "Ort. Toprak Nemi",
+      "liveSensorAverage": "Canlı sensör ortalaması",
+      "rainForecast": "7 Günlük Yağış Tahmini",
+      "expectedTotal": "Beklenen toplam",
+      "activeAlerts": "Aktif Uyarılar",
+      "allSystemsNominal": "Tüm sistemler normal",
+      "nextIrrigation": "Sonraki Sulama",
+      "scheduledQueue": "Planlı sıra",
+      "noneScheduled": "Planlanmamış",
+      "ongoing": "Devam ediyor",
+      "inHours": "{hours} saat içinde",
+      "inDays": "{days} gün içinde",
+      "unresolved": "{count} çözülmemiş"
+    },
+    "alerts": {
+      "title": "Aktif Uyarılar",
+      "statusActive": "{count} Aktif",
+      "statusClear": "Temiz",
+      "allNominal": "Tüm sistemler normal",
+      "nominalDescription": "Aktif uyarı tespit edilmedi. Bahçe parametreleri sağlıklı eşikler içinde.",
+      "domains": {
+        "soil-water": "Toprak ve Su",
+        "phenology": "Fenoloji",
+        "nutrition": "Beslenme",
+        "pest-disease": "Zararlı ve Hastalık",
+        "weather": "Hava Uyarısı",
+        "system": "Sistem Uyarısı"
+      },
+      "timeJustNow": "Az önce",
+      "timeMinutesAgo": "{count} dakika önce",
+      "timeMinutesAgoPlural": "{count} dakika önce",
+      "timeHoursAgo": "{count} saat önce",
+      "timeHoursAgoPlural": "{count} saat önce",
+      "timeYesterday": "Dün",
+      "timeDaysAgo": "{count} gün önce"
+    },
+    "blockStatus": {
+      "title": "Blok Durumu",
+      "overview": "{count} Blok Genel Görünümü",
+      "overviewPlural": "{count} Blok Genel Görünümü",
+      "noBlocks": "Henüz blok yapılandırılmamış",
+      "goToBlocks": "Yapılandırmak için Bloklar sayfasına gidin",
+      "moisture": "Nem: {value}",
+      "issue": "Sorun: {text}"
+    },
+    "activityFeed": {
+      "title": "Son Aktiviteler",
+      "viewLog": "Günlüğü Görüntüle",
+      "noActivities": "Son zamanlarda kayıtlı aktivite yok",
+      "by": "{user} tarafından",
+      "inBlock": "{name} bloğunda",
+      "timeJustNow": "Az önce",
+      "timeMinAgo": "{count} dak. önce",
+      "timeMinsAgo": "{count} dak. önce",
+      "timeHourAgo": "{count} saat önce",
+      "timeHoursAgo": "{count} saat önce",
+      "timeYesterday": "Dün",
+      "timeDaysAgo": "{count} gün önce"
+    },
+    "weather": {
+      "title": "7 Günlük Hava Tahmini",
+      "failedToLoad": "Hava durumu verileri yüklenemedi."
+    },
+    "upcomingCalendar": {
+      "title": "Yaklaşan Etkinlikler",
+      "noEvents": "Planlanmış görev yok",
+      "viewFullCalendar": "Takvimin Tamamını Görüntüle",
+      "today": "Bugün, {time}",
+      "tomorrow": "Yarın, {time}",
+      "yesterday": "Dün, {time}"
+    },
+    "page": {
+      "title": "Gösterge Paneli",
+      "subtitle": "Çiftlik genel görünümü ve uygulanabilir içgörüler.",
+      "welcomeTitle": "Yeni çiftliğinize hoş geldiniz",
+      "welcomeSubtitle": "Çiftliğinizi kurmak için aşağıdaki adımları izleyin.",
+      "emptyHint": "Blok ekleyip aktivite kaydetmeye başladığınızda gösterge paneli canlı verilerle dolacaktır.",
+      "steps": {
+        "blocks": { "title": "İlk bloğunuzu ekleyin", "desc": "Uydu haritasında blok sınırlarınızı çizin ve ürün ayrıntılarını girin." },
+        "soilTest": { "title": "Toprak ve su testlerini kaydedin", "desc": "Tarımsal verilerinizi temellemek için blok başına toprak testi sonuçlarını girin." },
+        "calendar": { "title": "İlk etkinliğinizi planlayın", "desc": "Çiftlik takvimine sulama, ilaçlama veya saha tarama etkinlikleri ekleyin." },
+        "sensors": { "title": "Sensörleri bağlayın", "desc": "Canlı veri akışları için IoT toprak nemi ve hava sensörlerini bağlayın." }
+      }
+    }
+  },
+  "blocks": {
+    "tabs": {
+      "soilWater": "Toprak ve Su",
+      "phenology": "Fenoloji",
+      "nutrition": "Beslenme",
+      "pestDisease": "Zararlı ve Hastalık",
+      "weather": "Hava Durumu"
+    },
+    "status": {
+      "healthy": "Sağlıklı",
+      "attention": "Dikkat",
+      "critical": "Kritik"
+    },
+    "detail": {
+      "edit": "Düzenle",
+      "delete": "Sil"
+    }
+  },
+  "activityTypes": {
+    "irrigation": "Sulama",
+    "fertigation": "Fertigasyon",
+    "spraying": "İlaçlama",
+    "pruning": "Budama",
+    "scouting": "Saha Tarama",
+    "pollinating": "Tozlaşma",
+    "tilling": "Toprak İşleme",
+    "plowing": "Sürme",
+    "weeding": "Yabancı Ot Temizliği",
+    "tissue-sample": "Doku Örneği",
+    "other": "Diğer"
+  },
+  "calendar": {
+    "header": {
+      "today": "Bugün",
+      "previous": "Önceki",
+      "next": "Sonraki",
+      "addEvent": "Etkinlik Ekle",
+      "month": "Ay",
+      "week": "Hafta",
+      "day": "Gün"
+    },
+    "overflow": "+{count} daha",
+    "page": {
+      "title": "Çiftlik Takvimi",
+      "subtitle": "Sulama · Fertigasyon · İlaçlama · Budama · Saha Tarama",
+      "notes": "Notlar",
+      "completed": "✓ Tamamlandı",
+      "logCompletion": "Tamamlanma Kaydet",
+      "saving": "Kaydediliyor…"
+    },
+    "dayView": {
+      "today": "Bugün",
+      "noEvents": "Planlanmış etkinlik yok",
+      "eventCount": "{count} etkinlik planlandı",
+      "eventCountPlural": "{count} etkinlik planlandı",
+      "details": "Ayrıntılar",
+      "logCompletion": "Tamamlanma Kaydet",
+      "completed": "Tamamlandı"
+    },
+    "addEvent": {
+      "title": "Etkinlik Ekle",
+      "fieldTitle": "Başlık",
+      "titlePlaceholder": "ör. Sulama Turu — A Bloğu",
+      "activityType": "Aktivite Türü",
+      "block": "Blok",
+      "allBlocks": "Tümü / Uygulanamaz",
+      "start": "Başlangıç",
+      "end": "Bitiş",
+      "notes": "Notlar (isteğe bağlı)",
+      "notesPlaceholder": "Ek talimatlar veya gözlemler…",
+      "cancel": "İptal",
+      "save": "Etkinliği Kaydet",
+      "irrigationDetails": "Sulama Detayları",
+      "durationHrs": "Süre (saat)",
+      "litresPerTree": "L/ağaç",
+      "repeatDays": "Tekrar (gün)",
+      "fertigationDetails": "Fertigasyon Detayları",
+      "fertilizerType": "Gübre türü",
+      "fertilizerPlaceholder": "ör. Kalsiyum Nitrat",
+      "amountKgPerTree": "Miktar (kg/ağaç)",
+      "growthStageNote": "Büyüme aşaması notu",
+      "growthStagePlaceholder": "ör. Fındık dolumu",
+      "growthStagePostHarvest": "ör. Hasat sonrası",
+      "sprayingDetails": "İlaçlama Detayları",
+      "pesticideProduct": "Pestisit / ürün",
+      "pesticidePlaceholder": "ör. Mankozeb",
+      "amountLPerHa": "Miktar (L/ha)",
+      "targetPest": "Hedef zararlı / hastalık",
+      "targetPestPlaceholder": "ör. Alternaria",
+      "pruningDetails": "Budama Detayları",
+      "pruningType": "Budama türü",
+      "selectType": "Tür seçin…",
+      "pruningThinning": "İnceleme (taç ışıklandırma)",
+      "pruningSkirting": "Etek kaldırma",
+      "pruningHeading": "Yükseklik azaltma",
+      "pruningRenewal": "Yenileme budaması",
+      "pruningCorrective": "Düzeltici budama"
+    },
+    "logCompletion": {
+      "title": "Tamamlanma Kaydet",
+      "actualStart": "Gerçek başlangıç",
+      "actualEnd": "Gerçek bitiş",
+      "notes": "Tamamlanma notları",
+      "notesPlaceholder": "Yapılanlar, gözlemler, karşılaşılan sorunlar…",
+      "cancel": "İptal",
+      "markComplete": "Tamamlandı Olarak İşaretle"
+    }
+  },
+  "inventory": {
+    "title": "Envanter",
+    "description": "Çiftlik varlıklarını, bakımını ve sarf malzemelerini yönetin.",
+    "addAsset": "Varlık Ekle",
+    "addConsumable": "Sarf Malzemesi Ekle",
+    "tabs": {
+      "assets": "Varlıklar",
+      "consumables": "Sarf Malzemeleri"
+    },
+    "searchAssetsPlaceholder": "Varlıklarda ara...",
+    "searchConsumablesPlaceholder": "Sarf malzemelerinde ara...",
+    "noAssetsFound": "Varlık bulunamadı.",
+    "noConsumablesFound": "Sarf malzemesi bulunamadı.",
+    "stats": {
+      "totalAssets": "Toplam Varlık",
+      "needsMaintenance": "Bakım Gerekiyor",
+      "consumables": "Sarf Malzemeleri",
+      "lowStockAlerts": "Düşük Stok Uyarıları"
+    }
+  },
+  "recommendations": {
+    "pageTitle": "Öneriler",
+    "pageSubtitle": "NutJob yapay zeka motoru tarafından oluşturulan öncelikli tarımsal önerileri inceleyin ve harekete geçin.",
+    "accept": "Kabul Et",
+    "skip": "Atla",
+    "edit": "Düzenle",
+    "confidenceMatch": "%{value} Eşleşme",
+    "logged": "Kaydedildi",
+    "statusAccepted": "Kabul Edildi",
+    "statusSkipped": "Atlandı",
+    "statusEdited": "Düzenlendi",
+    "categories": {
+      "all": "Tüm Türler",
+      "irrigate": "Sulama",
+      "fertilize": "Gübreleme",
+      "spray": "İlaçlama",
+      "scout": "Tarama",
+      "prune": "Budama"
+    },
+    "pending": "Beklemede",
+    "history": "Geçmiş",
+    "generateAI": "Yapay Zeka Önerileri Oluştur",
+    "generating": "Oluşturuluyor…",
+    "target": "Hedef: {name}",
+    "noPending": "Bekleyen öneri yok",
+    "noHistory": "Henüz geçmiş yok",
+    "pendingDesc": "Yapay zeka motoru şu an bloklarınız için yeni bir öneri üretmedi.",
+    "historyDesc": "Henüz hiçbir öneriyi kabul etmediniz veya atlamadınız.",
+    "generateMock": "Test Verisi Oluştur",
+    "editTitle": "Öneriyi Düzenle",
+    "actionTitle": "İşlem başlığı",
+    "aiRationale": "Yapay zeka gerekçesi",
+    "managerNote": "Notunuz",
+    "managerNoteOptional": "(isteğe bağlı)",
+    "managerNotePlaceholder": "Bağlam, düzeltmeler veya değişiklik nedenleri ekleyin…",
+    "cancel": "İptal",
+    "acceptWithChanges": "Değişikliklerle Kabul Et"
+  },
+  "activity": {
+    "title": "Aktivite Günlüğü",
+    "pageSubtitle": "Her blokta gerçekleştirilen tüm işlemlerin tam geçmişi.",
+    "searchPlaceholder": "Aktivitelerde ara…",
+    "allTypes": "Tüm Türler",
+    "allBlocks": "Tüm Bloklar",
+    "logActivity": "Aktivite Kaydet",
+    "noResults": "Aktivite bulunamadı",
+    "noResultsDesc": "Çiftlik geçmişinizi oluşturmak için önerileri kabul edin veya takvim etkinlikleri kaydedin.",
+    "loading": "Yükleniyor…",
+    "entryCount": "{count} kayıt",
+    "entryCountPlural": "{count} kayıt",
+    "pendingSync": "{count} senkronizasyon bekliyor",
+    "offlineBanner": "{count} aktivite çevrimdışı kaydedildi — yeniden bağlandığınızda otomatik senkronize edilecek.",
+    "syncingBanner": "Çevrimdışı aktiviteler senkronize ediliyor…",
+    "syncedBanner": "{count} aktivite başarıyla senkronize edildi.",
+    "pendingSyncBadge": "Senkronizasyon bekliyor"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "description": "Hesabınızı, ekibinizi, bloklarınızı, uyarıları, sensörleri ve hava entegrasyonunu yönetin.",
+    "language": {
+      "title": "Dil ve Bölge",
+      "description": "Uygulama için görüntüleme dilini seçin. Giriş alanları (çiftlik adları, notlar vb.) her zaman herhangi bir dilde yazılabilir.",
+      "label": "Görüntüleme Dili",
+      "save": "Dili Kaydet",
+      "options": {
+        "en": "English",
+        "ar": "العربية",
+        "tr": "Türkçe"
+      },
+      "saved": "Dil güncellendi. Yeniden yükleniyor…",
+      "tabLabel": "Dil",
+      "topNavHint": "Dilleri anında değiştirmek için üst gezinme çubuğundaki küre simgesini (🌐) kullanın."
+    }
+  },
+  "auth": {
+    "login": {
+      "orchardAlt": "Badem Bahçesi",
+      "logoAlt": "NutJob",
+      "tagline": "İçgörüler ektin. Zeka ile büyüdün.",
+      "taglineSubtitle": "Çok bloklu badem çiftlikleri için yapay zeka destekli çiftlik yönetim sistemi. Gerçek zamanlı veri, daha akıllı tarımsal kararlar.",
+      "title": "Tekrar hoş geldiniz",
+      "subtitle": "Çiftliğinizi yönetmek için hesabınıza giriş yapın.",
+      "emailLabel": "E-posta adresi",
+      "emailPlaceholder": "manager@farm.com",
+      "passwordLabel": "Şifre",
+      "rememberMe": "Beni hatırla",
+      "forgotPassword": "Şifremi unuttum?",
+      "signIn": "Komuta merkezine giriş yap"
+    },
+    "signOut": "Çıkış Yap"
+  },
+  "common": {
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "close": "Kapat",
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "loading": "Yükleniyor…",
+    "error": "Bir şeyler yanlış gitti.",
+    "na": "Yok",
+    "farmManager": "Çiftlik Müdürü",
+    "notLoggedIn": "Giriş yapılmamış",
+    "roles": {
+      "admin": "Yönetici",
+      "supervisor": "Süpervizör",
+      "worker": "İşçi"
+    }
+  }
+}

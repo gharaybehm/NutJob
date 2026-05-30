@@ -1,5 +1,6 @@
 import { AlertCircle, AlertTriangle, Info, CheckCircle } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { getTranslations } from "next-intl/server";
 
 interface AlertItem {
   id: string;
@@ -14,32 +15,6 @@ function getAlertIcon(severity: string) {
   if (severity === 'critical') return AlertCircle;
   if (severity === 'warning') return AlertTriangle;
   return Info;
-}
-
-function getDomainLabel(domain: string) {
-  switch (domain) {
-    case 'soil-water': return "Soil & Water";
-    case 'phenology': return "Phenology";
-    case 'nutrition': return "Nutrition";
-    case 'pest-disease': return "Pest & Disease";
-    case 'weather': return "Weather Alert";
-    default: return "System Alert";
-  }
-}
-
-function formatRelativeTime(dateStr: string) {
-  const date = new Date(dateStr);
-  const diffMs = Date.now() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHrs = Math.floor(diffMins / 60);
-
-  if (diffHrs >= 24) {
-    const days = Math.floor(diffHrs / 24);
-    return days === 1 ? "Yesterday" : `${days} days ago`;
-  }
-  if (diffHrs > 0) return `${diffHrs} hour${diffHrs > 1 ? 's' : ''} ago`;
-  if (diffMins > 0) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-  return "Just now";
 }
 
 async function getAlerts(farmId: string): Promise<AlertItem[]> {
@@ -69,36 +44,56 @@ async function getAlerts(farmId: string): Promise<AlertItem[]> {
   }));
 }
 
+function getRelativeTimeParts(dateStr: string) {
+  const date = new Date(dateStr);
+  const diffMs = Date.now() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHrs = Math.floor(diffMins / 60);
+  const days = Math.floor(diffHrs / 24);
+  return { diffMins, diffHrs, days };
+}
+
 export default async function ActiveAlerts({ farmId }: { farmId: string }) {
-  const alerts = await getAlerts(farmId);
+  const [alerts, t] = await Promise.all([
+    getAlerts(farmId),
+    getTranslations('dashboard.alerts'),
+  ]);
   const count = alerts.length;
 
   return (
     <div className="flex h-full flex-col rounded-xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
       <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
-        <h2 className="text-base font-semibold text-slate-900 dark:text-white">Active Alerts</h2>
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">{t('title')}</h2>
         <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
           count > 0
             ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
             : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
         }`}>
-          {count > 0 ? `${count} Active` : "Clear"}
+          {count > 0 ? t('statusActive', { count }) : t('statusClear')}
         </span>
       </div>
       <div className="flex-1 overflow-y-auto p-4 min-h-[200px]">
         {count === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-10 text-center gap-2">
             <CheckCircle className="h-10 w-10 text-emerald-500 dark:text-emerald-400" />
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">All systems nominal</p>
-            <p className="text-xs text-slate-500 max-w-[280px]">
-              No active alerts detected. Orchard parameters are within healthy thresholds.
-            </p>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('allNominal')}</p>
+            <p className="text-xs text-slate-500 max-w-[280px]">{t('nominalDescription')}</p>
           </div>
         ) : (
           <ul className="space-y-4">
             {alerts.map((alert) => {
               const Icon = getAlertIcon(alert.severity);
               const isCritical = alert.severity === 'critical';
+              const DOMAIN_KEYS = {
+                'soil-water': 'domains.soil-water',
+                'phenology': 'domains.phenology',
+                'nutrition': 'domains.nutrition',
+                'pest-disease': 'domains.pest-disease',
+                'weather': 'domains.weather',
+              } as const;
+              const domainLabel = alert.domain in DOMAIN_KEYS
+                ? t(DOMAIN_KEYS[alert.domain as keyof typeof DOMAIN_KEYS])
+                : t('domains.system');
               const blockStr = alert.blockName ? ` • ${alert.blockName}` : "";
 
               return (
@@ -125,13 +120,19 @@ export default async function ActiveAlerts({ farmId }: { farmId: string }) {
                           ? 'text-amber-800 dark:text-amber-300'
                           : 'text-slate-800 dark:text-slate-300'
                       }`}>
-                        {getDomainLabel(alert.domain)}{blockStr}
+                        {domainLabel}{blockStr}
                       </h3>
                       <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                         {alert.message}
                       </p>
                       <p className="mt-2 text-xs text-slate-400">
-                        {formatRelativeTime(alert.created_at)}
+                        {(() => {
+                          const { diffMins, diffHrs, days } = getRelativeTimeParts(alert.created_at);
+                          if (diffHrs >= 24) return days === 1 ? t('timeYesterday') : t('timeDaysAgo', { count: days });
+                          if (diffHrs > 0) return diffHrs === 1 ? t('timeHoursAgo', { count: diffHrs }) : t('timeHoursAgoPlural', { count: diffHrs });
+                          if (diffMins > 0) return diffMins === 1 ? t('timeMinutesAgo', { count: diffMins }) : t('timeMinutesAgoPlural', { count: diffMins });
+                          return t('timeJustNow');
+                        })()}
                       </p>
                     </div>
                   </div>

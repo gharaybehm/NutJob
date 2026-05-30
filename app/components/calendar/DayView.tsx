@@ -2,6 +2,7 @@
 
 import { CalendarEvent, ACTIVITY_COLORS, ACTIVITY_LABELS } from './types';
 import { CheckCircle, Clock, MapPin, ClipboardList } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 
 interface DayViewProps {
   currentDate: Date;
@@ -27,26 +28,31 @@ function fmt(d: Date) {
 }
 
 export default function DayView({ currentDate, events, onEventClick, onLogCompletion }: DayViewProps) {
+  const locale = useLocale();
+  const t = useTranslations('calendar.dayView');
+
   const dayEvents = events.filter((e) => isSameDay(e.startDate, currentDate));
   const hours = Array.from({ length: TOTAL_HOURS }, (_, i) => i + START_HOUR);
 
   const today = new Date();
   const isToday = isSameDay(currentDate, today);
-  const dateLabel = currentDate.toLocaleDateString('en-GB', {
+  const dateLabel = currentDate.toLocaleDateString(locale, {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
+
+  const eventCountStr = dayEvents.length === 1
+    ? t('eventCount', { count: 1 })
+    : t('eventCountPlural', { count: dayEvents.length });
 
   return (
     <div className="overflow-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
       {/* Header */}
       <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-4 dark:border-slate-700 dark:bg-slate-900">
         <p className={`text-lg font-semibold ${isToday ? 'text-brand-600' : 'text-slate-900 dark:text-white'}`}>
-          {isToday ? 'Today — ' : ''}{dateLabel}
+          {isToday ? `${t('today')} — ` : ''}{dateLabel}
         </p>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          {dayEvents.length === 0
-            ? 'No events scheduled'
-            : `${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''} scheduled`}
+          {dayEvents.length === 0 ? t('noEvents') : eventCountStr}
         </p>
       </div>
 
@@ -86,7 +92,6 @@ export default function DayView({ currentDate, events, onEventClick, onLogComple
                 style={{ top, height, left: 8, right: 8 }}
                 className={`absolute rounded-lg px-3 py-2 shadow-sm ring-1 ring-inset ${colors.bg} ${colors.ring} ${done ? 'opacity-60' : ''}`}
               >
-                {/* Type badge */}
                 <span className={`mb-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${colors.text}`}>
                   <span className={`h-1.5 w-1.5 rounded-full ${colors.dot}`} />
                   {ACTIVITY_LABELS[event.type]}
@@ -111,14 +116,13 @@ export default function DayView({ currentDate, events, onEventClick, onLogComple
                   <p className="mt-1 text-xs opacity-60 line-clamp-2">{event.notes}</p>
                 )}
 
-                {/* Actions */}
                 <div className="mt-2 flex gap-2">
                   <button
                     onClick={() => onEventClick(event)}
                     className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-all hover:opacity-80 active:scale-95 ${colors.text} bg-white/50 ring-1 ring-inset ${colors.ring}`}
                   >
                     <ClipboardList className="h-3 w-3" />
-                    Details
+                    {t('details')}
                   </button>
                   {!done && (
                     <button
@@ -126,13 +130,13 @@ export default function DayView({ currentDate, events, onEventClick, onLogComple
                       className="flex items-center gap-1 rounded-md bg-white/70 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-200 transition-all hover:bg-white active:scale-95"
                     >
                       <CheckCircle className="h-3 w-3 text-brand-600" />
-                      Log Completion
+                      {t('logCompletion')}
                     </button>
                   )}
                   {done && (
                     <span className="flex items-center gap-1 text-xs font-medium text-brand-600">
                       <CheckCircle className="h-3 w-3" />
-                      Completed
+                      {t('completed')}
                     </span>
                   )}
                 </div>
