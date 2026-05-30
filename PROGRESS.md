@@ -2,7 +2,7 @@
 
 > Last updated: 2026-05-30
 
-## Overall Status: ~96% Complete  <!-- weather cron + Netlify Gateway + locale formatting done 2026-05-30 -->
+## Overall Status: ~97% Complete  <!-- Netlify scheduling + feedback loop done 2026-05-30 -->
 
 ---
 
@@ -121,8 +121,8 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Netlify AI Gateway integration | ✅ Done | `NETLIFY_AI_GATEWAY_URL` env var swaps base URL; falls back to OpenRouter in dev |
 | Prioritised agronomic recommendations | ✅ Done | Claude Haiku generates per-block recommendations from live DB context |
 | Confidence scoring | ✅ Done | AI returns 0–100 score, shown on card |
-| Accept / Edit / Skip feedback loop | 🟡 Partial | Accept + Edit write to activity_log; Skip recorded on recommendation only |
-| Feedback writes back to block state | ❌ Not started | |
+| Accept / Edit / Skip feedback loop | ✅ Done | Accept + Edit write to activity_log + call applyStateMutation; Skip recorded on recommendation |
+| Feedback writes back to block state | ✅ Done | `applyStateMutation`: irrigate → soil_water_readings reset to field_capacity + alerts cleared; spray → pest_observations resolved; all → domain alerts resolved |
 
 ---
 
@@ -206,7 +206,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Inventory page | ✅ 100% (Asset & Consumable tracking with calendar linking) |
 | Database schema | ✅ 100% |
 | Real data ingestion | 🟡 Partial (weather cron ✅; sensor ingest pipeline + computed fields remaining) |
-| AI reasoning engine | 🟡 75% (OpenRouter/Netlify Gateway generation, confidence scoring, accept/edit/skip + state mutation done; full feedback → block state loop remaining) |
+| AI reasoning engine | ✅ 100% (generation, confidence scoring, accept/edit/skip, state mutation, block state feedback loop all done) |
 | Roles & permissions | ✅ 100% |
 | Multi-farm support | ✅ 100% |
 | Localisation (Arabic, Turkish) | ✅ 100% (next-intl + 3 message files + RTL + language switcher + locale dates + locale-aware numbers + AI in user language) |
@@ -257,5 +257,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | 2026-05-30 | Locale-aware number formatting — created `utils/format.ts` with `formatPercent`, `formatTemp`, `formatMeasurement`, `formatNumber` helpers using `Intl.NumberFormat`. KPIGrid, WeatherStrip, BlockStatusGrid updated to render locale-aware values (Eastern Arabic numerals in `ar`, comma decimals in `tr`). |
 | 2026-05-30 | Netlify AI Gateway wired — `NETLIFY_AI_GATEWAY_URL` env var now swaps the base URL in `generateAIRecommendations`; falls back to OpenRouter in dev. AI recommendations also return text in user's active language (`getLocale()` + language instruction injected into system prompt). |
 | 2026-05-30 | Scheduled weather cron — `/api/cron/weather` route fetches current conditions + 7-day forecast from Open-Meteo for every farm with GPS coordinates. Stores farm-level and per-block `weather_snapshots` rows. Secured with `CRON_SECRET`. Designed for Netlify Scheduled Functions (every 3 hr) or any external cron trigger. |
+| 2026-05-30 | Netlify deployment config — `netlify.toml` (build command, `.next` publish dir, `@netlify/plugin-nextjs`, functions directory). `netlify/functions/cron-weather.mts` — Netlify Scheduled Function that calls `/api/cron/weather` every 3 hours via `CRON_SECRET` + `URL` env vars. |
+| 2026-05-30 | AI feedback loop confirmed done — `applyStateMutation` in recommendations/actions.ts already handles: irrigate → insert soil_water_readings reset to field_capacity + resolve soil-water alerts; spray → resolve pest_observations + alerts; all categories → resolve domain alerts. PROGRESS.md updated to reflect ✅ status. |
 
 
