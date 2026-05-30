@@ -2,7 +2,7 @@
 
 > Last updated: 2026-05-30
 
-## Overall Status: ~98% Complete  <!-- multi-farm migration done 2026-05-30 -->
+## Overall Status: ~96% Complete  <!-- weather cron + Netlify Gateway + locale formatting done 2026-05-30 -->
 
 ---
 
@@ -13,7 +13,7 @@
 | Next.js + Tailwind CSS frontend | ✅ Done | Project scaffolded with both |
 | Netlify + Next.js App Router backend | ✅ Done | App Router in use; Netlify config assumed via env |
 | Supabase for DB + Auth | ✅ Done | `utils/supabase/` client, server, middleware wired up |
-| Netlify AI Gateway (LLM) | ❌ Not started | No AI integration exists yet |
+| Netlify AI Gateway (LLM) | ✅ Done | `NETLIFY_AI_GATEWAY_URL` env var swaps base URL in recommendations + cron; falls back to OpenRouter in dev |
 | Auth middleware (route protection) | ✅ Done | `middleware.ts` guards dashboard routes |
 
 ---
@@ -106,7 +106,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 |---|---|---|
 | Supabase client/server setup | ✅ Done | `utils/supabase/` |
 | In-field sensors (15-min updates) | ❌ Not started | No ingest pipeline |
-| Weather forecast API (3-hr updates) | 🟡 Partial | Open-Meteo in WeatherStrip; no scheduled fetch |
+| Weather forecast API (3-hr updates) | ✅ Done | Cron endpoint `/api/cron/weather` fetches Open-Meteo every 3 hr; stores per-farm + per-block snapshots in `weather_snapshots` |
 | Manual logs (irrigation, spray, scouting, etc.) | ❌ Not started | |
 | Initial block data / PDF upload & extraction | ✅ Done | AI extraction of soil/water test results from both PDF and image uploads using OpenRouter + Trigger.dev |
 | Computed fields (ETo, water deficit, GDD, chill hours, risk indices) | ❌ Not started | |
@@ -118,7 +118,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 
 | Requirement | Status | Notes |
 |---|---|---|
-| Netlify AI Gateway integration | 🟡 Partial | Using Anthropic SDK directly (swap base URL for Netlify Gateway in prod) |
+| Netlify AI Gateway integration | ✅ Done | `NETLIFY_AI_GATEWAY_URL` env var swaps base URL; falls back to OpenRouter in dev |
 | Prioritised agronomic recommendations | ✅ Done | Claude Haiku generates per-block recommendations from live DB context |
 | Confidence scoring | ✅ Done | AI returns 0–100 score, shown on card |
 | Accept / Edit / Skip feedback loop | 🟡 Partial | Accept + Edit write to activity_log; Skip recorded on recommendation only |
@@ -162,8 +162,8 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Arabic font | ✅ Done | Noto Sans Arabic loaded conditionally when `locale === 'ar'`; Geist with `latin-ext` for Turkish |
 | Language switcher UI | ✅ Done | Globe icon + one-click dropdown in **TopNav** (visible on every page); simplified mirror in Settings → Language tab |
 | Locale-aware date/weekday formatting | ✅ Done | `Intl.DateTimeFormat(locale, ...)` in WeatherStrip and UpcomingCalendar |
-| Locale-aware number, date, and calendar formats | ❌ Not started | |
-| AI recommendations returned in user's active language | ❌ Not started | |
+| Locale-aware number, date, and calendar formats | ✅ Done | `Intl.NumberFormat(locale)` via `utils/format.ts` — KPIGrid, WeatherStrip, BlockStatusGrid use `formatPercent`, `formatTemp`, `formatMeasurement`, `formatNumber` for locale-aware rendering (Eastern Arabic numerals for ar, comma decimals for tr) |
+| AI recommendations returned in user's active language | ✅ Done | `generateAIRecommendations` reads `getLocale()`, appends language instruction to system prompt when locale ≠ en |
 
 ---
 
@@ -198,18 +198,18 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Project scaffold & tech stack | ✅ 100% |
 | Auth (basic login) | ✅ 100% |
 | Dashboard page | ✅ 100% (Wired to live Supabase data & Open-Meteo) |
-| Settings page | ✅ 100% (All 6 tabs: Account, Team, Block Config, Alert Thresholds, Sensors, Weather) |
-| Navigation | ✅ 80% |
+| Settings page | ✅ 100% (All 7 tabs: Account, Team, Block Config, Alert Thresholds, Sensors, Weather & AI, Language) |
+| Navigation | ✅ 100% (TopNav + Sidebar + BottomNav with More drawer, all role-gated) |
 | Blocks page | ✅ 100% (Phase 4 — satellite map with GPS polygon draw/edit, Go-to-location bar) |
 | Recommendations page | ✅ 100% (UI + edit modal + activity log + AI generation + priority ordering done) |
 | Activity Log page | ✅ 100% (+ manual Log Activity button for supervisor/admin) |
 | Inventory page | ✅ 100% (Asset & Consumable tracking with calendar linking) |
 | Database schema | ✅ 100% |
-| Real data ingestion | ❌ 0% |
-| AI reasoning engine | ❌ 0% |
+| Real data ingestion | 🟡 Partial (weather cron ✅; sensor ingest pipeline + computed fields remaining) |
+| AI reasoning engine | 🟡 75% (OpenRouter/Netlify Gateway generation, confidence scoring, accept/edit/skip + state mutation done; full feedback → block state loop remaining) |
 | Roles & permissions | ✅ 100% |
 | Multi-farm support | ✅ 100% |
-| Localisation (Arabic, Turkish) | ❌ 0% |
+| Localisation (Arabic, Turkish) | ✅ 100% (next-intl + 3 message files + RTL + language switcher + locale dates + locale-aware numbers + AI in user language) |
 | Mobile optimisation | ✅ 100% (bottom nav, tap targets, swipe, service worker, per-page layout, offline sync, lazy-load all done) |
 
 ---
@@ -254,5 +254,8 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | 2026-05-29 | Farm rename in Settings — Added "Farm Identity" section at the top of the Weather & AI tab (admin only). Shows current farm name and address with Save button wired to the existing `updateFarm` server action. Farm name in the right-edge tab bar updates on next navigation. |
 | 2026-05-29 | Farm creation flow simplified — CreateFarmWizard reduced to 2 steps (name/location → GPS). On completion it navigates directly to the new farm's dashboard, which already shows the "Welcome" onboarding cards (Add block, Log soil tests, etc.). Removed redundant success step that duplicated the same setup cards. Also removed FarmSwitcher from Sidebar (caused hydration error and showed a confusing "All Farms" link); farm switching is now handled exclusively by the right-edge tab bar. |
 | 2026-05-30 | DB migration applied — `farms` and `farm_members` tables created with full RLS policies; `farm_id` FK column added to `blocks`. Multi-farm support now fully operational end-to-end. |
+| 2026-05-30 | Locale-aware number formatting — created `utils/format.ts` with `formatPercent`, `formatTemp`, `formatMeasurement`, `formatNumber` helpers using `Intl.NumberFormat`. KPIGrid, WeatherStrip, BlockStatusGrid updated to render locale-aware values (Eastern Arabic numerals in `ar`, comma decimals in `tr`). |
+| 2026-05-30 | Netlify AI Gateway wired — `NETLIFY_AI_GATEWAY_URL` env var now swaps the base URL in `generateAIRecommendations`; falls back to OpenRouter in dev. AI recommendations also return text in user's active language (`getLocale()` + language instruction injected into system prompt). |
+| 2026-05-30 | Scheduled weather cron — `/api/cron/weather` route fetches current conditions + 7-day forecast from Open-Meteo for every farm with GPS coordinates. Stores farm-level and per-block `weather_snapshots` rows. Secured with `CRON_SECRET`. Designed for Netlify Scheduled Functions (every 3 hr) or any external cron trigger. |
 
 

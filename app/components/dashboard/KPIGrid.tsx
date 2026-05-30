@@ -1,6 +1,7 @@
 import { Droplets, CloudRain, AlertTriangle, Timer } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
+import { formatPercent, formatMeasurement, formatNumber } from "@/utils/format";
 
 async function getKPIData(farmId: string) {
   const supabase = await createClient();
@@ -69,7 +70,7 @@ async function getKPIData(farmId: string) {
 }
 
 export default async function KPIGrid({ farmId }: { farmId: string }) {
-  const t = await getTranslations('dashboard.kpi');
+  const [t, locale] = await Promise.all([getTranslations('dashboard.kpi'), getLocale()]);
   const { avgSoilMoisture, rainForecastMm, activeAlertsCount, diffHrs } = await getKPIData(farmId);
 
   let nextIrrigationStr: string;
@@ -86,7 +87,7 @@ export default async function KPIGrid({ farmId }: { farmId: string }) {
   const kpis = [
     {
       name: t('avgSoilMoisture'),
-      value: avgSoilMoisture !== null ? `${avgSoilMoisture}%` : "N/A",
+      value: avgSoilMoisture !== null ? formatPercent(avgSoilMoisture, locale) : "N/A",
       change: t('liveSensorAverage'),
       changeType: "neutral",
       icon: Droplets,
@@ -95,7 +96,7 @@ export default async function KPIGrid({ farmId }: { farmId: string }) {
     },
     {
       name: t('rainForecast'),
-      value: `${rainForecastMm} mm`,
+      value: formatMeasurement(rainForecastMm, 'mm', locale),
       change: t('expectedTotal'),
       changeType: rainForecastMm > 0 ? "positive" : "neutral",
       icon: CloudRain,
@@ -104,7 +105,7 @@ export default async function KPIGrid({ farmId }: { farmId: string }) {
     },
     {
       name: t('activeAlerts'),
-      value: String(activeAlertsCount),
+      value: formatNumber(activeAlertsCount, locale),
       change: activeAlertsCount > 0 ? t('unresolved', { count: activeAlertsCount }) : t('allSystemsNominal'),
       changeType: activeAlertsCount > 0 ? "negative" : "positive",
       icon: AlertTriangle,

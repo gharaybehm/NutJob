@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
+import { formatPercent } from "@/utils/format";
 
 interface BlockStatusItem {
   id: string;
@@ -9,7 +10,7 @@ interface BlockStatusItem {
   area: number;
   areaUnit: string;
   status: 'green' | 'amber' | 'red';
-  moisture: string;
+  moisture: number | null;
   issue: string | null;
 }
 
@@ -27,7 +28,7 @@ async function getBlocks(farmId: string): Promise<BlockStatusItem[]> {
 
   return (dbBlocks ?? []).map((b: { id: string; name: string; variety: string; area: number; area_unit: string }) => {
     const moistureRow = (soilLatest ?? []).find(s => s.block_id === b.id);
-    const moisture = moistureRow?.soil_moisture != null ? `${moistureRow.soil_moisture}%` : "N/A";
+    const moisture = moistureRow?.soil_moisture != null ? moistureRow.soil_moisture : null;
     const blockAlerts = (activeAlerts ?? []).filter((a: { block_id: string; severity: string; message: string }) => a.block_id === b.id);
     let status: 'green' | 'amber' | 'red' = 'green';
     let issue: string | null = null;
@@ -43,7 +44,7 @@ async function getBlocks(farmId: string): Promise<BlockStatusItem[]> {
 }
 
 export default async function BlockStatusGrid({ farmId }: { farmId: string }) {
-  const [blocks, t] = await Promise.all([getBlocks(farmId), getTranslations('dashboard.blockStatus')]);
+  const [blocks, t, locale] = await Promise.all([getBlocks(farmId), getTranslations('dashboard.blockStatus'), getLocale()]);
   const count = blocks.length;
   const blocksHref = `/${farmId}/blocks`;
 
@@ -91,7 +92,7 @@ export default async function BlockStatusGrid({ farmId }: { farmId: string }) {
                   {block.variety} • {block.area} {block.areaUnit}
                 </div>
                 <div className="mt-4 flex items-center justify-between text-xs font-medium">
-                  <span className="text-slate-600 dark:text-slate-300">{t('moisture', { value: block.moisture })}</span>
+                  <span className="text-slate-600 dark:text-slate-300">{t('moisture', { value: block.moisture !== null ? formatPercent(block.moisture, locale) : 'N/A' })}</span>
                 </div>
                 {block.issue && (
                   <div className={`mt-2 text-xs font-medium truncate ${

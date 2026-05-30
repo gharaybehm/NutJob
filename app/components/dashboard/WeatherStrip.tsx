@@ -1,5 +1,6 @@
 import { Sun, Cloud, CloudRain, CloudLightning, CloudSnow, CloudDrizzle, CloudFog } from "lucide-react";
 import { getTranslations, getLocale } from "next-intl/server";
+import { formatTemp, formatPercent } from "@/utils/format";
 
 function getWeatherIcon(code: number) {
   if (code === 0) return Sun;
@@ -62,11 +63,11 @@ export default async function WeatherStrip({ farmId: _farmId }: { farmId: string
               <span className="text-xs text-slate-500 mb-2">{day.date}</span>
               <Icon className={`h-8 w-8 mb-2 ${day.rain > 50 ? 'text-blue-500' : day.rain > 0 ? 'text-slate-400' : 'text-amber-400'}`} />
               <div className="flex gap-2 text-sm font-medium">
-                <span className="text-slate-900 dark:text-white" dir="ltr">{day.tempH}°</span>
-                <span className="text-slate-400" dir="ltr">{day.tempL}°</span>
+                <span className="text-slate-900 dark:text-white" dir="ltr">{formatTemp(day.tempH, locale)}</span>
+                <span className="text-slate-400" dir="ltr">{formatTemp(day.tempL, locale)}</span>
               </div>
               {day.rain > 0 && (
-                <span className="text-xs text-blue-500 font-medium mt-1" dir="ltr">{day.rain}%</span>
+                <span className="text-xs text-blue-500 font-medium mt-1" dir="ltr">{formatPercent(day.rain, locale)}</span>
               )}
             </div>
           );

@@ -4,10 +4,14 @@ import OpenAI from "openai";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { getLocale } from "next-intl/server";
+import { localeToLanguageName } from "@/utils/format";
+
+const AI_BASE_URL = process.env.NETLIFY_AI_GATEWAY_URL || "https://openrouter.ai/api/v1";
 
 const openrouter = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY ?? "",
-  baseURL: "https://openrouter.ai/api/v1",
+  baseURL: AI_BASE_URL,
   defaultHeaders: {
     "HTTP-Referer": "https://nutjob.farm",
     "X-Title": "NutJob Farm Management",
@@ -255,6 +259,8 @@ export async function editRecommendation(
 export async function generateAIRecommendations(): Promise<{ count: number; model: string }> {
   const supabase = await createClient();
   const admin = createAdminClient();
+  const locale = await getLocale();
+  const languageName = localeToLanguageName(locale);
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) throw new Error("Unauthorised");
@@ -348,10 +354,14 @@ export async function generateAIRecommendations(): Promise<{ count: number; mode
     return ctx;
   }).join("\n\n");
 
+  const languageInstruction = locale !== 'en'
+    ? `\n\nIMPORTANT: Write ALL title and rationale text in ${languageName}. The JSON keys must remain in English.`
+    : '';
+
   const response = await openrouter.chat.completions.create({
     model: OPENROUTER_MODEL,
     messages: [
-      { role: "system", content: AI_SYSTEM_PROMPT },
+      { role: "system", content: AI_SYSTEM_PROMPT + languageInstruction },
       {
         role: "user",
         content: `Today: ${today}\n\nFarm data:\n\n${blockContexts}\n\nGenerate prioritised recommendations.`,
