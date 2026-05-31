@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/utils/supabase/server';
 
 /**
  * GET /api/plant-varieties?plantId={id}&commonName={name}
@@ -35,6 +36,10 @@ const CROP_VARIETIES: Record<string, string[]> = {
 type TrefleSubspecies = { common_name?: string | null; name: string };
 
 export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const plantId = request.nextUrl.searchParams.get('plantId');
   const commonName = (request.nextUrl.searchParams.get('commonName') ?? '').toLowerCase().trim();
 

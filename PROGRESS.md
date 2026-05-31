@@ -1,6 +1,6 @@
 # NutJob — Progress vs Requirements
 
-> Last updated: 2026-05-30
+> Last updated: 2026-05-31
 
 ## Overall Status: ~97% Complete  <!-- Netlify scheduling + feedback loop done 2026-05-30 -->
 
@@ -259,5 +259,4 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | 2026-05-30 | Scheduled weather cron — `/api/cron/weather` route fetches current conditions + 7-day forecast from Open-Meteo for every farm with GPS coordinates. Stores farm-level and per-block `weather_snapshots` rows. Secured with `CRON_SECRET`. Designed for Netlify Scheduled Functions (every 3 hr) or any external cron trigger. |
 | 2026-05-30 | Netlify deployment config — `netlify.toml` (build command, `.next` publish dir, `@netlify/plugin-nextjs`, functions directory). `netlify/functions/cron-weather.mts` — Netlify Scheduled Function that calls `/api/cron/weather` every 3 hours via `CRON_SECRET` + `URL` env vars. |
 | 2026-05-30 | AI feedback loop confirmed done — `applyStateMutation` in recommendations/actions.ts already handles: irrigate → insert soil_water_readings reset to field_capacity + resolve soil-water alerts; spray → resolve pest_observations + alerts; all categories → resolve domain alerts. PROGRESS.md updated to reflect ✅ status. |
-
-
+| 2026-05-31 | Pre-publish security review — 6 fixes applied: (1) Removed hardcoded local developer path (`C:/Users/mhrg7/...`) and `fs`/`path` debug block from `extract-soil-test` route; (2) Added Supabase auth check to all unauthenticated API routes (`extract-soil-test`, `plant-search`, `plant-varieties`) to prevent LLM/API cost abuse; (3) Added 20 MB file size limit to `extract-soil-test` upload; (4) Added HTTP security headers to `next.config.ts` (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, Content-Security-Policy); (5) Wrapped `JSON.parse(boundary)` in try-catch in `blocks.ts` (create + update actions); (6) Escaped SQL wildcards (`%`, `_`, `\`) in `ilike` search in both activity actions files. |

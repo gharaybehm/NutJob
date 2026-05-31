@@ -50,7 +50,8 @@ export async function getActivityLog(params?: {
   }
 
   if (params?.search) {
-    query = query.ilike("title", `%${params.search}%`);
+    const escaped = params.search.replace(/[%_\\]/g, '\\$&');
+    query = query.ilike("title", `%${escaped}%`);
   }
 
   if (params?.activity_type && params.activity_type !== "all") {

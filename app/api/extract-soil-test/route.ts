@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { tasks, runs } from "@trigger.dev/sdk/v3";
-import fs from 'fs';
-import path from 'path';
+import { createClient } from '@/utils/supabase/server';
 import OpenAI from 'openai';
 
 // Initialize OpenAI SDK configured for OpenRouter
@@ -74,10 +73,19 @@ Return ONLY a valid JSON object matching this structure:
 const pdfParse = require('pdf-parse/lib/pdf-parse.js') as (data: Buffer) => Promise<{ text: string }>;
 
 export async function POST(req: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+
+    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: 'File too large. Maximum size is 20 MB.' }, { status: 413 });
+    }
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -184,14 +192,6 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     const error = err as Error;
     console.error('[extract-soil-test] Unexpected error:', error);
-    
-    const logDir = 'C:/Users/mhrg7/.gemini/antigravity-ide/brain/5db26700-b878-468f-91e4-ea9f714f9a3e/scratch';
-    if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(logDir, 'error.log'),
-      `Unexpected error: ${error.message}\nStack: ${error.stack}`
-    );
-    
     return NextResponse.json({
       extracted: {},
       message: 'Could not read this file — please fill in manually.'

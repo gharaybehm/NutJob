@@ -35,7 +35,12 @@ export async function createBlock(
   const mapColSpan = values.mapColSpan ? Number(values.mapColSpan) : 1;
   const mapRowSpan = values.mapRowSpan ? Number(values.mapRowSpan) : 1;
 
-  const boundary = values.boundary ? JSON.parse(values.boundary) : null;
+  let boundary = null;
+  try {
+    boundary = values.boundary ? JSON.parse(values.boundary) : null;
+  } catch {
+    return { error: 'Invalid boundary data' };
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('blocks') as any).insert({
@@ -71,7 +76,12 @@ export async function updateBlock(
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
 
-  const boundary = values.boundary ? JSON.parse(values.boundary) : undefined;
+  let boundary: unknown[] | undefined;
+  try {
+    boundary = values.boundary ? JSON.parse(values.boundary) : undefined;
+  } catch {
+    return { error: 'Invalid boundary data' };
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('blocks') as any).update({
