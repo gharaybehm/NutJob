@@ -21,9 +21,10 @@ interface Props {
   initialBlocks?: Block[];
   userRole?: "admin" | "supervisor" | "worker";
   farmId: string;
+  farmCenter?: { lat: number; lng: number; zoom?: number };
 }
 
-export default function BlocksPage({ initialBlocks, userRole = "worker", farmId }: Props) {
+export default function BlocksPage({ initialBlocks, userRole = "worker", farmId, farmCenter }: Props) {
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks ?? []);
   const [profiles, setProfiles] = useState<Record<string, BlockProfile>>(() => {
     const seed: Record<string, BlockProfile> = { ...BLOCK_PROFILES };
@@ -379,6 +380,7 @@ export default function BlocksPage({ initialBlocks, userRole = "worker", farmId 
             onBoundaryEdit={handleBoundaryEdit}
             onBoundaryDelete={handleBoundaryDelete}
             mapHandleRef={mapHandleRef}
+            farmCenter={farmCenter}
           />
           </div>{/* end map relative wrapper */}
 

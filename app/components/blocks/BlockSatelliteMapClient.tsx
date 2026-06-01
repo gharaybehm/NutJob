@@ -8,7 +8,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import 'leaflet-draw';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Polygon, Tooltip, useMap } from 'react-leaflet';
 import type { Block, LatLng } from './types';
 
@@ -198,9 +198,35 @@ export interface BlockSatelliteMapClientProps {
   onBoundaryEdit: (id: string, boundary: LatLng[]) => void;
   onBoundaryDelete: (id: string) => void;
   mapHandleRef: React.MutableRefObject<MapHandle | null>;
+  farmCenter?: { lat: number; lng: number; zoom?: number };
 }
 
-const FARM_CENTER: [number, number] = [38.08, 33.57];
+const DEFAULT_CENTER: [number, number] = [0, 0];
+const DEFAULT_ZOOM = 2;
+
+/** Fit the map view to block boundaries on mount */
+function AutoFitBounds({ blocks }: { blocks: Block[] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const allPoints: [number, number][] = [];
+    for (const block of blocks) {
+      if (block.boundary && block.boundary.length >= 3) {
+        for (const p of block.boundary) {
+          allPoints.push([p.lat, p.lng]);
+        }
+      }
+    }
+    if (allPoints.length > 0) {
+      const bounds = L.latLngBounds(allPoints);
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 18, animate: false });
+    }
+  // Only run on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return null;
+}
 
 export default function BlockSatelliteMapClient({
   blocks,
@@ -212,14 +238,39 @@ export default function BlockSatelliteMapClient({
   onBoundaryEdit,
   onBoundaryDelete,
   mapHandleRef,
+  farmCenter,
 }: BlockSatelliteMapClientProps) {
+  // Compute initial center: block boundaries centroid > farm GPS > default
+  const { center, zoom } = useMemo(() => {
+    // First try: centroid of all block boundaries
+    const allPoints: [number, number][] = [];
+    for (const block of blocks) {
+      if (block.boundary && block.boundary.length >= 3) {
+        for (const p of block.boundary) {
+          allPoints.push([p.lat, p.lng]);
+        }
+      }
+    }
+    if (allPoints.length > 0) {
+      const lat = allPoints.reduce((s, p) => s + p[0], 0) / allPoints.length;
+      const lng = allPoints.reduce((s, p) => s + p[1], 0) / allPoints.length;
+      return { center: [lat, lng] as [number, number], zoom: 15 };
+    }
+    // Second try: farm GPS
+    if (farmCenter) {
+      return { center: [farmCenter.lat, farmCenter.lng] as [number, number], zoom: farmCenter.zoom ?? 15 };
+    }
+    // Fallback
+    return { center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     // isolation:isolate creates a self-contained stacking context for the map,
     // so Leaflet's internal z-indexes (200–1000) never compete with page modals.
     <div style={{ borderRadius: '12px', overflow: 'hidden', isolation: 'isolate' }}>
       <MapContainer
-        center={FARM_CENTER}
-        zoom={15}
+        center={center}
+        zoom={zoom}
         style={{ height: '480px', width: '100%' }}
       >
         {/* Esri World Imagery — free satellite tiles, no API key */}
@@ -264,6 +315,9 @@ export default function BlockSatelliteMapClient({
             onBoundaryDelete={onBoundaryDelete}
           />
         )}
+
+        {/* Auto-fit to block boundaries on mount */}
+        <AutoFitBounds blocks={blocks} />
 
         <MapFlyToController handleRef={mapHandleRef} />
       </MapContainer>

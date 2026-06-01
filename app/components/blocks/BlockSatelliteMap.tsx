@@ -31,6 +31,7 @@ interface Props {
   onBoundaryEdit: (id: string, boundary: LatLng[]) => void;
   onBoundaryDelete: (id: string) => void;
   mapHandleRef: React.MutableRefObject<MapHandle | null>;
+  farmCenter?: { lat: number; lng: number; zoom?: number };
 }
 
 export type { MapHandle };

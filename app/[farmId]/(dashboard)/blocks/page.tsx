@@ -56,11 +56,22 @@ export default async function BlocksRoute({ params }: { params: Promise<{ farmId
 
   const initialBlocks: Block[] = error || !data ? [] : data.map(rowToBlock);
 
+  // Fetch farm GPS center for the satellite map
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: farm } = await (supabase as any).from('farms')
+    .select('gps_lat, gps_lng, gps_zoom')
+    .eq('id', farmId)
+    .single();
+  const farmCenter = farm?.gps_lat != null && farm?.gps_lng != null
+    ? { lat: farm.gps_lat as number, lng: farm.gps_lng as number, zoom: (farm.gps_zoom as number) ?? 15 }
+    : undefined;
+
   return (
     <BlocksPage
       initialBlocks={initialBlocks}
       userRole={profile?.role || 'worker'}
       farmId={farmId}
+      farmCenter={farmCenter}
     />
   );
 }
