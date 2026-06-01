@@ -61,9 +61,9 @@ export default async function SettingsPage({
     .eq('farm_id', farmId)
     .order('name')
 
-  // Fetch farm name and address for the Farm Identity section
+  // Fetch farm details for the Farm Identity and Weather sections
   const { data: farmData } = await db.from('farms')
-    .select('name, address')
+    .select('name, address, gps_lat, gps_lng')
     .eq('id', farmId)
     .single()
 
@@ -88,6 +88,8 @@ export default async function SettingsPage({
         farmId={farmId}
         farmName={farmData?.name ?? ''}
         farmAddress={farmData?.address ?? ''}
+        farmGpsLat={farmData?.gps_lat ?? null}
+        farmGpsLng={farmData?.gps_lng ?? null}
       />
     </div>
   )

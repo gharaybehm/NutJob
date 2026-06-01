@@ -67,6 +67,8 @@ interface SettingsFormsProps {
   farmId?: string
   farmName?: string
   farmAddress?: string
+  farmGpsLat?: number | null
+  farmGpsLng?: number | null
 }
 
 type TabId = 'profile' | 'team' | 'blocks' | 'alerts' | 'sensors' | 'weather' | 'language'
@@ -82,8 +84,7 @@ const DEFAULT_PREFS = {
 }
 type NotifPrefs = typeof DEFAULT_PREFS
 
-const STORAGE_KEY_PREFS   = 'nutjob:notification_prefs'
-const STORAGE_KEY_WEATHER = 'nutjob:weather_coords'
+const STORAGE_KEY_PREFS = 'nutjob:notification_prefs'
 
 function loadFromStorage<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback
@@ -662,15 +663,19 @@ function SensorConnectionsTab() {
 
 // ── Tab 6: Weather API ────────────────────────────────────────────────────────
 
-const DEFAULT_WEATHER = { lat: '36.8969', lng: '30.7133' } // Antalya default
-
-function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initialAddress = '' }: {
+function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initialAddress = '', initialLat = null, initialLng = null }: {
   farmId?: string
   farmName?: string
   farmAddress?: string
+  initialLat?: number | null
+  initialLng?: number | null
 }) {
-  const [coords, setCoords] = useState(() => loadFromStorage(STORAGE_KEY_WEATHER, DEFAULT_WEATHER))
-  const [saved, setSaved] = useState(false)
+  const [coords, setCoords] = useState({
+    lat: initialLat != null ? String(initialLat) : '',
+    lng: initialLng != null ? String(initialLng) : '',
+  })
+  const [gpsSaving, setGpsSaving] = useState(false)
+  const [gpsStatus, setGpsStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<'ok' | 'error' | null>(null)
 
@@ -691,10 +696,18 @@ function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initia
     )
   }
 
-  function handleSave() {
-    localStorage.setItem(STORAGE_KEY_WEATHER, JSON.stringify(coords))
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+  async function handleSave() {
+    if (!farmId) return
+    setGpsSaving(true)
+    setGpsStatus(null)
+    const parsedLat = coords.lat ? parseFloat(coords.lat) : null
+    const parsedLng = coords.lng ? parseFloat(coords.lng) : null
+    const result = await updateFarm(farmId, { gps_lat: parsedLat, gps_lng: parsedLng })
+    setGpsSaving(false)
+    setGpsStatus(result.error
+      ? { type: 'error', message: result.error }
+      : { type: 'success', message: 'GPS coordinates saved. Dashboard weather will update on next visit.' }
+    )
   }
 
   async function handleTest() {
@@ -762,24 +775,26 @@ function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initia
             <div>
               <label htmlFor="lat" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Latitude</label>
               <input id="lat" type="number" step="0.0001" value={coords.lat} onChange={e => setCoords(c => ({ ...c, lat: e.target.value }))}
-                placeholder="e.g. 36.8969"
+                placeholder="e.g. 31.7683"
                 className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition" />
             </div>
             <div>
               <label htmlFor="lng" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Longitude</label>
               <input id="lng" type="number" step="0.0001" value={coords.lng} onChange={e => setCoords(c => ({ ...c, lng: e.target.value }))}
-                placeholder="e.g. 30.7133"
+                placeholder="e.g. 35.2137"
                 className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition" />
             </div>
           </div>
-          <p className="text-xs text-slate-400 dark:text-slate-500 -mt-2">Enter your farm&apos;s GPS coordinates. Used by the Dashboard weather strip and 7-day forecast.</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 -mt-2">Enter your farm&apos;s GPS coordinates. Saved to the database — used by the Dashboard weather strip and all team members.</p>
+
+          <StatusBanner status={gpsStatus} />
 
           <div className="flex items-center gap-3">
-            <button onClick={handleSave} className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-all">
-              {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-              {saved ? 'Saved!' : 'Save Coordinates'}
+            <button onClick={handleSave} disabled={gpsSaving} className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+              {gpsSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save Coordinates
             </button>
-            <button onClick={handleTest} disabled={testing} className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-60">
+            <button onClick={handleTest} disabled={testing || !coords.lat || !coords.lng} className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-60">
               {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               Test Connection
             </button>
@@ -794,13 +809,6 @@ function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initia
               <WifiOff className="h-4 w-4" /> Connection failed — check the coordinates and your internet connection.
             </div>
           )}
-
-          <div className="flex items-start gap-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 p-3">
-            <Info className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Coordinates are stored locally in your browser. A future update will persist these globally to Supabase so all team members use the same farm location.
-            </p>
-          </div>
         </div>
       </SectionCard>
 
@@ -899,6 +907,8 @@ export default function SettingsForms({
   farmId,
   farmName,
   farmAddress,
+  farmGpsLat,
+  farmGpsLng,
 }: SettingsFormsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('profile')
 
@@ -939,7 +949,7 @@ export default function SettingsForms({
       {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} />}
       {activeTab === 'alerts'   && <NotificationAlertsTab />}
       {activeTab === 'sensors'  && <SensorConnectionsTab />}
-      {activeTab === 'weather'  && <WeatherAPITab farmId={farmId} farmName={farmName} farmAddress={farmAddress} />}
+      {activeTab === 'weather'  && <WeatherAPITab farmId={farmId} farmName={farmName} farmAddress={farmAddress} initialLat={farmGpsLat} initialLng={farmGpsLng} />}
       {activeTab === 'language' && <LanguageTab />}
     </div>
   )

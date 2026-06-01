@@ -162,5 +162,6 @@ export async function updateFarm(
 
   revalidatePath('/farms');
   revalidatePath(`/${farmId}/settings`);
+  revalidatePath(`/${farmId}/dashboard`);
   return {};
 }
