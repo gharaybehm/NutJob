@@ -5,11 +5,9 @@ import { createClient } from '@/utils/supabase/server';
 import type { BlockFormValues } from '@/app/components/blocks/BlockFormModal';
 import type { Block, LatLng } from '@/app/components/blocks/types';
 
-/** Derive a short, unique text ID from the block name. */
-function deriveId(name: string, existing: string[]): string {
-  const raw = name.trim().replace(/\s+/g, '').slice(0, 4).toUpperCase();
-  if (raw && !existing.includes(raw)) return raw;
-  return `BLK${Date.now()}`;
+/** Generate a unique block ID. */
+function generateBlockId(): string {
+  return crypto.randomUUID();
 }
 
 /** Auto-position the new block after the last one in the grid. */
@@ -28,7 +26,7 @@ export async function createBlock(
 ): Promise<{ error?: string; id?: string }> {
   const supabase = await createClient();
 
-  const id = deriveId(values.name, existingBlocks.map(b => b.id));
+  const id = generateBlockId();
   const auto = nextMapPos(existingBlocks);
   const mapCol     = values.mapCol     ? Number(values.mapCol)     : auto.col;
   const mapRow     = values.mapRow     ? Number(values.mapRow)     : auto.row;

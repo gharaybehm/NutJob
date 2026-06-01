@@ -114,10 +114,7 @@ export default function BlocksPage({ initialBlocks, userRole = "worker", farmId 
         }
       });
     } else {
-      const rawId = values.name.trim().replace(/\s+/g, '').slice(0, 4).toUpperCase();
-      const tempId = (rawId && !blocks.some(b => b.id === rawId))
-        ? rawId
-        : `BLK${Date.now()}`;
+      const tempId = crypto.randomUUID();
       const lastBlock = blocks[blocks.length - 1];
       const lastCol = (lastBlock?.mapPos.col ?? 0) + (lastBlock?.mapPos.colSpan ?? 1);
       const col = lastCol > 2 ? 0 : lastCol;
