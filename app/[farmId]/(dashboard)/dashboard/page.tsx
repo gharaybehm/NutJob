@@ -10,6 +10,8 @@ import ActivityFeed from "@/app/components/dashboard/ActivityFeed";
 import { Layers, CalendarDays, FlaskConical, Cpu, ArrowRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
+export const dynamic = 'force-dynamic';
+
 function KPISkeleton() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

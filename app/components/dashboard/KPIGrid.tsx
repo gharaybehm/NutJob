@@ -52,7 +52,7 @@ async function getKPIData(farmId: string) {
     try {
       const res = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&daily=precipitation_sum&timezone=auto`,
-        { next: { revalidate: 3600 } }
+        { cache: 'no-store' }
       );
       if (res.ok) {
         const json = await res.json();

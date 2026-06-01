@@ -32,7 +32,8 @@ export default async function WeatherStrip({ farmId }: { farmId: string }) {
 
   let forecast: { day: string; date: string; icon: ReturnType<typeof getWeatherIcon>; tempH: number; tempL: number; rain: number; rawDate: string }[] = [];
   try {
-    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`, { next: { revalidate: 3600 } });
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`;
+    const res = await fetch(weatherUrl, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       forecast = data.daily.time.map((timeStr: string, index: number) => {
