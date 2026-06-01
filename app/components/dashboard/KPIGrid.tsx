@@ -2,6 +2,7 @@ import { Droplets, CloudRain, AlertTriangle, Timer } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getTranslations, getLocale } from "next-intl/server";
 import { formatPercent, formatMeasurement, formatNumber } from "@/utils/format";
+import { getFarmCoords } from "@/utils/farm-location";
 
 async function getKPIData(farmId: string) {
   const supabase = await createClient();
@@ -46,19 +47,22 @@ async function getKPIData(farmId: string) {
     : null;
 
   let rainForecastMm = 0;
-  try {
-    const res = await fetch(
-      "https://api.open-meteo.com/v1/forecast?latitude=38.08&longitude=33.57&daily=precipitation_sum&timezone=auto",
-      { next: { revalidate: 3600 } }
-    );
-    if (res.ok) {
-      const json = await res.json();
-      rainForecastMm = Math.round(
-        (json.daily?.precipitation_sum ?? []).reduce((acc: number, v: number) => acc + (v || 0), 0)
+  const coords = await getFarmCoords(farmId);
+  if (coords) {
+    try {
+      const res = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&daily=precipitation_sum&timezone=auto`,
+        { next: { revalidate: 3600 } }
       );
+      if (res.ok) {
+        const json = await res.json();
+        rainForecastMm = Math.round(
+          (json.daily?.precipitation_sum ?? []).reduce((acc: number, v: number) => acc + (v || 0), 0)
+        );
+      }
+    } catch {
+      // Open-Meteo unavailable — 0 shown
     }
-  } catch {
-    // Open-Meteo unavailable — 0 shown
   }
 
   const nextIrrig = upcomingIrrigation?.[0];

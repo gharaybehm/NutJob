@@ -1,6 +1,7 @@
 import { Sun, Cloud, CloudRain, CloudLightning, CloudSnow, CloudDrizzle, CloudFog } from "lucide-react";
 import { getTranslations, getLocale } from "next-intl/server";
 import { formatTemp, formatPercent } from "@/utils/format";
+import { getFarmCoords } from "@/utils/farm-location";
 
 function getWeatherIcon(code: number) {
   if (code === 0) return Sun;
@@ -13,12 +14,25 @@ function getWeatherIcon(code: number) {
   return Sun;
 }
 
-export default async function WeatherStrip({ farmId: _farmId }: { farmId: string }) {
-  const [t, locale] = await Promise.all([getTranslations('dashboard.weather'), getLocale()]);
+export default async function WeatherStrip({ farmId }: { farmId: string }) {
+  const [t, locale, coords] = await Promise.all([getTranslations('dashboard.weather'), getLocale(), getFarmCoords(farmId)]);
+
+  if (!coords) {
+    return (
+      <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <div className="flex items-center justify-between mb-4 px-2">
+          <h2 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">{t('title')}</h2>
+        </div>
+        <div className="text-sm text-slate-500 px-2">{t('failedToLoad')}</div>
+      </div>
+    );
+  }
+
+  const coordLabel = `${coords.latitude.toFixed(2)}°N, ${coords.longitude.toFixed(2)}°E`;
 
   let forecast: { day: string; date: string; icon: ReturnType<typeof getWeatherIcon>; tempH: number; tempL: number; rain: number; rawDate: string }[] = [];
   try {
-    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=38.08&longitude=33.57&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto', { next: { revalidate: 3600 } });
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`, { next: { revalidate: 3600 } });
     if (res.ok) {
       const data = await res.json();
       forecast = data.daily.time.map((timeStr: string, index: number) => {
@@ -41,7 +55,7 @@ export default async function WeatherStrip({ farmId: _farmId }: { farmId: string
       <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <div className="flex items-center justify-between mb-4 px-2">
           <h2 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">{t('title')}</h2>
-          <span className="text-sm text-slate-500">38.08°N, 33.57°E</span>
+          <span className="text-sm text-slate-500">{coordLabel}</span>
         </div>
         <div className="text-sm text-slate-500 px-2">{t('failedToLoad')}</div>
       </div>
@@ -52,7 +66,7 @@ export default async function WeatherStrip({ farmId: _farmId }: { farmId: string
     <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
       <div className="flex items-center justify-between mb-4 px-2">
         <h2 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">{t('title')}</h2>
-        <span className="text-sm text-slate-500">38.08°N, 33.57°E</span>
+        <span className="text-sm text-slate-500">{coordLabel}</span>
       </div>
       <div className="flex w-full overflow-x-auto gap-4 pb-2">
         {forecast.map((day) => {
