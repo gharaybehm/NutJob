@@ -6,6 +6,8 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { getFarms } from "@/app/actions/farms";
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardLayout({
   children,
   params,

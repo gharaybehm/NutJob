@@ -15,8 +15,8 @@ export default async function FarmsPage() {
 
   const farms = await getFarms();
 
-  // If user already has farms, go straight to the first one — tabs handle switching
-  if (farms.length > 0) {
+  // Single farm: skip the picker and go straight in
+  if (farms.length === 1) {
     redirect(`/${farms[0].id}/dashboard`);
   }
 

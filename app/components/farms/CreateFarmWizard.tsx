@@ -71,6 +71,7 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
       }
       // Go straight to the new farm's dashboard — it shows the setup steps
       router.push(`/${result.farmId}/dashboard`);
+      router.refresh();
       handleClose();
     });
   }

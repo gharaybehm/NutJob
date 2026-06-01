@@ -64,6 +64,7 @@ export async function createBlock(
   if (error) return { error: error.message };
 
   revalidatePath(`/${farmId}/blocks`);
+  revalidatePath(`/${farmId}/dashboard`);
   return { id };
 }
 
@@ -103,6 +104,7 @@ export async function updateBlock(
   if (error) return { error: error.message };
 
   revalidatePath(`/${farmId}/blocks`);
+  revalidatePath(`/${farmId}/dashboard`);
   return {};
 }
 
@@ -121,6 +123,7 @@ export async function updateBlockBoundary(
   if (error) return { error: error.message };
 
   revalidatePath(`/${farmId}/blocks`);
+  revalidatePath(`/${farmId}/dashboard`);
   return {};
 }
 
