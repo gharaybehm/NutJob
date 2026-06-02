@@ -1,6 +1,6 @@
 # NutJob — Progress vs Requirements
 
-> Last updated: 2026-06-01
+> Last updated: 2026-06-02
 
 ## Overall Status: ~97% Complete  <!-- Netlify scheduling + feedback loop done 2026-05-30 -->
 
@@ -18,7 +18,7 @@
 
 ---
 
-## 📄 Pages — 7 Required
+## 📄 Pages — 8 Required
 
 ### 1. Login Page — ✅ 100% Done
 - Email + password form built (`app/(auth)/login/page.tsx`)
@@ -87,7 +87,16 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 - Shows block name, performed-by, and description per entry ✅
 - **"Log Activity" button** (supervisor/admin only) — opens `LogActivityModal` with activity type grid, title, block selector, datetime picker, and notes; inserts directly into `activity_log` via server action with optimistic UI prepend ✅
 
-### 7. Settings Page — ✅ 100% Done
+### 7. Inventory Page — ✅ 100% Done
+- Route: `app/[farmId]/(dashboard)/inventory/page.tsx` ✅
+- `InventoryPage.tsx` — asset and consumable tabs with role-based permissions (admin/supervisor edit, worker read-only) ✅
+- **Asset tracking** — `AssetCard.tsx` with status badges, maintenance log history ✅
+- **Consumable tracking** — `ConsumableRow.tsx` with quantity levels, low-stock alerts ✅
+- CRUD modals: `AddAssetModal.tsx`, `AddConsumableModal.tsx`, `LogMaintenanceModal.tsx`, `LogUsageModal.tsx` ✅
+- Calendar event usage linking — consumable usage rows link to calendar events ✅
+- Searchable dropdown suggestions and low-stock alert badges ✅
+
+### 8. Settings Page — ✅ 100% Done
 - Route exists: `app/(dashboard)/settings/`
 - `SettingsForms.tsx` rebuilt with 7 tabs (role-gated)
 - **Account & Security tab** — profile + password update ✅
@@ -109,7 +118,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Weather forecast API (3-hr updates) | ✅ Done | Cron endpoint `/api/cron/weather` fetches Open-Meteo every 3 hr; stores per-farm + per-block snapshots in `weather_snapshots` |
 | Manual logs (irrigation, spray, scouting, etc.) | ❌ Not started | |
 | Initial block data / PDF upload & extraction | ✅ Done | AI extraction of soil/water test results from both PDF and image uploads using OpenRouter + Trigger.dev |
-| Computed fields (ETo, water deficit, GDD, chill hours, risk indices) | ❌ Not started | |
+| Computed fields (ETo, water deficit, GDD, chill hours, risk indices) | 🟡 Partial | Daily cron `/api/cron/compute-fields` computes ETo (Hargreaves), GDD, chill hours, 7-day water deficit from Open-Meteo and writes to `phenology_records` + `soil_water_readings`. In-field sensor pipeline not yet wired. |
 | DB schema / migrations | ✅ Done | 12 migrations applied — see table list below |
 
 ---
@@ -205,7 +214,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Activity Log page | ✅ 100% (+ manual Log Activity button for supervisor/admin) |
 | Inventory page | ✅ 100% (Asset & Consumable tracking with calendar linking) |
 | Database schema | ✅ 100% |
-| Real data ingestion | 🟡 Partial (weather cron ✅; sensor ingest pipeline + computed fields remaining) |
+| Real data ingestion | 🟡 Partial (weather cron ✅; computed fields cron ✅; sensor ingest pipeline remaining) |
 | AI reasoning engine | ✅ 100% (generation, confidence scoring, accept/edit/skip, state mutation, block state feedback loop all done) |
 | Roles & permissions | ✅ 100% |
 | Multi-farm support | ✅ 100% |
@@ -262,3 +271,6 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | 2026-05-31 | Pre-publish security review — 6 fixes applied: (1) Removed hardcoded local developer path (`C:/Users/mhrg7/...`) and `fs`/`path` debug block from `extract-soil-test` route; (2) Added Supabase auth check to all unauthenticated API routes (`extract-soil-test`, `plant-search`, `plant-varieties`) to prevent LLM/API cost abuse; (3) Added 20 MB file size limit to `extract-soil-test` upload; (4) Added HTTP security headers to `next.config.ts` (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, Content-Security-Policy); (5) Wrapped `JSON.parse(boundary)` in try-catch in `blocks.ts` (create + update actions); (6) Escaped SQL wildcards (`%`, `_`, `\`) in `ilike` search in both activity actions files. |
 | 2026-06-01 | Fix cross-farm weather forecast bug (round 1) — (1) `next.config.ts`: added `experimental.staleTimes.dynamic = 0` so the Next.js client-side Router Cache never reuses a stale layout RSC payload carrying the previous farm's `farmId`; (2) layout: added `export const dynamic = 'force-dynamic'`; (3) `/farms` page: show `FarmPicker` for multi-farm users instead of always redirecting to Farm 1; (4) `CreateFarmWizard.tsx`: added `router.refresh()` after `router.push`; (5) `blocks.ts`: `createBlock`, `updateBlock`, `updateBlockBoundary` now also revalidate the dashboard path. |
 | 2026-06-01 | Fix Settings GPS not saving to database (root cause) — The Settings → Weather & AI tab GPS lat/lng inputs were saving to `localStorage` only (never to Supabase), while `getFarmCoords` reads exclusively from the database. Fixed: (1) `SettingsForms.tsx`: `WeatherAPITab` now accepts `initialLat`/`initialLng` props (DB values), initialises state from them instead of localStorage, and `handleSave()` calls `updateFarm(farmId, { gps_lat, gps_lng })` to persist to Supabase with success/error feedback; (2) `settings/page.tsx`: fetches `gps_lat, gps_lng` from the farms table and passes them as props; (3) `updateFarm` now also revalidates the dashboard path; removed `STORAGE_KEY_WEATHER` and hardcoded Antalya default coordinates. |
+| 2026-06-02 | AI reasoning enriched with tree age and phenological growth stage — `src/trigger/recommendations.ts` now fetches `phenology_latest` view alongside existing queries, computes tree age from `planting_year`, and appends both to each block's context string sent to Gemini Flash (growth stage, GDD, chill hours, days to hull split, estimated harvest window). System prompt updated with a rule to use age and stage when tailoring recommendation intensity and category-gating. Degrades gracefully when no phenology record exists for a block. |
+| 2026-06-02 | PROGRESS.md cleanup — Added Inventory Page as numbered section 7 (was missing despite being done); renamed Settings to section 8; updated page count from 7 to 8; corrected "Last updated" header date. |
+| 2026-06-02 | Computed fields daily cron — New `/api/cron/compute-fields` route fetches daily Tmax/Tmin from Open-Meteo and writes per-block computed rows to `phenology_records` (cumulative GDD, chill hours, inferred growth stage) and `soil_water_readings` (ETo via Hargreaves-Samani, 7-day forward water deficit). Idempotent: skips blocks already computed today. `netlify/functions/cron-compute-fields.mts` schedules it at midnight daily. All computation uses existing `utils/agronomic.ts` helpers. |

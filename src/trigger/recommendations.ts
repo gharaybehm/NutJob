@@ -19,6 +19,7 @@ Rules:
 - Order by urgency across ALL blocks (priority 1 = most urgent farm-wide).
 - Be specific: cite actual sensor values or observations in the rationale.
 - Confidence: 90–100 = very strong signal, 70–89 = moderate, below 70 = weaker/precautionary.
+- Use tree age and phenological stage to tailor recommendations: young trees (≤5 yr) require lower input rates and more frequent but smaller irrigations; stage-specific actions (e.g. hull-split sprays, bloom-period frost protection) are time-critical and should carry high priority and confidence. Cite stage and tree age in the rationale when they influence the recommendation.
 
 Respond ONLY with a valid JSON array, no other text or explanation. Each element must match this schema:
 {
@@ -47,6 +48,7 @@ export const generateRecommendationsTask = task({
       { data: alerts, error: alertsError },
       { data: scoutingReports, error: scoutingError },
       { data: tissueSamples, error: tissueError },
+      { data: phenologyRecords, error: _phenologyError },
     ] = await Promise.all([
       admin.from("blocks").select("*"),
       admin.from("soil_water_readings").select("*").order("recorded_at", { ascending: false }),
@@ -54,6 +56,7 @@ export const generateRecommendationsTask = task({
       admin.from("block_alerts").select("*").eq("resolved", false),
       admin.from("scouting_reports").select("*").order("scouted_at", { ascending: false }),
       admin.from("tissue_samples").select("*").order("sampled_at", { ascending: false }),
+      admin.from("phenology_latest").select("*"),
     ]);
 
     if (blocksError) throw new Error(`Blocks fetch error: ${blocksError.message}`);
@@ -66,6 +69,7 @@ export const generateRecommendationsTask = task({
       alertsCount: alerts?.length ?? 0,
       scoutingReportsCount: scoutingReports?.length ?? 0,
       tissueSamplesCount: tissueSamples?.length ?? 0,
+      phenologyRecordsCount: phenologyRecords?.length ?? 0,
     });
 
     // Index latest reading per block
@@ -91,17 +95,23 @@ export const generateRecommendationsTask = task({
     const latestTissue = new Map();
     tissueSamples?.forEach((r) => { if (!latestTissue.has(r.block_id)) latestTissue.set(r.block_id, r); });
 
+    const latestPhenology = new Map();
+    phenologyRecords?.forEach((r) => { if (r.block_id && !latestPhenology.has(r.block_id)) latestPhenology.set(r.block_id, r); });
+
     // Build per-block context strings
     const today = new Date().toISOString().split("T")[0];
+    const currentYear = new Date().getFullYear();
     const blockContexts = blocks.map((block) => {
       const soil = latestSoil.get(block.id);
       const weather = latestWeather.get(block.id) ?? globalWeather;
       const activeAlerts = blockAlerts.get(block.id) ?? [];
       const scouting = latestScouting.get(block.id);
       const tissue = latestTissue.get(block.id);
+      const phenology = latestPhenology.get(block.id);
+      const treeAge = block.planting_year ? currentYear - block.planting_year : null;
 
       let ctx = `Block "${block.name}" (id: ${block.id})
-- Crop: ${block.crop_type}, Variety: ${block.variety}, Planted: ${block.planting_year}, Area: ${block.area} ${block.area_unit}, Trees: ${block.tree_count}`;
+- Crop: ${block.crop_type}, Variety: ${block.variety}, Planted: ${block.planting_year} (age: ${treeAge ?? "unknown"} yr), Area: ${block.area} ${block.area_unit}, Trees: ${block.tree_count}`;
 
       if (soil) {
         ctx += `
@@ -130,6 +140,16 @@ export const generateRecommendationsTask = task({
           .map(([k, v]) => `${k}:${v}`)
           .join(", ");
         ctx += `\n- Tissue sample (${tissue.sampled_at.split("T")[0]}): ${nutrientStr}`;
+      }
+
+      if (phenology) {
+        ctx += `\n- Growth stage: ${phenology.current_stage} | GDD accumulated: ${phenology.cumulative_gdd ?? "N/A"} | Chill hours: ${phenology.chill_hours ?? "N/A"}`;
+        if (phenology.days_to_hull_split != null) {
+          ctx += ` | Days to hull split: ${phenology.days_to_hull_split}`;
+        }
+        if (phenology.estimated_harvest_start || phenology.estimated_harvest_end) {
+          ctx += `\n- Est. harvest window: ${phenology.estimated_harvest_start ?? "?"} – ${phenology.estimated_harvest_end ?? "?"}`;
+        }
       }
 
       return ctx;
