@@ -67,6 +67,19 @@ export default async function SettingsPage({
     .eq('id', farmId)
     .single()
 
+  // Fetch sensors with their assigned block name
+  const { data: sensorsRaw = [] } = await db
+    .from('sensors')
+    .select('*, block:blocks(name)')
+    .eq('farm_id', farmId)
+    .order('created_at', { ascending: false })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sensors = (sensorsRaw as any[]).map((s: any) => ({
+    ...s,
+    block_name: s.block?.name ?? null,
+    block: undefined,
+  }))
+
   const t = await getTranslations('settings');
 
   return (
@@ -90,6 +103,7 @@ export default async function SettingsPage({
         farmAddress={farmData?.address ?? ''}
         farmGpsLat={farmData?.gps_lat ?? null}
         farmGpsLng={farmData?.gps_lng ?? null}
+        sensors={sensors}
       />
     </div>
   )

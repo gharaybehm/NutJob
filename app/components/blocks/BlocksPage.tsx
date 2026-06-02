@@ -19,15 +19,16 @@ const LogTestResultModal = dynamic(() => import('./LogTestResultModal'), { ssr: 
 
 interface Props {
   initialBlocks?: Block[];
+  initialProfiles?: Record<string, BlockProfile>;
   userRole?: "admin" | "supervisor" | "worker";
   farmId: string;
   farmCenter?: { lat: number; lng: number; zoom?: number };
 }
 
-export default function BlocksPage({ initialBlocks, userRole = "worker", farmId, farmCenter }: Props) {
+export default function BlocksPage({ initialBlocks, initialProfiles, userRole = "worker", farmId, farmCenter }: Props) {
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks ?? []);
   const [profiles, setProfiles] = useState<Record<string, BlockProfile>>(() => {
-    const seed: Record<string, BlockProfile> = { ...BLOCK_PROFILES };
+    const seed: Record<string, BlockProfile> = { ...(initialProfiles ?? BLOCK_PROFILES) };
     (initialBlocks ?? []).forEach(b => {
       if (!seed[b.id]) seed[b.id] = makeDefaultProfile(b);
     });
@@ -39,7 +40,7 @@ export default function BlocksPage({ initialBlocks, userRole = "worker", farmId,
     setPrevInitialBlocks(initialBlocks);
     setBlocks(initialBlocks ?? []);
     setProfiles(() => {
-      const seed: Record<string, BlockProfile> = { ...BLOCK_PROFILES };
+      const seed: Record<string, BlockProfile> = { ...(initialProfiles ?? BLOCK_PROFILES) };
       (initialBlocks ?? []).forEach(b => {
         if (!seed[b.id]) seed[b.id] = makeDefaultProfile(b);
       });

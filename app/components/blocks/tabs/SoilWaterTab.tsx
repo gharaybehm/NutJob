@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Paperclip } from 'lucide-react';
+import { Paperclip, Wifi } from 'lucide-react';
 import type { SoilWaterDomain } from '../types';
 import AlertBadge from '../AlertBadge';
 import SourceBadge from '../SourceBadge';
@@ -9,6 +9,7 @@ import SourceBadge from '../SourceBadge';
 interface Props {
   data: SoilWaterDomain;
   blockId: string;
+  sensorCount?: number;
 }
 
 interface SoilParams {
@@ -45,6 +46,18 @@ interface ManualReading {
   file_url:       string | null;
   notes:          string | null;
   parameters:     SoilParams | null;
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function formatRelativeTime(date: Date): string {
+  const diff = Date.now() - date.getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
 }
 
 // ─── Benchmark helpers ────────────────────────────────────────────────────────
@@ -248,7 +261,7 @@ function ReadingCard({ r }: { r: ManualReading }) {
 
 // ─── Main tab ─────────────────────────────────────────────────────────────────
 
-export default function SoilWaterTab({ data, blockId }: Props) {
+export default function SoilWaterTab({ data, blockId, sensorCount = 0 }: Props) {
   const [history, setHistory]               = useState<ManualReading[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
@@ -289,10 +302,19 @@ export default function SoilWaterTab({ data, blockId }: Props) {
 
       {/* Soil moisture hero */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-1">
           <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Soil Moisture</h3>
           <SourceBadge source={data.source} />
         </div>
+        {sensorCount > 0 ? (
+          <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1 mb-3">
+            <Wifi className="h-3 w-3" />
+            {sensorCount} sensor{sensorCount > 1 ? 's' : ''} monitoring
+            {data.lastReadingAt && ` · updated ${formatRelativeTime(data.lastReadingAt)}`}
+          </p>
+        ) : (
+          <div className="mb-3" />
+        )}
         <div className="flex items-end gap-2">
           <span className={`text-4xl font-bold ${moistureStatus}`}>{data.soilMoisture}</span>
           <span className="text-lg text-slate-400 pb-1">% vol</span>

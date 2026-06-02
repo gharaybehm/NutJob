@@ -122,7 +122,7 @@ export default function BlockDetailPanel({ profile, onEdit, onDelete }: Props) {
 
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-5">
-        {activeTab === 'soil-water'   && <SoilWaterTab   data={profile.soilWater}   blockId={profile.block.id} />}
+        {activeTab === 'soil-water'   && <SoilWaterTab   data={profile.soilWater}   blockId={profile.block.id} sensorCount={profile.sensorCount ?? 0} />}
         {activeTab === 'phenology'    && <PhenologyTab    data={profile.phenology}    />}
         {activeTab === 'nutrition'    && <NutritionTab    data={profile.nutrition}    />}
         {activeTab === 'pest-disease' && <PestDiseaseTab  data={profile.pestDisease}  />}

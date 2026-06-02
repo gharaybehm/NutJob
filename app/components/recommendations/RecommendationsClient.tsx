@@ -122,6 +122,10 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
     setProcessingIds((prev) => new Set(prev).add("ai-generate"));
     try {
       const result = await generateAIRecommendations();
+      if ("error" in result) {
+        alert(`AI generation failed: ${result.error}`);
+        return;
+      }
       startTransition(() => { router.refresh(); });
       if (result.count === 0) {
         alert("The AI found no new recommendations needed based on current block data.");

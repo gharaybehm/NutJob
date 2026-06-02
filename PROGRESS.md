@@ -1,6 +1,6 @@
 # NutJob — Progress vs Requirements
 
-> Last updated: 2026-06-02
+> Last updated: 2026-06-02 (sensor infrastructure)
 
 ## Overall Status: ~97% Complete  <!-- Netlify scheduling + feedback loop done 2026-05-30 -->
 
@@ -103,7 +103,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 - **Team Management tab** (admin + supervisor) — role assignment & new worker invite/creation ✅
 - **Block Configuration tab** (admin + supervisor) — per-block field capacity (%), wilting point (%), and notes with live bars and Supabase persistence via `updateBlockConfig` server action ✅
 - **Alert Thresholds tab** (admin + supervisor) — 5 threshold sliders (soil moisture, water deficit, heat stress, rainfall skip, pest risk) stored in localStorage ✅
-- **Sensor Connections tab** (admin only) — channel status panel + copy-to-clipboard ingest endpoint reference ✅
+- **Sensor Connections tab** (admin only) — full sensor device registry: register sensors, assign to blocks (multiple sensors per block supported), copy/regenerate API keys, real-time status badges, ingest endpoint reference ✅
 - **Weather & AI tab** (admin only) — farm lat/lng config with Open-Meteo live connection test + Netlify AI Gateway status ✅
 - **Language tab** (all roles) — globe icon + dropdown to switch between English / العربية / Türkçe; saves to cookie + triggers full reload ✅
 
@@ -114,11 +114,11 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Requirement | Status | Notes |
 |---|---|---|
 | Supabase client/server setup | ✅ Done | `utils/supabase/` |
-| In-field sensors (15-min updates) | ❌ Not started | No ingest pipeline |
+| In-field sensors (15-min updates) | 🟡 Infra ready | `sensors` table migration, sensor registration UI in Settings, 3 authenticated ingest endpoints (`/api/ingest/soil|weather|alert`) all in place. Physical devices not yet connected. |
 | Weather forecast API (3-hr updates) | ✅ Done | Cron endpoint `/api/cron/weather` fetches Open-Meteo every 3 hr; stores per-farm + per-block snapshots in `weather_snapshots` |
 | Manual logs (irrigation, spray, scouting, etc.) | ❌ Not started | |
 | Initial block data / PDF upload & extraction | ✅ Done | AI extraction of soil/water test results from both PDF and image uploads using OpenRouter + Trigger.dev |
-| Computed fields (ETo, water deficit, GDD, chill hours, risk indices) | 🟡 Partial | Daily cron `/api/cron/compute-fields` computes ETo (Hargreaves), GDD, chill hours, 7-day water deficit from Open-Meteo and writes to `phenology_records` + `soil_water_readings`. In-field sensor pipeline not yet wired. |
+| Computed fields (ETo, water deficit, GDD, chill hours, risk indices) | ✅ Done | Daily cron writes to DB. Blocks page now queries `soil_water_latest`, `phenology_latest`, `weather_latest` views and displays real values. When a sensor reading arrives within 24 h the cron carries its `soil_moisture` into the computed row. |
 | DB schema / migrations | ✅ Done | 12 migrations applied — see table list below |
 
 ---
@@ -274,3 +274,4 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | 2026-06-02 | AI reasoning enriched with tree age and phenological growth stage — `src/trigger/recommendations.ts` now fetches `phenology_latest` view alongside existing queries, computes tree age from `planting_year`, and appends both to each block's context string sent to Gemini Flash (growth stage, GDD, chill hours, days to hull split, estimated harvest window). System prompt updated with a rule to use age and stage when tailoring recommendation intensity and category-gating. Degrades gracefully when no phenology record exists for a block. |
 | 2026-06-02 | PROGRESS.md cleanup — Added Inventory Page as numbered section 7 (was missing despite being done); renamed Settings to section 8; updated page count from 7 to 8; corrected "Last updated" header date. |
 | 2026-06-02 | Computed fields daily cron — New `/api/cron/compute-fields` route fetches daily Tmax/Tmin from Open-Meteo and writes per-block computed rows to `phenology_records` (cumulative GDD, chill hours, inferred growth stage) and `soil_water_readings` (ETo via Hargreaves-Samani, 7-day forward water deficit). Idempotent: skips blocks already computed today. `netlify/functions/cron-compute-fields.mts` schedules it at midnight daily. All computation uses existing `utils/agronomic.ts` helpers. |
+| 2026-06-02 | IoT sensor infrastructure — Full sensor readiness: (1) `supabase/migrations/20260602000000_create_sensors.sql` — `sensors` table with farm/block FK, api_key (unique), status, last_seen_at; `sensor_id` FK added to `soil_water_readings` and `weather_snapshots`; (2) `types/sensors.ts` — application-level sensor types; (3) 5 new server actions in `settings/actions.ts` — `registerSensor`, `updateSensor`, `deleteSensor`, `assignSensorToBlock`, `generateSensorApiKey`; (4) Settings > Sensor Connections tab rebuilt — live sensor inventory table with add/edit/delete, API key copy+regenerate, one-time key display banner; (5) 3 authenticated ingest API routes — `POST /api/ingest/soil`, `/weather`, `/alert` with `X-Sensor-Key` header auth; (6) Blocks page (`[farmId]/blocks/page.tsx`) now runs 4 parallel Supabase queries and builds real `initialProfiles` from `soil_water_latest`, `phenology_latest`, `weather_latest`, `block_alerts`, and `sensors` — no more all-zeros mock data; (7) `SoilWaterTab` shows "N sensors monitoring · updated Xm ago" line when sensors are assigned to a block; (8) Cron enhanced to carry latest sensor `soil_moisture` into the daily computed row when a reading arrived within 24 h. |

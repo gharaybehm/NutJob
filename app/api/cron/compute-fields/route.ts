@@ -197,10 +197,24 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
+        // If a sensor reading arrived in the last 24 h, carry its soil_moisture
+        // into the computed row so the daily snapshot reflects real field data.
+        const { data: latestSensorSoil } = await admin
+          .from("soil_water_readings")
+          .select("soil_moisture")
+          .eq("block_id", blockId)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .eq("source", "sensor" as any)
+          .gte("recorded_at", new Date(Date.now() - 86_400_000).toISOString())
+          .order("recorded_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
         const { error: soilError } = await admin.from("soil_water_readings").insert({
           block_id: blockId,
           eto: todayEto,
           water_deficit: waterDeficit7d,
+          soil_moisture: latestSensorSoil?.soil_moisture ?? null,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           source: "computed" as any,
           test_type: "computed",

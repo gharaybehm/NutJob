@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { routing, LOCALE_COOKIE, type Locale } from '@/i18n/routing'
+import type { SensorFormValues, Sensor } from '@/types/sensors'
 
 export async function setLocale(locale: string) {
   if (!routing.locales.includes(locale as Locale)) {
@@ -161,6 +162,133 @@ export async function createWorker(formData: FormData) {
   revalidatePath('/settings')
   return { success: `Successfully created new ${role}` }
 }
+
+// ─── Sensor actions ───────────────────────────────────────────────────────────
+
+async function requireAdmin() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { user: null, error: 'Not authenticated' as const }
+  const { data: profile } = await supabase
+    .from('user_profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') return { user: null, error: 'Only admins can manage sensors' as const }
+  return { user, error: null }
+}
+
+export async function registerSensor(
+  farmId: string,
+  values: SensorFormValues
+): Promise<{ error?: string; sensor?: Sensor }> {
+  const { error: authError } = await requireAdmin()
+  if (authError) return { error: authError }
+
+  const apiKey = crypto.randomUUID()
+  const adminClient = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (adminClient as any).from('sensors')
+    .insert({
+      farm_id: farmId,
+      block_id: values.block_id ?? null,
+      name: values.name,
+      device_id: values.device_id,
+      sensor_type: values.sensor_type,
+      api_key: apiKey,
+      location_notes: values.location_notes ?? null,
+    })
+    .select()
+    .single()
+
+  if (error) return { error: error.message }
+  revalidatePath(`/${farmId}/settings`)
+  return { sensor: data as Sensor }
+}
+
+export async function updateSensor(
+  sensorId: string,
+  farmId: string,
+  values: Partial<SensorFormValues>
+): Promise<{ error?: string }> {
+  const { error: authError } = await requireAdmin()
+  if (authError) return { error: authError }
+
+  const adminClient = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (adminClient as any).from('sensors')
+    .update({
+      name: values.name,
+      device_id: values.device_id,
+      sensor_type: values.sensor_type,
+      block_id: values.block_id ?? null,
+      location_notes: values.location_notes ?? null,
+    })
+    .eq('id', sensorId)
+    .eq('farm_id', farmId)
+
+  if (error) return { error: error.message }
+  revalidatePath(`/${farmId}/settings`)
+  return {}
+}
+
+export async function deleteSensor(
+  sensorId: string,
+  farmId: string
+): Promise<{ error?: string }> {
+  const { error: authError } = await requireAdmin()
+  if (authError) return { error: authError }
+
+  const adminClient = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (adminClient as any).from('sensors')
+    .delete()
+    .eq('id', sensorId)
+    .eq('farm_id', farmId)
+
+  if (error) return { error: error.message }
+  revalidatePath(`/${farmId}/settings`)
+  return {}
+}
+
+export async function assignSensorToBlock(
+  sensorId: string,
+  blockId: string | null,
+  farmId: string
+): Promise<{ error?: string }> {
+  const { error: authError } = await requireAdmin()
+  if (authError) return { error: authError }
+
+  const adminClient = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (adminClient as any).from('sensors')
+    .update({ block_id: blockId })
+    .eq('id', sensorId)
+    .eq('farm_id', farmId)
+
+  if (error) return { error: error.message }
+  revalidatePath(`/${farmId}/settings`)
+  return {}
+}
+
+export async function generateSensorApiKey(
+  sensorId: string,
+  farmId: string
+): Promise<{ error?: string; api_key?: string }> {
+  const { error: authError } = await requireAdmin()
+  if (authError) return { error: authError }
+
+  const newKey = crypto.randomUUID()
+  const adminClient = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (adminClient as any).from('sensors')
+    .update({ api_key: newKey })
+    .eq('id', sensorId)
+    .eq('farm_id', farmId)
+
+  if (error) return { error: error.message }
+  revalidatePath(`/${farmId}/settings`)
+  return { api_key: newKey }
+}
+
+// ─── Block config ─────────────────────────────────────────────────────────────
 
 export async function updateBlockConfig(
   blockId: string,

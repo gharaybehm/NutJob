@@ -8,6 +8,10 @@ import {
   createWorker,
   updateBlockConfig,
   setLocale,
+  registerSensor,
+  updateSensor,
+  deleteSensor,
+  generateSensorApiKey,
 } from './actions'
 import {
   User,
@@ -35,9 +39,16 @@ import {
   RefreshCw,
   Building2,
   Globe,
+  Plus,
+  Pencil,
+  Trash2,
+  RotateCcw,
+  X,
 } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { updateFarm } from '@/app/actions/farms'
+import type { SensorWithBlock, SensorFormValues, SensorType } from '@/types/sensors'
+import { SENSOR_TYPE_LABELS } from '@/types/sensors'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -69,6 +80,7 @@ interface SettingsFormsProps {
   farmAddress?: string
   farmGpsLat?: number | null
   farmGpsLng?: number | null
+  sensors?: SensorWithBlock[]
 }
 
 type TabId = 'profile' | 'team' | 'blocks' | 'alerts' | 'sensors' | 'weather' | 'language'
@@ -570,15 +582,6 @@ function NotificationAlertsTab() {
 
 // ── Tab 5: Sensor Connections ─────────────────────────────────────────────────
 
-const SENSOR_CHANNELS = [
-  { name: 'Soil Moisture', unit: '%', icon: Droplets, color: 'text-blue-500' },
-  { name: 'Soil EC', unit: 'dS/m', icon: Cpu, color: 'text-purple-500' },
-  { name: 'Soil Temperature', unit: '°C', icon: Thermometer, color: 'text-orange-500' },
-  { name: 'Air Humidity', unit: '%', icon: Wind, color: 'text-teal-500' },
-  { name: 'Wind Speed', unit: 'km/h', icon: Wind, color: 'text-slate-500' },
-  { name: 'Rainfall', unit: 'mm', icon: Droplets, color: 'text-indigo-500' },
-]
-
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
   function handleCopy() {
@@ -594,47 +597,342 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
-function SensorConnectionsTab() {
+const SENSOR_TYPE_OPTIONS: { value: SensorType; label: string }[] = [
+  { value: 'soil_moisture', label: 'Soil Moisture' },
+  { value: 'soil_ec',       label: 'Soil EC' },
+  { value: 'soil_temp',     label: 'Soil Temperature' },
+  { value: 'air_humidity',  label: 'Air Humidity' },
+  { value: 'wind',          label: 'Wind Speed' },
+  { value: 'rainfall',      label: 'Rainfall' },
+  { value: 'multi',         label: 'Multi-Sensor' },
+]
+
+function StatusDot({ status }: { status: 'online' | 'offline' | 'unknown' }) {
+  const cfg = {
+    online:  { cls: 'bg-green-500', label: 'Online'  },
+    offline: { cls: 'bg-amber-400', label: 'Offline' },
+    unknown: { cls: 'bg-slate-400', label: 'Unknown' },
+  }[status]
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className={`inline-block h-2 w-2 rounded-full ${cfg.cls}`} />
+      <span className="text-xs text-slate-500 dark:text-slate-400">{cfg.label}</span>
+    </span>
+  )
+}
+
+function formatLastSeen(iso: string | null): string {
+  if (!iso) return 'Never'
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
+}
+
+const BLANK_FORM: SensorFormValues = {
+  name: '', device_id: '', sensor_type: 'soil_moisture', block_id: null, location_notes: null,
+}
+
+function SensorConnectionsTab({
+  initialSensors,
+  blocks,
+  farmId,
+}: {
+  initialSensors: SensorWithBlock[]
+  blocks: Block[]
+  farmId: string
+}) {
+  const [sensors, setSensors] = useState<SensorWithBlock[]>(initialSensors)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editTarget, setEditTarget] = useState<SensorWithBlock | null>(null)
+  const [form, setForm] = useState<SensorFormValues>(BLANK_FORM)
+  const [saving, setSaving] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [newApiKey, setNewApiKey] = useState<string | null>(null)
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null)
+
   const webhookBase = typeof window !== 'undefined'
     ? `${window.location.origin}/api/ingest`
-    : 'https://your-domain.netlify.app/api/ingest'
+    : '/api/ingest'
+
+  function openAdd() {
+    setEditTarget(null)
+    setForm(BLANK_FORM)
+    setActionError(null)
+    setModalOpen(true)
+  }
+
+  function openEdit(s: SensorWithBlock) {
+    setEditTarget(s)
+    setForm({ name: s.name, device_id: s.device_id, sensor_type: s.sensor_type, block_id: s.block_id, location_notes: s.location_notes })
+    setActionError(null)
+    setModalOpen(true)
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    setActionError(null)
+    if (editTarget) {
+      const res = await updateSensor(editTarget.id, farmId, form)
+      if (res.error) { setActionError(res.error); setSaving(false); return }
+      setSensors(prev => prev.map(s => s.id === editTarget.id
+        ? { ...s, ...form, block_name: blocks.find(b => b.id === form.block_id)?.name ?? null }
+        : s))
+    } else {
+      const res = await registerSensor(farmId, form)
+      if (res.error) { setActionError(res.error); setSaving(false); return }
+      if (res.sensor) {
+        const withBlock: SensorWithBlock = {
+          ...res.sensor,
+          block_name: blocks.find(b => b.id === res.sensor!.block_id)?.name ?? null,
+        }
+        setSensors(prev => [withBlock, ...prev])
+        setNewApiKey(res.sensor.api_key)
+      }
+    }
+    setSaving(false)
+    setModalOpen(false)
+  }
+
+  async function handleDelete(id: string) {
+    const res = await deleteSensor(id, farmId)
+    if (res.error) { setActionError(res.error); return }
+    setSensors(prev => prev.filter(s => s.id !== id))
+    setDeleteConfirm(null)
+  }
+
+  async function handleRegenerateKey(id: string) {
+    setRegeneratingId(id)
+    const res = await generateSensorApiKey(id, farmId)
+    setRegeneratingId(null)
+    if (res.error) { setActionError(res.error); return }
+    if (res.api_key) setNewApiKey(res.api_key)
+  }
+
+  const INGEST_ENDPOINTS = [
+    {
+      path: '/soil',
+      label: 'Soil Readings',
+      payload: `{ "moisture": 28.5, "ec": 1.2, "temp": 22.4 }`,
+    },
+    {
+      path: '/weather',
+      label: 'Weather Snapshot',
+      payload: `{ "temp_c": 34.0, "humidity_pct": 42, "rainfall_mm": 0, "wind_kmh": 18 }`,
+    },
+    {
+      path: '/alert',
+      label: 'Custom Alert',
+      payload: `{ "block_id": "...", "domain": "soil-water", "severity": "warning", "message": "..." }`,
+    },
+  ]
 
   return (
     <div className="space-y-8">
-      <SectionCard title="Sensor Channels" icon={Cpu}
-        description="Current status of each sensor channel. Manual entry via the Lab Test modal is available on the Blocks page while physical sensors are not yet connected.">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {SENSOR_CHANNELS.map(ch => {
-            const Icon = ch.icon
-            return (
-              <div key={ch.name} className="flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-white dark:bg-slate-900 flex items-center justify-center shadow-sm">
-                    <Icon className={`h-4 w-4 ${ch.color}`} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">{ch.name}</p>
-                    <p className="text-xs text-slate-400">{ch.unit}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
-                  <WifiOff className="h-3.5 w-3.5" />
-                  Not connected
-                </div>
+      {/* One-time API key banner */}
+      {newApiKey && (
+        <div className="rounded-xl border border-brand-300 bg-brand-50 dark:bg-brand-900/20 dark:border-brand-700 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-brand-800 dark:text-brand-200 mb-1">
+                Copy this API key — it won&apos;t be shown in full again
+              </p>
+              <div className="flex items-center gap-2 rounded-lg bg-white dark:bg-slate-900 border border-brand-200 dark:border-brand-800 px-3 py-2">
+                <code className="text-xs font-mono text-slate-700 dark:text-slate-200 break-all flex-1">{newApiKey}</code>
+                <CopyButton text={newApiKey} />
               </div>
-            )
-          })}
+              <p className="text-xs text-brand-600 dark:text-brand-400 mt-1.5">
+                Flash this key into your sensor firmware as the <code className="font-mono">X-Sensor-Key</code> header value.
+              </p>
+            </div>
+            <button onClick={() => setNewApiKey(null)} className="text-brand-400 hover:text-brand-600 dark:hover:text-brand-300 mt-0.5">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
+      )}
+
+      {/* Sensor inventory */}
+      <SectionCard title="Registered Sensors" icon={Cpu}
+        description="Register each physical sensor device and assign it to a block. A block can have multiple sensors.">
+        <div className="flex justify-end mb-4">
+          <button onClick={openAdd}
+            className="flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors">
+            <Plus className="h-4 w-4" />
+            Add Sensor
+          </button>
+        </div>
+
+        {actionError && (
+          <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 p-3 text-sm text-red-700 dark:text-red-300">
+            {actionError}
+          </div>
+        )}
+
+        {sensors.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Cpu className="h-10 w-10 text-slate-300 dark:text-slate-600 mb-3" />
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">No sensors registered yet</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Add a sensor above to get started</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto -mx-2">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-left">
+                  {['Name', 'Type', 'Block', 'Status', 'Last Seen', 'API Key', ''].map(h => (
+                    <th key={h} className="pb-3 px-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {sensors.map(s => (
+                  <tr key={s.id} className="group">
+                    <td className="py-3 px-2">
+                      <p className="font-medium text-slate-900 dark:text-white">{s.name}</p>
+                      <p className="text-xs text-slate-400 font-mono">{s.device_id}</p>
+                    </td>
+                    <td className="py-3 px-2 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                      {SENSOR_TYPE_LABELS[s.sensor_type] ?? s.sensor_type}
+                    </td>
+                    <td className="py-3 px-2 text-slate-600 dark:text-slate-300">
+                      {s.block_name ?? <span className="text-slate-400 italic">Unassigned</span>}
+                    </td>
+                    <td className="py-3 px-2">
+                      <StatusDot status={s.status} />
+                    </td>
+                    <td className="py-3 px-2 text-slate-500 dark:text-slate-400 whitespace-nowrap text-xs">
+                      {formatLastSeen(s.last_seen_at)}
+                    </td>
+                    <td className="py-3 px-2">
+                      <div className="flex items-center gap-1">
+                        <code className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                          ···{s.api_key.slice(-8)}
+                        </code>
+                        <CopyButton text={s.api_key} />
+                        <button
+                          onClick={() => handleRegenerateKey(s.id)}
+                          disabled={regeneratingId === s.id}
+                          title="Regenerate key"
+                          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 disabled:opacity-50">
+                          <RotateCcw className={`h-3.5 w-3.5 ${regeneratingId === s.id ? 'animate-spin' : ''}`} />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="py-3 px-2">
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => openEdit(s)}
+                          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        {deleteConfirm === s.id ? (
+                          <span className="flex items-center gap-1 text-xs">
+                            <button onClick={() => handleDelete(s.id)}
+                              className="px-2 py-0.5 rounded bg-red-600 text-white text-xs hover:bg-red-700">Confirm</button>
+                            <button onClick={() => setDeleteConfirm(null)}
+                              className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs">Cancel</button>
+                          </span>
+                        ) : (
+                          <button onClick={() => setDeleteConfirm(s.id)}
+                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </SectionCard>
 
+      {/* Add / Edit modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 shadow-xl ring-1 ring-slate-200 dark:ring-slate-700 p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+                {editTarget ? 'Edit Sensor' : 'Add Sensor'}
+              </h3>
+              <button onClick={() => setModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name</label>
+                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="e.g. Block A — North Probe"
+                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-slate-900 shadow-sm ring-1 ring-slate-300 dark:ring-slate-700 dark:bg-slate-800 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-600" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Device ID</label>
+                <input value={form.device_id} onChange={e => setForm(f => ({ ...f, device_id: e.target.value }))}
+                  placeholder="MAC address or serial number"
+                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-slate-900 shadow-sm ring-1 ring-slate-300 dark:ring-slate-700 dark:bg-slate-800 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-600" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sensor Type</label>
+                <select value={form.sensor_type} onChange={e => setForm(f => ({ ...f, sensor_type: e.target.value as SensorType }))}
+                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-slate-900 shadow-sm ring-1 ring-slate-300 dark:ring-slate-700 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-brand-600">
+                  {SENSOR_TYPE_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Block Assignment</label>
+                <select value={form.block_id ?? ''} onChange={e => setForm(f => ({ ...f, block_id: e.target.value || null }))}
+                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-slate-900 shadow-sm ring-1 ring-slate-300 dark:ring-slate-700 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-brand-600">
+                  <option value="">Unassigned</option>
+                  {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Location Notes <span className="text-slate-400 font-normal">(optional)</span></label>
+                <textarea value={form.location_notes ?? ''} onChange={e => setForm(f => ({ ...f, location_notes: e.target.value || null }))}
+                  rows={2} placeholder="e.g. North corner, 30 cm depth"
+                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-slate-900 shadow-sm ring-1 ring-slate-300 dark:ring-slate-700 dark:bg-slate-800 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-600 resize-none" />
+              </div>
+
+              {actionError && (
+                <p className="text-sm text-red-600 dark:text-red-400">{actionError}</p>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setModalOpen(false)}
+                  className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                  Cancel
+                </button>
+                <button onClick={handleSave} disabled={saving || !form.name.trim() || !form.device_id.trim()}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-600 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50">
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {editTarget ? 'Save Changes' : 'Register Sensor'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ingest reference */}
       <SectionCard title="Ingest Endpoints" icon={Wifi}
-        description="Once you have physical sensors or a data logger, push readings to these REST endpoints. Each endpoint accepts POST with JSON payload.">
+        description="When sensors arrive, flash the API key from above and configure the firmware to POST to these endpoints.">
+        <div className="mb-3 rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-700/50 p-3 flex items-start gap-2">
+          <Info className="h-4 w-4 text-brand-600 dark:text-brand-400 mt-0.5 shrink-0" />
+          <p className="text-xs text-brand-700 dark:text-brand-300">
+            All requests must include the header <code className="font-mono font-semibold">X-Sensor-Key: &lt;api-key&gt;</code>. The block is determined automatically from the sensor&apos;s assignment.
+          </p>
+        </div>
         <div className="space-y-3">
-          {[
-            { path: '/soil', label: 'Soil Readings', payload: '{ "block_id": "...", "moisture": 28.5, "ec": 1.2, "temp": 22.4 }' },
-            { path: '/weather', label: 'Weather Snapshot', payload: '{ "temp_c": 34.0, "humidity_pct": 42, "rainfall_mm": 0, "wind_kmh": 18 }' },
-            { path: '/alert', label: 'Custom Alert', payload: '{ "block_id": "...", "domain": "soil-water", "severity": "warning", "message": "..." }' },
-          ].map(ep => (
+          {INGEST_ENDPOINTS.map(ep => (
             <div key={ep.path} className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-2">
@@ -649,12 +947,6 @@ function SensorConnectionsTab() {
               </div>
             </div>
           ))}
-        </div>
-        <div className="mt-4 flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 p-3">
-          <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-          <p className="text-xs text-amber-700 dark:text-amber-300">
-            These endpoints are not yet active. Manual data entry via <strong>Log Activity</strong> and <strong>Log Test Result</strong> (on the Blocks page) is the recommended workflow until sensor hardware is connected.
-          </p>
         </div>
       </SectionCard>
     </div>
@@ -909,6 +1201,7 @@ export default function SettingsForms({
   farmAddress,
   farmGpsLat,
   farmGpsLng,
+  sensors = [],
 }: SettingsFormsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('profile')
 
@@ -948,7 +1241,7 @@ export default function SettingsForms({
       {activeTab === 'team'     && <TeamTab userRole={userRole} initialProfile={initialProfile} allUsers={allUsers} />}
       {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} />}
       {activeTab === 'alerts'   && <NotificationAlertsTab />}
-      {activeTab === 'sensors'  && <SensorConnectionsTab />}
+      {activeTab === 'sensors'  && <SensorConnectionsTab initialSensors={sensors} blocks={blocks} farmId={farmId ?? ''} />}
       {activeTab === 'weather'  && <WeatherAPITab farmId={farmId} farmName={farmName} farmAddress={farmAddress} initialLat={farmGpsLat} initialLng={farmGpsLng} />}
       {activeTab === 'language' && <LanguageTab />}
     </div>

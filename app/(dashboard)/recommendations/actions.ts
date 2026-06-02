@@ -256,7 +256,8 @@ export async function editRecommendation(
   revalidatePath("/recommendations");
 }
 
-export async function generateAIRecommendations(): Promise<{ count: number; model: string }> {
+export async function generateAIRecommendations(): Promise<{ count: number; model: string } | { error: string }> {
+  try {
   const supabase = await createClient();
   const admin = createAdminClient();
   const locale = await getLocale();
@@ -421,6 +422,9 @@ export async function generateAIRecommendations(): Promise<{ count: number; mode
 
   revalidatePath("/recommendations");
   return { count: toInsert.length, model: OPENROUTER_MODEL };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 export async function generateMockRecommendations() {

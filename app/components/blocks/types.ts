@@ -65,6 +65,7 @@ export interface SoilWaterDomain {
   lastIrrigation: Date;
   nextIrrigationDue: Date;
   source: DataSource;
+  lastReadingAt?: Date;      // timestamp of the most recent sensor/computed reading
   alerts: BlockAlert[];
 }
 
@@ -178,4 +179,5 @@ export interface BlockProfile {
   nutrition: NutritionDomain;
   pestDisease: PestDiseaseDomain;
   weather: WeatherDomain;
+  sensorCount?: number;        // number of sensors currently assigned to this block
 }
