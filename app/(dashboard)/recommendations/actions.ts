@@ -7,11 +7,9 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 import { localeToLanguageName } from "@/utils/format";
 
-const AI_BASE_URL = process.env.NETLIFY_AI_GATEWAY_URL || "https://openrouter.ai/api/v1";
-
 const openrouter = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY ?? "",
-  baseURL: AI_BASE_URL,
+  baseURL: "https://openrouter.ai/api/v1",
   defaultHeaders: {
     "HTTP-Referer": "https://nutjob.farm",
     "X-Title": "NutJob Farm Management",
