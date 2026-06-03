@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS public.sensors (
   id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   farm_id        UUID        NOT NULL REFERENCES public.farms(id)   ON DELETE CASCADE,
-  block_id       UUID                 REFERENCES public.blocks(id)  ON DELETE SET NULL,
+  block_id       TEXT                 REFERENCES public.blocks(id)  ON DELETE SET NULL,
   name           TEXT        NOT NULL,
   device_id      TEXT        NOT NULL,
   sensor_type    TEXT        NOT NULL CHECK (sensor_type IN (
