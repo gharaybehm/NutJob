@@ -14,9 +14,18 @@ import {
   Sprout,
   WifiOff,
 } from "lucide-react";
-import { logActivity, type ActivityLogEntry } from "@/app/(dashboard)/activity/actions";
+import {
+  logActivity,
+  type ActivityLogEntry,
+  type ActivityDetails,
+  type IrrigationDetails,
+  type FertigationDetails,
+  type SprayingDetails,
+  type ScoutingDetails,
+  type PruningDetails,
+} from "@/app/[farmId]/(dashboard)/activity/actions";
 
-interface QueuedActivity {
+export interface QueuedActivity {
   id: string;
   title: string;
   activity_type: ActivityLogEntry["activity_type"];
@@ -25,6 +34,7 @@ interface QueuedActivity {
   performed_at: string;
   block_name: string | null;
   saved_at: string;
+  details?: ActivityDetails;
 }
 
 type ActivityType = ActivityLogEntry["activity_type"];
@@ -55,11 +65,15 @@ const ACTIVITY_TYPES: { id: ActivityType; label: string; icon: React.ElementType
   { id: "other",         label: "Other",         icon: Activity,     color: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 ring-slate-300 dark:ring-slate-600" },
 ];
 
-// Returns local datetime string suitable for <input type="datetime-local">
+const DETAIL_TYPES = new Set<ActivityType>(["irrigation", "fertigation", "spraying", "scouting", "pruning"]);
+
 function toLocalISOString(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+const inputCls = "w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-400 transition";
+const labelSmCls = "block text-xs text-slate-500 dark:text-slate-400 mb-1";
 
 export default function LogActivityModal({ blocks, onClose, onSaved, onSavedOffline }: Props) {
   const [activityType, setActivityType] = useState<ActivityType>("irrigation");
@@ -70,21 +84,97 @@ export default function LogActivityModal({ blocks, onClose, onSaved, onSavedOffl
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ── Irrigation fields ──────────────────────────────────────────────────────
+  const [irrDuration, setIrrDuration] = useState("");
+  const [irrVolume, setIrrVolume] = useState("");
+  const [irrMethod, setIrrMethod] = useState<IrrigationDetails["method"]>("Drip");
+
+  // ── Fertigation fields ─────────────────────────────────────────────────────
+  const [fertProduct, setFertProduct] = useState("");
+  const [fertAmount, setFertAmount] = useState("");
+  const [fertUnit, setFertUnit] = useState<"kg" | "L">("kg");
+  const [fertGrowthNote, setFertGrowthNote] = useState("");
+
+  // ── Spraying fields ────────────────────────────────────────────────────────
+  const [sprayProduct, setSprayProduct] = useState("");
+  const [sprayRate, setSprayRate] = useState("");
+  const [sprayTarget, setSprayTarget] = useState("");
+  const [sprayPHI, setSprayPHI] = useState("");
+
+  // ── Scouting fields ────────────────────────────────────────────────────────
+  const [scoutRisk, setScoutRisk] = useState<ScoutingDetails["overall_risk"]>("green");
+  const [scoutObs, setScoutObs] = useState("");
+  const [scoutNext, setScoutNext] = useState("");
+
+  // ── Pruning fields ─────────────────────────────────────────────────────────
+  const [pruneType, setPruneType] = useState<PruningDetails["pruning_type"]>("Maintenance");
+  const [pruneIntensity, setPruneIntensity] = useState<PruningDetails["intensity"]>("Moderate");
+
   const titleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     titleRef.current?.focus();
   }, []);
 
-  // Auto-fill a sensible title when activity type changes, if user hasn't typed one
   const selectedType = ACTIVITY_TYPES.find((t) => t.id === activityType)!;
+
+  function resetDetailFields() {
+    setIrrDuration(""); setIrrVolume(""); setIrrMethod("Drip");
+    setFertProduct(""); setFertAmount(""); setFertUnit("kg"); setFertGrowthNote("");
+    setSprayProduct(""); setSprayRate(""); setSprayTarget(""); setSprayPHI("");
+    setScoutRisk("green"); setScoutObs(""); setScoutNext("");
+    setPruneType("Maintenance"); setPruneIntensity("Moderate");
+  }
 
   const handleTypeSelect = (type: ActivityType) => {
     setActivityType(type);
+    resetDetailFields();
     if (!title || ACTIVITY_TYPES.some((t) => t.label === title)) {
       setTitle(ACTIVITY_TYPES.find((t) => t.id === type)?.label ?? "");
     }
   };
+
+  function buildDetails(): ActivityDetails {
+    switch (activityType) {
+      case "irrigation":
+        return {
+          source: "manual", activity: "irrigation",
+          ...(irrDuration ? { duration_hours: parseFloat(irrDuration) } : {}),
+          ...(irrVolume ? { volume_per_tree_l: parseFloat(irrVolume) } : {}),
+          method: irrMethod,
+        };
+      case "fertigation":
+        return {
+          source: "manual", activity: "fertigation",
+          ...(fertProduct ? { product_name: fertProduct } : {}),
+          ...(fertAmount ? { amount_per_tree: parseFloat(fertAmount), amount_unit: fertUnit } : {}),
+          ...(fertGrowthNote ? { growth_stage_note: fertGrowthNote } : {}),
+        };
+      case "spraying":
+        return {
+          source: "manual", activity: "spraying",
+          ...(sprayProduct ? { product_name: sprayProduct } : {}),
+          ...(sprayRate ? { rate_l_per_ha: parseFloat(sprayRate) } : {}),
+          ...(sprayTarget ? { target: sprayTarget } : {}),
+          ...(sprayPHI ? { phi_days: parseInt(sprayPHI, 10) } : {}),
+        };
+      case "scouting":
+        return {
+          source: "manual", activity: "scouting",
+          overall_risk: scoutRisk,
+          ...(scoutObs ? { observations: scoutObs } : {}),
+          ...(scoutNext ? { next_scouting: new Date(scoutNext).toISOString() } : {}),
+        };
+      case "pruning":
+        return {
+          source: "manual", activity: "pruning",
+          pruning_type: pruneType,
+          intensity: pruneIntensity,
+        };
+      default:
+        return { source: "manual" };
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,12 +184,14 @@ export default function LogActivityModal({ blocks, onClose, onSaved, onSavedOffl
     setError(null);
 
     const block = blocks.find((b) => b.id === blockId) ?? null;
+    const details = buildDetails();
     const payload = {
       title: title.trim(),
       activity_type: activityType,
       block_id: blockId || null,
       description: description.trim() || null,
       performed_at: new Date(performedAt).toISOString(),
+      details,
     };
 
     // ── Offline path ──────────────────────────────────────────────────────────
@@ -148,7 +240,7 @@ export default function LogActivityModal({ blocks, onClose, onSaved, onSavedOffl
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col max-h-[90vh]">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-2.5 text-slate-900 dark:text-white font-semibold">
@@ -253,11 +345,194 @@ export default function LogActivityModal({ blocks, onClose, onSaved, onSavedOffl
                 id="log-notes"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={3}
+                rows={2}
                 placeholder="Observations, quantities, conditions…"
                 className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-400 resize-none transition"
               />
             </div>
+
+            {/* Activity-specific detail fields */}
+            {DETAIL_TYPES.has(activityType) && (
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Details</p>
+
+                {/* IRRIGATION */}
+                {activityType === "irrigation" && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelSmCls}>Duration (hours)</label>
+                        <input type="number" min="0" step="0.5" value={irrDuration}
+                          onChange={(e) => setIrrDuration(e.target.value)}
+                          placeholder="e.g. 4"
+                          className={inputCls} />
+                      </div>
+                      <div>
+                        <label className={labelSmCls}>Volume (L/tree)</label>
+                        <input type="number" min="0" step="0.1" value={irrVolume}
+                          onChange={(e) => setIrrVolume(e.target.value)}
+                          placeholder="e.g. 30"
+                          className={inputCls} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className={labelSmCls}>Method</label>
+                      <select value={irrMethod}
+                        onChange={(e) => setIrrMethod(e.target.value as IrrigationDetails["method"])}
+                        className={inputCls}>
+                        {["Drip", "Sprinkler", "Flood", "Surface"].map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {/* FERTIGATION */}
+                {activityType === "fertigation" && (
+                  <>
+                    <div>
+                      <label className={labelSmCls}>Product Name</label>
+                      <input type="text" value={fertProduct}
+                        onChange={(e) => setFertProduct(e.target.value)}
+                        placeholder="e.g. Haifa Multi-K"
+                        className={inputCls} />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelSmCls}>Amount / tree</label>
+                        <input type="number" min="0" step="0.01" value={fertAmount}
+                          onChange={(e) => setFertAmount(e.target.value)}
+                          placeholder="e.g. 0.5"
+                          className={inputCls} />
+                      </div>
+                      <div>
+                        <label className={labelSmCls}>Unit</label>
+                        <select value={fertUnit}
+                          onChange={(e) => setFertUnit(e.target.value as "kg" | "L")}
+                          className={inputCls}>
+                          <option value="kg">kg / tree</option>
+                          <option value="L">L / tree</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className={labelSmCls}>Growth Stage Note (optional)</label>
+                      <input type="text" value={fertGrowthNote}
+                        onChange={(e) => setFertGrowthNote(e.target.value)}
+                        placeholder="e.g. Nut development"
+                        className={inputCls} />
+                    </div>
+                  </>
+                )}
+
+                {/* SPRAYING */}
+                {activityType === "spraying" && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelSmCls}>Product Name</label>
+                        <input type="text" value={sprayProduct}
+                          onChange={(e) => setSprayProduct(e.target.value)}
+                          placeholder="e.g. Karate Zeon"
+                          className={inputCls} />
+                      </div>
+                      <div>
+                        <label className={labelSmCls}>Rate (L/ha)</label>
+                        <input type="number" min="0" step="0.1" value={sprayRate}
+                          onChange={(e) => setSprayRate(e.target.value)}
+                          placeholder="e.g. 600"
+                          className={inputCls} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className={labelSmCls}>Target pest / disease</label>
+                      <input type="text" value={sprayTarget}
+                        onChange={(e) => setSprayTarget(e.target.value)}
+                        placeholder="e.g. Spider mite"
+                        className={inputCls} />
+                    </div>
+                    <div>
+                      <label className={labelSmCls}>PHI (days, optional)</label>
+                      <input type="number" min="0" step="1" value={sprayPHI}
+                        onChange={(e) => setSprayPHI(e.target.value)}
+                        placeholder="e.g. 14"
+                        className={inputCls} />
+                    </div>
+                  </>
+                )}
+
+                {/* SCOUTING */}
+                {activityType === "scouting" && (
+                  <>
+                    <div>
+                      <label className={labelSmCls}>Overall Risk</label>
+                      <div className="flex gap-2 mt-1">
+                        {([
+                          { value: "green" as const, label: "Low",    cls: "text-green-700 bg-green-100 ring-green-300 dark:bg-green-900/40 dark:text-green-300 dark:ring-green-700" },
+                          { value: "amber" as const, label: "Medium", cls: "text-amber-700 bg-amber-100 ring-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:ring-amber-700" },
+                          { value: "red"   as const, label: "High",   cls: "text-red-700 bg-red-100 ring-red-300 dark:bg-red-900/40 dark:text-red-300 dark:ring-red-700" },
+                        ]).map((opt) => (
+                          <button key={opt.value} type="button"
+                            onClick={() => setScoutRisk(opt.value)}
+                            className={`flex-1 py-2 rounded-lg text-xs font-medium ring-1 transition-all ${
+                              scoutRisk === opt.value
+                                ? `${opt.cls} ring-2 scale-[1.03]`
+                                : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 ring-slate-200 dark:ring-slate-700"
+                            }`}>
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className={labelSmCls}>Observations</label>
+                      <textarea value={scoutObs} onChange={(e) => setScoutObs(e.target.value)} rows={2}
+                        placeholder="Pest name, count, stage…"
+                        className={`${inputCls} resize-none`} />
+                    </div>
+                    <div>
+                      <label className={labelSmCls}>Next Scouting Date (optional)</label>
+                      <input type="date" value={scoutNext}
+                        onChange={(e) => setScoutNext(e.target.value)}
+                        className={inputCls} />
+                    </div>
+                  </>
+                )}
+
+                {/* PRUNING */}
+                {activityType === "pruning" && (
+                  <>
+                    <div>
+                      <label className={labelSmCls}>Pruning Type</label>
+                      <select value={pruneType}
+                        onChange={(e) => setPruneType(e.target.value as PruningDetails["pruning_type"])}
+                        className={inputCls}>
+                        {["Formative", "Maintenance", "Summer", "Renovation"].map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelSmCls}>Intensity</label>
+                      <div className="flex gap-2 mt-1">
+                        {(["Low", "Moderate", "Heavy"] as const).map((level) => (
+                          <button key={level} type="button"
+                            onClick={() => setPruneIntensity(level)}
+                            className={`flex-1 py-2 rounded-lg text-xs font-medium ring-1 transition-all ${
+                              pruneIntensity === level
+                                ? "bg-amber-100 text-amber-700 ring-amber-300 ring-2 scale-[1.03] dark:bg-amber-900/40 dark:text-amber-300 dark:ring-amber-700"
+                                : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 ring-slate-200 dark:ring-slate-700"
+                            }`}>
+                            {level}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Error */}
             {error && (

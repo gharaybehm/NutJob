@@ -10,7 +10,9 @@
     "settings": "Ayarlar",
     "more": "Daha Fazla",
     "signOut": "Çıkış Yap",
-    "goBack": "Geri"
+    "goBack": "Geri",
+    "farms": "Çiftliklerim",
+    "current": "Mevcut"
   },
   "topNav": {
     "searchPlaceholder": "Blokları, işlemleri veya önerileri arayın...",

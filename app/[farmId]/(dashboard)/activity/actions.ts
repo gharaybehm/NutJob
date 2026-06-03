@@ -4,6 +4,14 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 
+export type IrrigationDetails  = { source: "manual"; activity: "irrigation";  duration_hours?: number; volume_per_tree_l?: number; method?: "Drip" | "Sprinkler" | "Flood" | "Surface" };
+export type FertigationDetails = { source: "manual"; activity: "fertigation"; product_name?: string; amount_per_tree?: number; amount_unit?: "kg" | "L"; growth_stage_note?: string };
+export type SprayingDetails    = { source: "manual"; activity: "spraying";    product_name?: string; rate_l_per_ha?: number; target?: string; phi_days?: number };
+export type ScoutingDetails    = { source: "manual"; activity: "scouting";    overall_risk?: "green" | "amber" | "red"; observations?: string; next_scouting?: string };
+export type PruningDetails     = { source: "manual"; activity: "pruning";     pruning_type?: "Formative" | "Maintenance" | "Summer" | "Renovation"; intensity?: "Low" | "Moderate" | "Heavy" };
+export type GenericDetails     = { source: "manual" };
+export type ActivityDetails    = IrrigationDetails | FertigationDetails | SprayingDetails | ScoutingDetails | PruningDetails | GenericDetails;
+
 export type ActivityLogEntry = {
   id: string;
   title: string;
@@ -14,6 +22,7 @@ export type ActivityLogEntry = {
   performed_by: string | null;
   created_at: string;
   blocks: { name: string } | null;
+  details?: ActivityDetails | null;
 };
 
 export async function getActivityLog(params?: {
@@ -38,7 +47,7 @@ export async function getActivityLog(params?: {
 
   let query = supabase
     .from("activity_log")
-    .select("id, title, activity_type, block_id, description, performed_at, performed_by, created_at, blocks(name)", {
+    .select("id, title, activity_type, block_id, description, performed_at, performed_by, created_at, details, blocks(name)", {
       count: "exact",
     })
     .order("performed_at", { ascending: false });
@@ -92,6 +101,7 @@ export async function logActivity(
     block_id: string | null;
     description: string | null;
     performed_at: string;
+    details?: ActivityDetails;
   },
   farmId?: string,
 ): Promise<{ id: string }> {
@@ -110,12 +120,64 @@ export async function logActivity(
       description: params.description,
       performed_at: params.performed_at,
       performed_by: user.id,
-      details: { source: "manual" },
+      details: params.details ?? { source: "manual" },
     })
     .select("id")
     .single();
 
   if (error) throw new Error(error.message);
+
+  // Side-write: fertigation_log (only when block_id is set and details are present)
+  if (
+    params.activity_type === "fertigation" &&
+    params.block_id &&
+    params.details &&
+    "activity" in params.details &&
+    params.details.activity === "fertigation"
+  ) {
+    const d = params.details as FertigationDetails;
+    if (d.product_name && d.amount_per_tree != null) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (admin.from("fertigation_log") as any).insert({
+          block_id: params.block_id,
+          fertilizer_type: d.product_name,
+          amount_kg_per_tree: d.amount_per_tree,
+          applied_at: params.performed_at,
+          growth_stage_note: d.growth_stage_note ?? null,
+          notes: params.description ?? null,
+          entered_by: user.id,
+          calendar_event_id: null,
+        });
+      } catch (e) {
+        console.error("[logActivity] fertigation_log side-write failed:", e);
+      }
+    }
+  }
+
+  // Side-write: scouting_reports (only when block_id is set and details are present)
+  if (
+    params.activity_type === "scouting" &&
+    params.block_id &&
+    params.details &&
+    "activity" in params.details &&
+    params.details.activity === "scouting"
+  ) {
+    const d = params.details as ScoutingDetails;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin.from("scouting_reports") as any).insert({
+        block_id: params.block_id,
+        scouted_at: params.performed_at,
+        overall_risk: d.overall_risk ?? "green",
+        notes: d.observations ?? params.description ?? null,
+        next_scouting: d.next_scouting ?? null,
+        scout_id: user.id,
+      });
+    } catch (e) {
+      console.error("[logActivity] scouting_reports side-write failed:", e);
+    }
+  }
 
   if (farmId) revalidatePath(`/${farmId}/activity`);
   else revalidatePath("/activity");

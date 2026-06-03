@@ -10,7 +10,9 @@
     "settings": "الإعدادات",
     "more": "المزيد",
     "signOut": "تسجيل الخروج",
-    "goBack": "رجوع"
+    "goBack": "رجوع",
+    "farms": "مزارعي",
+    "current": "الحالية"
   },
   "topNav": {
     "searchPlaceholder": "البحث في القطع والإجراءات والتوصيات...",

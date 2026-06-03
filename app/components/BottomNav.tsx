@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
@@ -16,16 +16,30 @@ import {
   X,
 } from "lucide-react";
 import SignOutButton from "./auth/SignOutButton";
+import type { FarmWithMeta } from "@/utils/supabase/farm-types";
 
 interface BottomNavProps {
   userRole?: "admin" | "supervisor" | "worker";
   farmId: string;
+  farms?: FarmWithMeta[];
 }
 
-export default function BottomNav({ userRole, farmId }: BottomNavProps) {
+const PAGE_SLUGS = ['dashboard', 'blocks', 'calendar', 'recommendations', 'activity', 'inventory', 'settings'];
+
+export default function BottomNav({ userRole, farmId, farms = [] }: BottomNavProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const t = useTranslations('nav');
+
+  function switchFarm(targetFarmId: string) {
+    if (targetFarmId === farmId) return;
+    const segments = pathname.split('/').filter(Boolean);
+    const lastSlug = segments[segments.length - 1] ?? 'dashboard';
+    const pageSlug = PAGE_SLUGS.includes(lastSlug) ? lastSlug : 'dashboard';
+    setDrawerOpen(false);
+    router.push(`/${targetFarmId}/${pageSlug}`);
+  }
 
   const primaryNav = [
     { id: "dashboard", name: t("dashboard"), href: `/${farmId}/dashboard`, icon: LayoutDashboard },
@@ -59,7 +73,7 @@ export default function BottomNav({ userRole, farmId }: BottomNavProps) {
         className={`fixed start-0 end-0 z-50 md:hidden bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 rounded-t-2xl shadow-xl transition-transform duration-200 ease-out ${
           drawerOpen ? "translate-y-0" : "translate-y-full"
         }`}
-        style={{ bottom: "64px" }}
+        style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
       >
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
@@ -91,6 +105,31 @@ export default function BottomNav({ userRole, farmId }: BottomNavProps) {
               );
             })}
           </div>
+          {farms.length > 1 && (
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-3 mb-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t("farms")}</p>
+              <div className="flex flex-col gap-1">
+                {farms.map((farm) => {
+                  const isCurrentFarm = farm.id === farmId;
+                  return (
+                    <button
+                      key={farm.id}
+                      onClick={() => switchFarm(farm.id)}
+                      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-left transition-colors ${
+                        isCurrentFarm
+                          ? "bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300"
+                          : "text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <span className={`h-2 w-2 rounded-full flex-shrink-0 ${isCurrentFarm ? "bg-brand-500" : "bg-slate-300 dark:bg-slate-600"}`} />
+                      <span className="truncate">{farm.name}</span>
+                      {isCurrentFarm && <span className="ms-auto text-xs text-brand-500">{t("current")}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
             <SignOutButton />
           </div>
@@ -98,7 +137,7 @@ export default function BottomNav({ userRole, farmId }: BottomNavProps) {
       </div>
 
       {/* Bottom navigation bar */}
-      <nav className="fixed bottom-0 start-0 end-0 z-40 md:hidden bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+      <nav className="fixed bottom-0 start-0 end-0 z-40 md:hidden bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="flex h-16 items-stretch">
           {primaryNav.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);

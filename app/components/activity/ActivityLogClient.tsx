@@ -3,7 +3,7 @@
 import { useState, useTransition, useCallback, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Search, Filter, Droplets, Sprout, Bug, Scissors, FlaskConical, Activity, Leaf, PlusCircle, WifiOff, RefreshCw, CheckCircle } from "lucide-react";
-import { getActivityLog, logActivity, type ActivityLogEntry } from "@/app/[farmId]/(dashboard)/activity/actions";
+import { getActivityLog, logActivity, type ActivityLogEntry, type ActivityDetails } from "@/app/[farmId]/(dashboard)/activity/actions";
 import dynamic from 'next/dynamic';
 const LogActivityModal = dynamic(() => import('./LogActivityModal'), { ssr: false });
 
@@ -20,6 +20,53 @@ interface QueuedActivity {
   performed_at: string;
   block_name: string | null;
   saved_at: string;
+  details?: ActivityDetails;
+}
+
+type DetailChip = { label: string; value: string };
+
+function getDetailChips(details: ActivityDetails | null | undefined): DetailChip[] {
+  if (!details || !("activity" in details)) return [];
+  const d = details as Extract<ActivityDetails, { activity: string }>;
+  switch (d.activity) {
+    case "irrigation": {
+      const chips: DetailChip[] = [];
+      if (d.duration_hours != null) chips.push({ label: "Duration", value: `${d.duration_hours}h` });
+      if (d.volume_per_tree_l != null) chips.push({ label: "Volume", value: `${d.volume_per_tree_l} L/tree` });
+      if (d.method) chips.push({ label: "Method", value: d.method });
+      return chips;
+    }
+    case "fertigation": {
+      const chips: DetailChip[] = [];
+      if (d.product_name) chips.push({ label: "Product", value: d.product_name });
+      if (d.amount_per_tree != null) chips.push({ label: "Amount", value: `${d.amount_per_tree} ${d.amount_unit ?? "kg"}/tree` });
+      if (d.growth_stage_note) chips.push({ label: "Stage", value: d.growth_stage_note });
+      return chips;
+    }
+    case "spraying": {
+      const chips: DetailChip[] = [];
+      if (d.product_name) chips.push({ label: "Product", value: d.product_name });
+      if (d.rate_l_per_ha != null) chips.push({ label: "Rate", value: `${d.rate_l_per_ha} L/ha` });
+      if (d.target) chips.push({ label: "Target", value: d.target });
+      if (d.phi_days != null) chips.push({ label: "PHI", value: `${d.phi_days}d` });
+      return chips;
+    }
+    case "scouting": {
+      const riskLabel: Record<string, string> = { green: "Low risk", amber: "Medium risk", red: "High risk" };
+      const chips: DetailChip[] = [];
+      if (d.overall_risk) chips.push({ label: "Risk", value: riskLabel[d.overall_risk] ?? d.overall_risk });
+      if (d.next_scouting) chips.push({ label: "Next scout", value: new Date(d.next_scouting).toLocaleDateString() });
+      return chips;
+    }
+    case "pruning": {
+      const chips: DetailChip[] = [];
+      if (d.pruning_type) chips.push({ label: "Type", value: d.pruning_type });
+      if (d.intensity) chips.push({ label: "Intensity", value: d.intensity });
+      return chips;
+    }
+    default:
+      return [];
+  }
 }
 
 function readQueue(): QueuedActivity[] {
@@ -115,6 +162,7 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
       id: q.id, title: q.title, activity_type: q.activity_type,
       block_id: q.block_id, description: q.description, performed_at: q.performed_at,
       performed_by: null, blocks: q.block_name ? { name: q.block_name } : null, created_at: q.saved_at,
+      details: q.details ?? null,
     }));
     setEntries((prev) => {
       const existingIds = new Set(prev.map((e) => e.id));
@@ -129,7 +177,7 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
     let synced = 0;
     for (const item of queued) {
       try {
-        const result = await logActivity({ title: item.title, activity_type: item.activity_type, block_id: item.block_id, description: item.description, performed_at: item.performed_at });
+        const result = await logActivity({ title: item.title, activity_type: item.activity_type, block_id: item.block_id, description: item.description, performed_at: item.performed_at, details: item.details });
         setEntries((prev) => prev.map((e) => e.id === item.id ? { ...e, id: result.id } : e));
         setPendingIds((prev) => { const next = new Set(prev); next.delete(item.id); return next; });
         removeFromQueue(item.id);
@@ -293,6 +341,20 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
                         {entry.description}
                       </p>
                     )}
+                    {(() => {
+                      const chips = getDetailChips(entry.details as ActivityDetails | null | undefined);
+                      if (chips.length === 0) return null;
+                      return (
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {chips.map((chip) => (
+                            <span key={chip.label} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                              <span className="font-medium text-slate-500 dark:text-slate-500">{chip.label}:</span>
+                              {chip.value}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </li>
               );

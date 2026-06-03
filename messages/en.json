@@ -10,7 +10,9 @@
     "settings": "Settings",
     "more": "More",
     "signOut": "Sign Out",
-    "goBack": "Go back"
+    "goBack": "Go back",
+    "farms": "My Farms",
+    "current": "Current"
   },
   "topNav": {
     "searchPlaceholder": "Search blocks, actions, or recommendations...",
