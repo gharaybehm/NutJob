@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 
 function numOrNull(v: string | null): number | null {
@@ -74,7 +73,7 @@ export async function logTestResult(
     fileUrl = filePath;
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Derive soil_ec for water tests: convert µs/cm → ms/cm (÷1000)
   let ecValue: number | null = numOrNull(soilEc);
