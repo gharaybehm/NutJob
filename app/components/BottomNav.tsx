@@ -71,7 +71,7 @@ export default function BottomNav({ userRole, farmId, farms = [] }: BottomNavPro
       {/* More drawer — slides up above the nav bar */}
       <div
         className={`fixed start-0 end-0 z-50 md:hidden bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 rounded-t-2xl shadow-xl transition-transform duration-200 ease-out ${
-          drawerOpen ? "translate-y-0" : "translate-y-full"
+          drawerOpen ? "translate-y-0 pointer-events-auto" : "translate-y-full pointer-events-none"
         }`}
         style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
       >
