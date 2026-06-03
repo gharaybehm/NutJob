@@ -68,13 +68,13 @@ export default async function SettingsPage({
     .single()
 
   // Fetch sensors with their assigned block name
-  const { data: sensorsRaw = [] } = await db
+  const { data: sensorsRaw } = await db
     .from('sensors')
     .select('*, block:blocks(name)')
     .eq('farm_id', farmId)
     .order('created_at', { ascending: false })
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sensors = (sensorsRaw as any[]).map((s: any) => ({
+  const sensors = ((sensorsRaw ?? []) as any[]).map((s: any) => ({
     ...s,
     block_name: s.block?.name ?? null,
     block: undefined,
