@@ -54,7 +54,7 @@ export default async function RootLayout({
       dir={isRTL ? 'rtl' : 'ltr'}
       className={`${geistSans.variable} ${geistMono.variable} ${isRTL ? notoSansArabic.variable : ''} h-full antialiased`}
     >
-      <body className="flex h-full overflow-hidden bg-slate-50 dark:bg-slate-900">
+      <body className="flex h-dvh overflow-hidden bg-slate-50 dark:bg-slate-900">
         <NextIntlClientProvider messages={messages} locale={locale}>
           {children}
         </NextIntlClientProvider>

@@ -91,13 +91,13 @@ export default async function DashboardLayout({
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopNav farmId={farmId} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 md:pb-6 md:pr-14" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 md:pb-6 md:pr-14">
           <div className="mx-auto max-w-7xl">
             {children}
           </div>
         </main>
+        <BottomNav userRole={effectiveRole} farmId={farmId} farms={allFarms} />
       </div>
-      <BottomNav userRole={effectiveRole} farmId={farmId} farms={allFarms} />
       <FarmTabs farms={allFarms} currentFarmId={farmId} maxFarms={3} />
     </>
   );

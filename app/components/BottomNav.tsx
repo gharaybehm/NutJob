@@ -59,21 +59,20 @@ export default function BottomNav({ userRole, farmId, farms = [] }: BottomNavPro
   );
 
   return (
-    <>
+    <div className="relative md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {/* Backdrop */}
       {drawerOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40"
           onClick={() => setDrawerOpen(false)}
         />
       )}
 
-      {/* More drawer — slides up above the nav bar */}
+      {/* More drawer — floats above the nav bar */}
       <div
-        className={`fixed start-0 end-0 z-50 md:hidden bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 rounded-t-2xl shadow-xl transition-transform duration-200 ease-out ${
-          drawerOpen ? "translate-y-0 pointer-events-auto" : "translate-y-full pointer-events-none"
+        className={`absolute bottom-full start-0 end-0 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 rounded-t-2xl shadow-xl transition-all duration-200 ease-out ${
+          drawerOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible translate-y-2"
         }`}
-        style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
       >
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
@@ -137,7 +136,7 @@ export default function BottomNav({ userRole, farmId, farms = [] }: BottomNavPro
       </div>
 
       {/* Bottom navigation bar */}
-      <nav className="fixed bottom-0 start-0 end-0 z-40 md:hidden bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <nav className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
         <div className="flex h-16 items-stretch">
           {primaryNav.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -181,6 +180,6 @@ export default function BottomNav({ userRole, farmId, farms = [] }: BottomNavPro
           </button>
         </div>
       </nav>
-    </>
+    </div>
   );
 }
