@@ -42,7 +42,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: https: blob:",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://openrouter.ai https://api.open-meteo.com https://trefle.io",
               "font-src 'self'",
-              "worker-src blob:",
+              "worker-src 'self' blob:",
               "frame-ancestors 'none'",
             ].join("; "),
           },

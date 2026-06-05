@@ -78,6 +78,23 @@ export default async function DashboardLayout({
   // Per-farm role takes precedence for UI gating
   const effectiveRole = (membership.role as "admin" | "supervisor" | "worker") ?? profile.role;
 
+  // Count unresolved alerts for the bell badge
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: farmBlocks } = await (db as any)
+    .from('blocks')
+    .select('id')
+    .eq('farm_id', farmId)
+  const blockIds: string[] = ((farmBlocks ?? []) as { id: string }[]).map((b) => b.id)
+  let unresolvedAlertCount = 0
+  if (blockIds.length > 0) {
+    const { count } = await supabase
+      .from('block_alerts')
+      .select('*', { count: 'exact', head: true })
+      .in('block_id', blockIds)
+      .eq('resolved', false)
+    unresolvedAlertCount = count ?? 0
+  }
+
   // All farms for the tab bar
   const allFarms = await getFarms();
 
@@ -90,7 +107,7 @@ export default async function DashboardLayout({
         farmId={farmId}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <TopNav farmId={farmId} />
+        <TopNav farmId={farmId} alertCount={unresolvedAlertCount} />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 md:pb-6 md:pr-14">
           <div className="mx-auto max-w-7xl">
             {children}

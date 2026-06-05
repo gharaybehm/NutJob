@@ -40,6 +40,26 @@ export async function POST(request: Request) {
 
   if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 })
 
+  // Fire push notification for warning/critical alerts (non-blocking)
+  if (severity === 'warning' || severity === 'critical') {
+    const { data: block } = await (admin as any)
+      .from('blocks')
+      .select('farm_id, name')
+      .eq('id', body.block_id)
+      .single()
+
+    if (block?.farm_id) {
+      import('@/utils/push').then(({ sendPushToFarm }) => {
+        sendPushToFarm(block.farm_id, {
+          title: severity === 'critical' ? 'Critical Farm Alert' : 'Farm Alert',
+          body: body.message,
+          url: `/${block.farm_id}/dashboard`,
+          tag: `alert-${body.block_id}-${body.domain}`,
+        }).catch((e: unknown) => console.error('[Push] Alert push failed:', e))
+      })
+    }
+  }
+
   await updateSensorHeartbeat(sensor.id)
   return NextResponse.json({ ok: true })
 }

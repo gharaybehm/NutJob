@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell, Search, ArrowLeft, Globe } from "lucide-react";
+import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
@@ -9,6 +10,7 @@ import { setLocale } from "@/app/(dashboard)/settings/actions";
 
 interface TopNavProps {
   farmId: string;
+  alertCount?: number;
 }
 
 const LOCALE_OPTIONS = [
@@ -17,7 +19,7 @@ const LOCALE_OPTIONS = [
   { value: 'tr', label: 'Türkçe',   flag: '🇹🇷' },
 ];
 
-export default function TopNav({ farmId }: TopNavProps) {
+export default function TopNav({ farmId, alertCount = 0 }: TopNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations('nav');
@@ -144,13 +146,18 @@ export default function TopNav({ farmId }: TopNavProps) {
         </div>
 
         {/* Notification bell */}
-        <button className="relative h-11 w-11 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
-          <span className="absolute top-1.5 end-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-900">
-            3
-          </span>
+        <Link
+          href={`/${farmId}/dashboard`}
+          className="relative h-11 w-11 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors"
+        >
+          {alertCount > 0 && (
+            <span className="absolute top-1.5 end-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-900">
+              {alertCount > 99 ? '99+' : alertCount}
+            </span>
+          )}
           <span className="sr-only">{tTop("viewNotifications")}</span>
           <Bell className="h-5 w-5" aria-hidden="true" />
-        </button>
+        </Link>
       </div>
     </header>
   );

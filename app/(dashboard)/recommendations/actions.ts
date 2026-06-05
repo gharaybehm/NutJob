@@ -418,6 +418,23 @@ export async function generateAIRecommendations(): Promise<{ count: number; mode
   const { error: insertError } = await admin.from("recommendations").insert(toInsert);
   if (insertError) throw new Error(`Insert error: ${insertError.message}`);
 
+  // Fire push notifications per farm (non-blocking)
+  const blockFarmMap = new Map(blocks.map((b) => [b.id, (b as { id: string; farm_id?: string }).farm_id]))
+  const farmIds = [...new Set(toInsert.map((r) => blockFarmMap.get(r.block_id)).filter(Boolean) as string[])]
+  if (farmIds.length > 0) {
+    import('@/utils/push').then(({ sendPushToFarm }) => {
+      farmIds.forEach((fid) => {
+        const count = toInsert.filter((r) => blockFarmMap.get(r.block_id) === fid).length
+        sendPushToFarm(fid, {
+          title: 'New AI Recommendations',
+          body: `${count} new recommendation${count !== 1 ? 's' : ''} generated for your farm.`,
+          url: `/${fid}/recommendations`,
+          tag: 'ai-recommendations',
+        }).catch((e: unknown) => console.error('[Push] Recommendation push failed:', e))
+      })
+    })
+  }
+
   revalidatePath("/recommendations");
   return { count: toInsert.length, model: OPENROUTER_MODEL };
   } catch (e) {

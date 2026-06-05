@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { subscribeToPush, unsubscribeFromPush } from '@/app/components/ServiceWorkerRegistration'
 import {
   updateProfile,
   updatePassword,
@@ -524,7 +525,126 @@ function ThresholdSlider({ id, label, description, icon: Icon, value, onChange, 
   )
 }
 
-function NotificationAlertsTab() {
+type PushStatus = 'unknown' | 'subscribed' | 'unsubscribed' | 'denied' | 'unsupported'
+
+function PushNotificationToggle({ farmId }: { farmId: string }) {
+  const [status, setStatus] = useState<PushStatus>('unknown')
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setStatus('unsupported'); return
+    }
+    if (Notification.permission === 'denied') {
+      setStatus('denied'); return
+    }
+    let cancelled = false
+    // Fallback: if SW isn't ready within 3 s (e.g. first install), show toggle as off
+    const timeout = setTimeout(() => {
+      if (!cancelled) setStatus('unsubscribed')
+    }, 3000)
+    navigator.serviceWorker.ready.then((reg) => {
+      clearTimeout(timeout)
+      if (cancelled) return
+      reg.pushManager.getSubscription().then((sub) => {
+        if (!cancelled) setStatus(sub ? 'subscribed' : 'unsubscribed')
+      })
+    })
+    return () => { cancelled = true; clearTimeout(timeout) }
+  }, [])
+
+  async function handleToggle() {
+    setLoading(true)
+    setMessage(null)
+    try {
+      if (status === 'subscribed') {
+        const ok = await unsubscribeFromPush()
+        setStatus(ok ? 'unsubscribed' : 'subscribed')
+        if (ok) setMessage('Push notifications disabled on this device.')
+      } else {
+        const ok = await subscribeToPush(farmId)
+        if (ok) {
+          setStatus('subscribed')
+          setMessage('Push notifications enabled! You will receive alerts on this device.')
+        } else {
+          if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+            setStatus('denied')
+            setMessage('Permission blocked. Enable Notifications in your browser site settings, then refresh.')
+          } else {
+            setMessage('Could not enable push notifications. Try again.')
+          }
+        }
+      }
+    } catch {
+      setMessage('An error occurred. Please try again.')
+    }
+    setLoading(false)
+  }
+
+  const isOn = status === 'subscribed'
+
+  if (status === 'unsupported') {
+    return (
+      <div className="flex items-start gap-3 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+        <Bell className="h-5 w-5 text-slate-400 mt-0.5 shrink-0" />
+        <div>
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Push Notifications</p>
+          <p className="text-xs text-slate-400 mt-1">Not supported in this browser. Use Chrome or Safari on iOS 16.4+.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-3">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className={`rounded-lg p-2 ${isOn ? 'bg-brand-50 dark:bg-brand-900/30' : 'bg-slate-100 dark:bg-slate-800'}`}>
+            <Bell className={`h-5 w-5 ${isOn ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400'}`} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">Push Notifications</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {status === 'denied'
+                ? 'Permission blocked in browser settings'
+                : isOn
+                ? 'Enabled on this device'
+                : status === 'unknown'
+                ? 'Checking…'
+                : 'Disabled on this device'}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={loading || status === 'denied' || status === 'unknown'}
+          aria-pressed={isOn}
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 ${
+            isOn ? 'bg-brand-600' : 'bg-slate-200 dark:bg-slate-700'
+          }`}
+        >
+          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isOn ? 'translate-x-6' : 'translate-x-1'}`} />
+        </button>
+      </div>
+      {status === 'denied' && (
+        <p className="text-xs text-amber-600 dark:text-amber-400">
+          Click the lock/info icon in your browser address bar, allow Notifications, then refresh.
+        </p>
+      )}
+      {message && (
+        <p className={`text-xs ${message.startsWith('Push notifications enabled') || message.startsWith('Push notifications disabled') ? 'text-brand-600 dark:text-brand-400' : 'text-red-600 dark:text-red-400'}`}>
+          {message}
+        </p>
+      )}
+      <p className="text-xs text-slate-400 dark:text-slate-500">
+        Receive alerts for high-priority block issues and new AI recommendations when you&apos;re away from the app.
+      </p>
+    </div>
+  )
+}
+
+function NotificationAlertsTab({ farmId }: { farmId: string }) {
   const [prefs, setPrefs] = useState<NotifPrefs>(() => loadFromStorage(STORAGE_KEY_PREFS, DEFAULT_PREFS))
   const [saved, setSaved] = useState(false)
 
@@ -548,6 +668,7 @@ function NotificationAlertsTab() {
     <SectionCard title="Notification Alert Thresholds" icon={Bell}
       description="Configure when alerts fire across the dashboard and block panels. These settings are stored locally on this device.">
       <div className="space-y-8 max-w-xl">
+        <PushNotificationToggle farmId={farmId} />
         <ThresholdSlider id="soil-moisture-low" label="Soil Moisture — Low Alert" description="Alert fires when a block's soil moisture reading falls below this level."
           icon={Droplets} colorClass="text-blue-500" value={prefs.soilMoistureLow} onChange={v => update('soilMoistureLow', v)} min={5} max={50} step={1} unit="%" />
         <ThresholdSlider id="water-deficit-high" label="Water Deficit — Critical" description="Alert fires when estimated water deficit exceeds this amount."
@@ -1240,7 +1361,7 @@ export default function SettingsForms({
       {activeTab === 'profile'  && <AccountTab initialProfile={initialProfile} />}
       {activeTab === 'team'     && <TeamTab userRole={userRole} initialProfile={initialProfile} allUsers={allUsers} />}
       {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} />}
-      {activeTab === 'alerts'   && <NotificationAlertsTab />}
+      {activeTab === 'alerts'   && <NotificationAlertsTab farmId={farmId ?? ''} />}
       {activeTab === 'sensors'  && <SensorConnectionsTab initialSensors={sensors} blocks={blocks} farmId={farmId ?? ''} />}
       {activeTab === 'weather'  && <WeatherAPITab farmId={farmId} farmName={farmName} farmAddress={farmAddress} initialLat={farmGpsLat} initialLng={farmGpsLng} />}
       {activeTab === 'language' && <LanguageTab />}
