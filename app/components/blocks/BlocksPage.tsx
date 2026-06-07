@@ -54,6 +54,7 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [testModalOpen, setTestModalOpen] = useState(false);
+  const [soilRefreshKey, setSoilRefreshKey] = useState(0);
   const [isPending, startTransition] = useTransition();
 
   // ─── Map edit mode state ────────────────────────────────────────────────────
@@ -434,6 +435,7 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
             profile={selectedProfile}
             onEdit={userRole !== "worker" ? () => openEditBlock(selectedProfile.block) : undefined}
             onDelete={userRole === "admin" ? () => confirmDeleteBlock(selectedProfile.block.id) : undefined}
+            soilRefreshKey={soilRefreshKey}
           />
         ) : (
           <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-400">
@@ -452,7 +454,7 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
 
       <LogTestResultModal
         open={testModalOpen}
-        onClose={() => setTestModalOpen(false)}
+        onClose={() => { setTestModalOpen(false); setSoilRefreshKey(k => k + 1); }}
         blocks={blocks}
         defaultBlockId={selectedId}
       />

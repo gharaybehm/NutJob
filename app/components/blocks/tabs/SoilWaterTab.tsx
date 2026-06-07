@@ -5,11 +5,13 @@ import { Paperclip, Wifi } from 'lucide-react';
 import type { SoilWaterDomain } from '../types';
 import AlertBadge from '../AlertBadge';
 import SourceBadge from '../SourceBadge';
+import { getLabReadings } from '@/app/actions/soilTests';
 
 interface Props {
   data: SoilWaterDomain;
   blockId: string;
   sensorCount?: number;
+  refreshKey?: number;
 }
 
 interface SoilParams {
@@ -261,28 +263,17 @@ function ReadingCard({ r }: { r: ManualReading }) {
 
 // ─── Main tab ─────────────────────────────────────────────────────────────────
 
-export default function SoilWaterTab({ data, blockId, sensorCount = 0 }: Props) {
+export default function SoilWaterTab({ data, blockId, sensorCount = 0, refreshKey }: Props) {
   const [history, setHistory]               = useState<ManualReading[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     if (!blockId) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHistoryLoading(true);
-    import('@/utils/supabase/client').then(async ({ createClient }) => {
-      const sb = createClient();
-      // Fetch block-specific AND farm-level (null block_id) readings
-      const { data: rows } = await sb
-        .from('soil_water_readings')
-        .select('id, recorded_at, test_type, ph, soil_ec, soil_moisture, root_zone_temp, water_deficit, lab_reference, file_url, notes, parameters')
-        .or(`block_id.eq.${blockId},block_id.is.null`)
-        .eq('source', 'manual')
-        .order('recorded_at', { ascending: false })
-        .limit(20);
-      setHistory((rows ?? []) as ManualReading[]);
-      setHistoryLoading(false);
-    });
-  }, [blockId]);
+    getLabReadings(blockId)
+      .then(rows => { setHistory(rows as ManualReading[]); setHistoryLoading(false); })
+      .catch(() => setHistoryLoading(false));
+  }, [blockId, refreshKey]);
 
   const moistureStatus =
     data.soilMoisture < data.wiltingPoint ? 'text-red-600' :
