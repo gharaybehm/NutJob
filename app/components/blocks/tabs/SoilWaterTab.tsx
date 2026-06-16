@@ -5,7 +5,6 @@ import { Paperclip, Wifi } from 'lucide-react';
 import type { SoilWaterDomain } from '../types';
 import AlertBadge from '../AlertBadge';
 import SourceBadge from '../SourceBadge';
-import { getLabReadings } from '@/app/actions/soilTests';
 
 interface Props {
   data: SoilWaterDomain;
@@ -270,8 +269,12 @@ export default function SoilWaterTab({ data, blockId, sensorCount = 0, refreshKe
   useEffect(() => {
     if (!blockId) return;
     setHistoryLoading(true);
-    getLabReadings(blockId)
-      .then(rows => { setHistory(rows as ManualReading[]); setHistoryLoading(false); })
+    fetch(`/api/lab-readings?blockId=${encodeURIComponent(blockId)}`)
+      .then(r => r.json())
+      .then(({ data, error }) => {
+        if (!error) setHistory((data ?? []) as ManualReading[]);
+        setHistoryLoading(false);
+      })
       .catch(() => setHistoryLoading(false));
   }, [blockId, refreshKey]);
 
