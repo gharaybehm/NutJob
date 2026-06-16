@@ -113,7 +113,7 @@ export async function getLabReadings(blockId: string): Promise<{
   const { data, error } = await supabase
     .from('soil_water_readings')
     .select('id, recorded_at, test_type, ph, soil_ec, soil_moisture, root_zone_temp, water_deficit, lab_reference, file_url, notes, parameters')
-    .or(`block_id.eq.${blockId},block_id.is.null`)
+    .eq('block_id', blockId)
     .eq('source', 'manual')
     .order('recorded_at', { ascending: false })
     .limit(20);

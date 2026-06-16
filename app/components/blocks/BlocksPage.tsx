@@ -456,7 +456,7 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
         open={testModalOpen}
         onClose={() => { setTestModalOpen(false); setSoilRefreshKey(k => k + 1); }}
         blocks={blocks}
-        defaultBlockId={selectedId}
+        defaultBlockId="__farm__"
       />
 
       {/* Log Test Result FAB */}
