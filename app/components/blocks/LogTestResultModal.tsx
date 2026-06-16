@@ -253,22 +253,6 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
     setSaving(true);
 
     try {
-      // Upload file first via API route (keeps binary out of server action payload)
-      let fileUrl: string | null = null;
-      if (file) {
-        const uploadFd = new FormData();
-        uploadFd.append('file', file);
-        uploadFd.append('blockId', blockId === '__farm__' ? '' : blockId);
-        const uploadRes = await fetch('/api/upload-lab-report', { method: 'POST', body: uploadFd });
-        const uploadJson = await uploadRes.json();
-        if (!uploadRes.ok || uploadJson.error) {
-          setError(uploadJson.error ?? 'File upload failed');
-          setSaving(false);
-          return;
-        }
-        fileUrl = uploadJson.fileUrl as string;
-      }
-
       const fd = new FormData();
       fd.append('blockId',      blockId === '__farm__' ? '' : blockId);
       fd.append('testType',     'soil');
@@ -281,7 +265,6 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
       fd.append('rootZoneTemp', rootZoneTemp);
       fd.append('waterDeficit', waterDeficit);
       fd.append('notes',        notes);
-      if (fileUrl) fd.append('fileUrl', fileUrl);
       for (const [k, v] of Object.entries(soil)) fd.append(k, v);
 
       const result = await logTestResult(fd);
