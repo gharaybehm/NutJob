@@ -92,3 +92,33 @@ export async function logTestResult(
   return {};
 }
 
+export async function getLabReadings(blockId: string): Promise<{
+  data: {
+    id: string;
+    recorded_at: string;
+    test_type: string | null;
+    ph: number | null;
+    soil_ec: number | null;
+    soil_moisture: number | null;
+    root_zone_temp: number | null;
+    water_deficit: number | null;
+    lab_reference: string | null;
+    file_url: string | null;
+    notes: string | null;
+    parameters: Record<string, unknown> | null;
+  }[] | null;
+  error?: string;
+}> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('soil_water_readings')
+    .select('id, recorded_at, test_type, ph, soil_ec, soil_moisture, root_zone_temp, water_deficit, lab_reference, file_url, notes, parameters')
+    .or(`block_id.eq.${blockId},block_id.is.null`)
+    .eq('source', 'manual')
+    .order('recorded_at', { ascending: false })
+    .limit(20);
+
+  if (error) return { data: null, error: error.message };
+  return { data };
+}
+

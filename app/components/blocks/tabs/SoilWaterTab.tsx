@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Paperclip, Wifi } from 'lucide-react';
+import { getLabReadings } from '@/app/actions/soilTests';
 import type { SoilWaterDomain } from '../types';
 import AlertBadge from '../AlertBadge';
 import SourceBadge from '../SourceBadge';
@@ -269,13 +270,10 @@ export default function SoilWaterTab({ data, blockId, sensorCount = 0, refreshKe
   useEffect(() => {
     if (!blockId) return;
     setHistoryLoading(true);
-    fetch(`/api/soil-readings?blockId=${encodeURIComponent(blockId)}`)
-      .then(res => res.json())
-      .then(rows => {
-        setHistory(Array.isArray(rows) ? (rows as ManualReading[]) : []);
-        setHistoryLoading(false);
-      })
-      .catch(() => setHistoryLoading(false));
+    getLabReadings(blockId).then(result => {
+      setHistory((result.data ?? []) as ManualReading[]);
+      setHistoryLoading(false);
+    });
   }, [blockId, refreshKey]);
 
   const moistureStatus =
