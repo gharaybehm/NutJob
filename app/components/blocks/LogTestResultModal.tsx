@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Loader2, FlaskConical, Paperclip } from 'lucide-react';
 import type { Block } from './types';
-import { logTestResult } from '@/app/actions/soilTests';
+import { logTestResult, getFarmLabReadings } from '@/app/actions/soilTests';
 
 interface Props {
   open: boolean;
@@ -154,6 +154,113 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
+// ─── History card helpers ─────────────────────────────────────────────────────
+
+type HistReading = Awaited<ReturnType<typeof getFarmLabReadings>>['data'] extends (infer T)[] | null ? T : never;
+
+type HBS = 'green' | 'amber' | 'red';
+function hbench(key: string, v: number): HBS {
+  const t: Record<string, [number, HBS][]> = {
+    ph_soil:        [[6,'amber'],[6.5,'amber'],[7.5,'green'],[8.5,'amber'],[Infinity,'red']],
+    ec_soil:        [[1,'green'],[1.5,'amber'],[4,'amber'],[Infinity,'red']],
+    organic_matter: [[1,'red'],[2,'amber'],[4,'green'],[8,'green'],[Infinity,'amber']],
+    phosphorus:     [[3,'red'],[6,'amber'],[9,'green'],[12,'green'],[Infinity,'amber']],
+    potassium:      [[20,'red'],[40,'amber'],[80,'green'],[160,'green'],[Infinity,'amber']],
+    lime:           [[1,'green'],[5,'green'],[15,'amber'],[25,'amber'],[Infinity,'red']],
+    cec:            [[5,'red'],[15,'amber'],[25,'green'],[40,'green'],[Infinity,'amber']],
+    calcium:        [[1000,'amber'],[3000,'green'],[6000,'green'],[Infinity,'amber']],
+    magnesium:      [[300,'red'],[1000,'green'],[2000,'amber'],[Infinity,'red']],
+    iron:           [[5,'red'],[20,'green'],[Infinity,'amber']],
+    zinc:           [[0.5,'red'],[1,'amber'],[3,'green'],[Infinity,'amber']],
+    copper:         [[0.5,'red'],[2,'green'],[Infinity,'amber']],
+    manganese:      [[2,'red'],[15,'green'],[Infinity,'amber']],
+    boron:          [[0.5,'red'],[1.5,'green'],[Infinity,'amber']],
+  };
+  const thresholds = t[key];
+  if (!thresholds) return 'green';
+  for (const [max, s] of thresholds) if (v <= max) return s;
+  return 'green';
+}
+
+function HChip({ label, value, unit, bk }: { label: string; value: number; unit: string; bk?: string }) {
+  const s = bk ? hbench(bk, value) : null;
+  const bg = s === 'green' ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/40'
+           : s === 'amber' ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/40'
+           : s === 'red'   ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800/40'
+           : 'bg-slate-50 border-slate-200 dark:bg-slate-800/40 dark:border-slate-700';
+  const dot = s === 'green' ? 'bg-emerald-500' : s === 'amber' ? 'bg-amber-500' : s === 'red' ? 'bg-red-500' : '';
+  return (
+    <div className={`flex flex-col gap-0.5 rounded-lg border px-2.5 py-1.5 ${bg}`}>
+      <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-tight">{label}</span>
+      <div className="flex items-center gap-1">
+        {s && <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${dot}`} />}
+        <span className="text-xs font-bold text-slate-900 dark:text-white">{value}</span>
+        <span className="text-[10px] text-slate-400">{unit}</span>
+      </div>
+    </div>
+  );
+}
+
+const HIST_CHIPS: { key: string; label: string; unit: string; bk?: string }[] = [
+  { key: 'organic_matter',  label: 'Organic Matter', unit: '%',        bk: 'organic_matter' },
+  { key: 'phosphorus_p2o5', label: 'P₂O₅',          unit: 'kg/da',    bk: 'phosphorus' },
+  { key: 'potassium_k2o',   label: 'K₂O',           unit: 'kg/da',    bk: 'potassium' },
+  { key: 'lime',            label: 'Lime',           unit: '%',        bk: 'lime' },
+  { key: 'cec',             label: 'CEC',            unit: 'meq/100g', bk: 'cec' },
+  { key: 'calcium',         label: 'Calcium',        unit: 'ppm',      bk: 'calcium' },
+  { key: 'magnesium',       label: 'Magnesium',      unit: 'ppm',      bk: 'magnesium' },
+  { key: 'sodium',          label: 'Sodium',         unit: 'ppm' },
+  { key: 'iron',            label: 'Iron',           unit: 'ppm',      bk: 'iron' },
+  { key: 'zinc',            label: 'Zinc',           unit: 'ppm',      bk: 'zinc' },
+  { key: 'copper',          label: 'Copper',         unit: 'ppm',      bk: 'copper' },
+  { key: 'manganese',       label: 'Manganese',      unit: 'ppm',      bk: 'manganese' },
+  { key: 'boron',           label: 'Boron',          unit: 'mg/kg',    bk: 'boron' },
+];
+
+function HistReadingCard({ r }: { r: HistReading }) {
+  const isWater = r.test_type === 'water';
+  const p = (r.parameters ?? {}) as Record<string, unknown>;
+  const hdr = isWater
+    ? 'bg-sky-50 dark:bg-sky-950/20 border-sky-100 dark:border-sky-800/30'
+    : 'bg-slate-50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-800';
+  return (
+    <div className="border-b border-slate-100 dark:border-slate-800 last:border-0 pb-4 mb-4 last:pb-0 last:mb-0 flex flex-col gap-2">
+      <div className={`flex items-center justify-between rounded-lg px-3 py-2 border ${hdr}`}>
+        <div>
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+            {new Date(r.recorded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+          {r.lab_reference && <span className="ml-2 text-xs text-slate-400">· {r.lab_reference}</span>}
+        </div>
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${isWater ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'}`}>
+          {isWater ? 'Water' : 'Soil'}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1.5 px-1">
+        {r.ph != null && <HChip label="pH" value={r.ph} unit="" bk={isWater ? 'ph_water' : 'ph_soil'} />}
+        {r.soil_ec != null && <HChip label="EC" value={isWater ? Math.round(r.soil_ec * 1000) : r.soil_ec} unit={isWater ? 'µs/cm' : 'ms/cm'} bk="ec_soil" />}
+        {r.soil_moisture != null && <HChip label="Moisture" value={r.soil_moisture} unit="%" />}
+      </div>
+      {!isWater && HIST_CHIPS.some(c => p[c.key] != null) && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 px-1">
+          {HIST_CHIPS.map(c => {
+            const v = p[c.key];
+            if (v == null || typeof v !== 'number') return null;
+            return <HChip key={c.key} label={c.label} value={v} unit={c.unit} bk={c.bk} />;
+          })}
+          {typeof p.texture_class === 'string' && p.texture_class && (
+            <div className="col-span-2 flex flex-col gap-0.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 px-2.5 py-1.5">
+              <span className="text-[10px] font-medium text-slate-500">Texture</span>
+              <span className="text-xs font-bold text-slate-900 dark:text-white">{p.texture_class}</span>
+            </div>
+          )}
+        </div>
+      )}
+      {r.notes && <p className="px-1 text-xs text-slate-500 italic">{r.notes}</p>}
+    </div>
+  );
+}
+
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
 const EMPTY_SOIL = {
@@ -181,13 +288,15 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
   const [extracting,    setExtracting]    = useState(false);
   const [extractedCount, setExtractedCount] = useState<number | null>(null);
   const [extractMsg,    setExtractMsg]    = useState<string | null>(null);
+  const [view,          setView]          = useState<'form' | 'history'>('form');
+  const [histReadings,  setHistReadings]  = useState<HistReading[]>([]);
+  const [histLoading,   setHistLoading]   = useState(false);
 
   const setSoilField = (key: keyof typeof EMPTY_SOIL) => (v: string) =>
     setSoil(s => ({ ...s, [key]: v }));
 
   useEffect(() => {
     if (open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBlockId(defaultBlockId ?? '');
       setRecordedAt(''); setLabReference('');
       setPh(''); setSoilEc(''); setWaterEc('');
@@ -195,8 +304,18 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
       setSoil({ ...EMPTY_SOIL });
       setNotes(''); setFile(null); setError(null);
       setExtractedCount(null); setExtractMsg(null);
+      setView('form');
     }
   }, [open, defaultBlockId]);
+
+  function switchToHistory() {
+    setView('history');
+    setHistLoading(true);
+    getFarmLabReadings().then(r => {
+      setHistReadings(r.data ?? []);
+      setHistLoading(false);
+    });
+  }
 
   async function handleFileSelect(selected: File | null) {
     setFile(selected);
@@ -290,8 +409,21 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
           <div className="flex items-center gap-3">
             <FlaskConical className="h-5 w-5 text-brand-600 dark:text-brand-400 shrink-0" />
             <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Log Lab Test Result</h2>
-              <p className="text-sm text-slate-500 mt-0.5">Record soil and water analysis with benchmark comparison.</p>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Lab Test Results</h2>
+              <div className="flex gap-1 mt-1.5">
+                <button
+                  onClick={() => setView('form')}
+                  className={`rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${view === 'form' ? 'bg-brand-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                >
+                  Log New
+                </button>
+                <button
+                  onClick={switchToHistory}
+                  className={`rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${view === 'history' ? 'bg-brand-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                >
+                  History
+                </button>
+              </div>
             </div>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 transition-colors">
@@ -299,8 +431,27 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
           </button>
         </div>
 
+        {/* History body */}
+        {view === 'history' && (
+          <div className="overflow-y-auto px-6 py-4 flex-1">
+            {histLoading ? (
+              <div className="flex items-center justify-center py-12 text-sm text-slate-400">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading…
+              </div>
+            ) : histReadings.length === 0 ? (
+              <div className="py-12 text-center text-sm text-slate-400">
+                No lab results saved yet. Switch to &ldquo;Log New&rdquo; to add one.
+              </div>
+            ) : (
+              <div className="py-1">
+                {histReadings.map(r => <HistReadingCard key={r.id} r={r} />)}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Form body */}
-        <div className="overflow-y-auto px-6 py-4 flex flex-col gap-5">
+        {view === 'form' && <div className="overflow-y-auto px-6 py-4 flex flex-col gap-5">
 
           {/* Sample info */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -427,10 +578,10 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
             )}
           </div>
 
-        </div>
+        </div>}
 
-        {/* Error */}
-        {error && (
+        {/* Error (form only) */}
+        {view === 'form' && error && (
           <div className="mx-6 rounded-lg border border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-950/20 px-4 py-2 text-sm text-red-700 dark:text-red-400">
             {error}
           </div>
@@ -439,16 +590,18 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-700 px-6 py-4 shrink-0">
           <button onClick={onClose} className="rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-            Cancel
+            {view === 'history' ? 'Close' : 'Cancel'}
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors disabled:opacity-60"
-          >
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Save Test Result
-          </button>
+          {view === 'form' && (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors disabled:opacity-60"
+            >
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Save Test Result
+            </button>
+          )}
         </div>
 
       </div>
