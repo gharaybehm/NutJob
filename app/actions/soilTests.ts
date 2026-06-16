@@ -1,8 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createAdminClient } from '@/utils/supabase/admin';
-// File upload is handled by /api/upload-lab-report before this action is called.
+import { createClient } from '@/utils/supabase/server';
 
 function numOrNull(v: string | null): number | null {
   if (!v || v.trim() === '') return null;
@@ -61,7 +60,7 @@ export async function logTestResult(
     if (waterEcUs !== null) params['water_ec_us_cm'] = waterEcUs;
   }
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   // Derive soil_ec for water tests: convert µs/cm → ms/cm (÷1000)
   let ecValue: number | null = numOrNull(soilEc);
