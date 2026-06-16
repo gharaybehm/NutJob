@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/utils/supabase/admin';
+// File upload is handled by /api/upload-lab-report before this action is called.
 
 function numOrNull(v: string | null): number | null {
   if (!v || v.trim() === '') return null;
@@ -17,7 +18,7 @@ export async function logTestResult(
   const recordedAt   = formData.get('recordedAt') as string;
   const labReference = formData.get('labReference') as string;
   const notes        = formData.get('notes')      as string;
-  const file         = formData.get('file')       as File | null;
+  const fileUrl      = formData.get('fileUrl')    as string | null;
 
   // Core top-level columns
   const ph           = formData.get('ph')           as string;
@@ -58,19 +59,6 @@ export async function logTestResult(
     const waterEcRaw = formData.get('waterEc') as string;
     const waterEcUs = numOrNull(waterEcRaw);
     if (waterEcUs !== null) params['water_ec_us_cm'] = waterEcUs;
-  }
-
-  let fileUrl: string | null = null;
-  if (file && file.size > 0) {
-    const adminSupabase = createAdminClient();
-    const ext      = file.name.split('.').pop() ?? 'pdf';
-    const folder   = blockId ?? 'farm';
-    const filePath = `${folder}/${Date.now()}.${ext}`;
-    const { error: uploadError } = await adminSupabase.storage
-      .from('lab-reports')
-      .upload(filePath, file, { contentType: file.type, upsert: false });
-    if (uploadError) return { error: uploadError.message };
-    fileUrl = filePath;
   }
 
   const supabase = createAdminClient();
