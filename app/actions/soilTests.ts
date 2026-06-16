@@ -62,12 +62,6 @@ export async function logTestResult(
 
   const supabase = await createClient();
 
-  // Verify session is available in this server action context
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (!user) {
-    return { error: `Auth check failed — no session found. Auth error: ${authError?.message ?? 'none'}` };
-  }
-
   // Derive soil_ec for water tests: convert µs/cm → ms/cm (÷1000)
   let ecValue: number | null = numOrNull(soilEc);
   if (testType === 'water') {
@@ -92,7 +86,7 @@ export async function logTestResult(
   };
 
   const { error } = await supabase.from('soil_water_readings').insert(row);
-  if (error) return { error: `INSERT failed [${error.code}]: ${error.message} — hint: ${error.hint ?? 'none'} — user: ${user.id}` };
+  if (error) return { error: error.message };
 
   revalidatePath('/blocks');
   return {};
