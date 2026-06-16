@@ -398,7 +398,7 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
               {blocks.map(block => (
                 <button
                   key={block.id}
-                  onClick={() => setSelectedId(block.id)}
+                  onClick={() => setSelectedId(id => id === block.id ? '' : block.id)}
                   className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border transition-all ${
                     block.id === selectedId
                       ? 'bg-brand-600 text-white border-brand-600'
@@ -489,7 +489,7 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
 
       <LogTestResultModal
         open={testModalOpen}
-        onClose={() => { setTestModalOpen(false); setSoilRefreshKey(k => k + 1); }}
+        onClose={() => { setTestModalOpen(false); setSoilRefreshKey(k => k + 1); setSelectedId(''); }}
         blocks={blocks}
         defaultBlockId="__farm__"
       />
