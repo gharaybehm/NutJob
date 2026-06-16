@@ -266,10 +266,15 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
     for (const [k, v] of Object.entries(soil)) fd.append(k, v);
 
     setSaving(true);
-    const result = await logTestResult(fd);
-    setSaving(false);
-    if (result.error) { setError(result.error); return; }
-    onClose();
+    try {
+      const result = await logTestResult(fd);
+      setSaving(false);
+      if (result.error) { setError(result.error); return; }
+      onClose();
+    } catch (e) {
+      setSaving(false);
+      setError(e instanceof Error ? e.message : 'Save failed — check server logs');
+    }
   }
 
   if (!open) return null;
