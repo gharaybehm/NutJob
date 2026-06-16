@@ -12,12 +12,14 @@ function numOrNull(v: string | null): number | null {
 export async function logTestResult(
   formData: FormData,
 ): Promise<{ error?: string }> {
+  const id           = formData.get('id')         as string | null;
   const blockId      = formData.get('blockId')    as string | null;
   const testType     = (formData.get('testType')  as string) || 'soil';
   const recordedAt   = formData.get('recordedAt') as string;
   const labReference = formData.get('labReference') as string;
   const notes        = formData.get('notes')      as string;
-  const fileUrl      = formData.get('fileUrl')    as string | null;
+  let fileUrl        = formData.get('fileUrl')    as string | null;
+  const file         = formData.get('file')       as File | null;
 
   // Core top-level columns
   const ph           = formData.get('ph')           as string;
@@ -62,6 +64,22 @@ export async function logTestResult(
 
   const supabase = await createClient();
 
+  // Handle file upload if present
+  if (file && file.size > 0) {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
+    const filePath = `reports/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('lab-reports')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      return { error: 'Failed to upload report: ' + uploadError.message };
+    }
+    fileUrl = filePath;
+  }
+
   // Derive soil_ec for water tests: convert µs/cm → ms/cm (÷1000)
   let ecValue: number | null = numOrNull(soilEc);
   if (testType === 'water') {
@@ -85,8 +103,21 @@ export async function logTestResult(
     parameters:     Object.keys(params).length > 0 ? params : null,
   };
 
-  const { error } = await supabase.from('soil_water_readings').insert(row);
-  if (error) return { error: error.message };
+  let saveError;
+  if (id) {
+    const { error } = await supabase
+      .from('soil_water_readings')
+      .update(row)
+      .eq('id', id);
+    saveError = error;
+  } else {
+    const { error } = await supabase
+      .from('soil_water_readings')
+      .insert(row);
+    saveError = error;
+  }
+
+  if (saveError) return { error: saveError.message };
 
   revalidatePath('/blocks');
   return {};
@@ -117,6 +148,44 @@ export async function getLabReadings(blockId: string): Promise<{
     .eq('source', 'manual')
     .order('recorded_at', { ascending: false })
     .limit(20);
+
+  if (error) return { data: null, error: error.message };
+  return { data };
+}
+
+export async function getLatestSoilReading(blockId: string | null): Promise<{
+  data: {
+    id: string;
+    recorded_at: string;
+    test_type: string | null;
+    ph: number | null;
+    soil_ec: number | null;
+    soil_moisture: number | null;
+    root_zone_temp: number | null;
+    water_deficit: number | null;
+    lab_reference: string | null;
+    file_url: string | null;
+    notes: string | null;
+    parameters: Record<string, unknown> | null;
+  } | null;
+  error?: string;
+}> {
+  const supabase = await createClient();
+  let query = supabase
+    .from('soil_water_readings')
+    .select('id, recorded_at, test_type, ph, soil_ec, soil_moisture, root_zone_temp, water_deficit, lab_reference, file_url, notes, parameters')
+    .eq('source', 'manual')
+    .eq('test_type', 'soil')
+    .order('recorded_at', { ascending: false })
+    .limit(1);
+
+  if (blockId) {
+    query = query.eq('block_id', blockId);
+  } else {
+    query = query.is('block_id', null);
+  }
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) return { data: null, error: error.message };
   return { data };

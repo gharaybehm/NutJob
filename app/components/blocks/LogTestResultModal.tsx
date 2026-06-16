@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Loader2, FlaskConical, Paperclip } from 'lucide-react';
 import type { Block } from './types';
-import { logTestResult, getFarmLabReadings } from '@/app/actions/soilTests';
+import { logTestResult, getFarmLabReadings, getLatestSoilReading } from '@/app/actions/soilTests';
 
 interface Props {
   open: boolean;
@@ -292,21 +292,112 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
   const [histReadings,  setHistReadings]  = useState<HistReading[]>([]);
   const [histLoading,   setHistLoading]   = useState(false);
 
+  const [existingId,   setExistingId]   = useState<string | null>(null);
+  const [existingFileUrl, setExistingFileUrl] = useState<string | null>(null);
+  const [loadingLatest, setLoadingLatest] = useState(false);
+
   const setSoilField = (key: keyof typeof EMPTY_SOIL) => (v: string) =>
     setSoil(s => ({ ...s, [key]: v }));
 
   useEffect(() => {
     if (open) {
       setBlockId(defaultBlockId ?? '');
-      setRecordedAt(''); setLabReference('');
-      setPh(''); setSoilEc(''); setWaterEc('');
-      setSoilMoisture(''); setRootZoneTemp(''); setWaterDeficit('');
-      setSoil({ ...EMPTY_SOIL });
-      setNotes(''); setFile(null); setError(null);
-      setExtractedCount(null); setExtractMsg(null);
+      setFile(null);
+      setError(null);
+      setExtractedCount(null);
+      setExtractMsg(null);
       setView('form');
     }
   }, [open, defaultBlockId]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    async function loadLatestReading() {
+      setLoadingLatest(true);
+      setError(null);
+      try {
+        const targetId = blockId === '__farm__' ? null : blockId;
+        const res = await getLatestSoilReading(targetId);
+        if (res.error) {
+          setError(res.error);
+          return;
+        }
+
+        if (res.data) {
+          const r = res.data;
+          setExistingId(r.id);
+          setRecordedAt(r.recorded_at ? new Date(r.recorded_at).toISOString().split('T')[0] : '');
+          setLabReference(r.lab_reference ?? '');
+          setPh(r.ph != null ? String(r.ph) : '');
+          setSoilEc(r.soil_ec != null ? String(r.soil_ec) : '');
+          
+          const p = (r.parameters ?? {}) as Record<string, any>;
+          setWaterEc(p.water_ec_us_cm != null ? String(p.water_ec_us_cm) : '');
+          setSoilMoisture(r.soil_moisture != null ? String(r.soil_moisture) : '');
+          setRootZoneTemp(r.root_zone_temp != null ? String(r.root_zone_temp) : '');
+          setWaterDeficit(r.water_deficit != null ? String(r.water_deficit) : '');
+          setNotes(r.notes ?? '');
+          setExistingFileUrl(r.file_url ?? null);
+
+          // Populate extended soil params
+          const newSoil = { ...EMPTY_SOIL };
+          const keys: (keyof typeof EMPTY_SOIL)[] = [
+            'organicMatter', 'phosphorus', 'potassium', 'lime',
+            'calcium', 'magnesium', 'sodium',
+            'iron', 'zinc', 'copper', 'manganese', 'boron', 'cec',
+            'sand', 'clay', 'silt', 'textureClass'
+          ];
+          const dbMapping: Record<string, string> = {
+            organicMatter: 'organic_matter',
+            phosphorus: 'phosphorus_p2o5',
+            potassium: 'potassium_k2o',
+            lime: 'lime',
+            calcium: 'calcium',
+            magnesium: 'magnesium',
+            sodium: 'sodium',
+            iron: 'iron',
+            zinc: 'zinc',
+            copper: 'copper',
+            manganese: 'manganese',
+            boron: 'boron',
+            cec: 'cec',
+            sand: 'sand',
+            clay: 'clay',
+            silt: 'silt',
+            textureClass: 'texture_class'
+          };
+          for (const key of keys) {
+            const dbKey = dbMapping[key];
+            if (p[dbKey] != null) {
+              newSoil[key] = String(p[dbKey]);
+            }
+          }
+          setSoil(newSoil);
+        } else {
+          // Reset to empty for this block/scope since no reading exists
+          setExistingId(null);
+          setRecordedAt('');
+          setLabReference('');
+          setPh('');
+          setSoilEc('');
+          setWaterEc('');
+          setSoilMoisture('');
+          setRootZoneTemp('');
+          setWaterDeficit('');
+          setSoil({ ...EMPTY_SOIL });
+          setNotes('');
+          setExistingFileUrl(null);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load latest test result');
+      } finally {
+        setLoadingLatest(false);
+      }
+    }
+
+    loadLatestReading();
+  }, [open, blockId]);
 
   function switchToHistory() {
     setView('history');
@@ -373,6 +464,9 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
 
     try {
       const fd = new FormData();
+      if (existingId) {
+        fd.append('id', existingId);
+      }
       fd.append('blockId',      blockId === '__farm__' ? '' : blockId);
       fd.append('testType',     'soil');
       fd.append('recordedAt',   recordedAt);
@@ -384,6 +478,13 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
       fd.append('rootZoneTemp', rootZoneTemp);
       fd.append('waterDeficit', waterDeficit);
       fd.append('notes',        notes);
+
+      if (file) {
+        fd.append('file', file);
+      } else if (existingFileUrl) {
+        fd.append('fileUrl', existingFileUrl);
+      }
+
       for (const [k, v] of Object.entries(soil)) fd.append(k, v);
 
       const result = await logTestResult(fd);
@@ -409,7 +510,14 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
           <div className="flex items-center gap-3">
             <FlaskConical className="h-5 w-5 text-brand-600 dark:text-brand-400 shrink-0" />
             <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Lab Test Results</h2>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                Lab Test Results
+                {view === 'form' && existingId && (
+                  <span className="rounded bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider animate-pulse">
+                    Updating Saved
+                  </span>
+                )}
+              </h2>
               <div className="flex gap-1 mt-1.5">
                 <button
                   onClick={() => setView('form')}
@@ -451,134 +559,149 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
         )}
 
         {/* Form body */}
-        {view === 'form' && <div className="overflow-y-auto px-6 py-4 flex flex-col gap-5">
-
-          {/* Sample info */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <SectionHeader title="Sample Information" />
-            <div className="col-span-3 flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Block / Scope</label>
-              <select value={blockId} onChange={e => setBlockId(e.target.value)} className={inputCls}>
-                <option value="__farm__">🌾 Whole Farm (no specific block)</option>
-                {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
+        {view === 'form' && (
+          loadingLatest ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-24 text-slate-400 dark:text-slate-500 gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-brand-600 dark:text-brand-400" />
+              <span className="text-sm font-medium">Loading latest soil test readings…</span>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Test Date</label>
-              <input type="date" value={recordedAt} onChange={e => setRecordedAt(e.target.value)} className={inputCls} />
-            </div>
-            <div className="col-span-2 flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Lab Reference</label>
-              <input type="text" placeholder="e.g. SA250023" value={labReference} onChange={e => setLabReference(e.target.value)} className={inputCls} />
-            </div>
-          </div>
+          ) : (
+            <div className="overflow-y-auto px-6 py-4 flex flex-col gap-5">
 
-          {/* Basic properties — soil pH/EC + water EC in one section */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <SectionHeader title="Basic Properties" />
-            <ParamInput label="pH" value={ph} onChange={setPh} unit="" benchmarkKey="ph" />
-            <ParamInput label="Soil EC" value={soilEc} onChange={setSoilEc} unit="ms/cm" benchmarkKey="ec_soil" />
-            <ParamInput label="Water EC" value={waterEc} onChange={setWaterEc} unit="µs/cm" benchmarkKey="ec_water" />
-          </div>
-
-          {/* Macronutrients & chemistry */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <SectionHeader title="Macronutrients & Chemistry" />
-            <ParamInput label="Organic Matter" value={soil.organicMatter} onChange={setSoilField('organicMatter')} unit="%" benchmarkKey="organic_matter" />
-            <ParamInput label="Phosphorus (P₂O₅)" value={soil.phosphorus} onChange={setSoilField('phosphorus')} unit="kg/da" benchmarkKey="phosphorus" />
-            <ParamInput label="Potassium (K₂O)" value={soil.potassium} onChange={setSoilField('potassium')} unit="kg/da" benchmarkKey="potassium" />
-            <ParamInput label="Lime (CaCO₃)" value={soil.lime} onChange={setSoilField('lime')} unit="%" benchmarkKey="lime" />
-            <ParamInput label="CEC" value={soil.cec} onChange={setSoilField('cec')} unit="meq/100g" benchmarkKey="cec" />
-          </div>
-
-          {/* Minerals */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <SectionHeader title="Minerals" />
-            <ParamInput label="Calcium" value={soil.calcium} onChange={setSoilField('calcium')} unit="ppm" benchmarkKey="calcium" />
-            <ParamInput label="Magnesium" value={soil.magnesium} onChange={setSoilField('magnesium')} unit="ppm" benchmarkKey="magnesium" />
-            <ParamInput label="Sodium" value={soil.sodium} onChange={setSoilField('sodium')} unit="ppm" />
-            <ParamInput label="Iron" value={soil.iron} onChange={setSoilField('iron')} unit="ppm" benchmarkKey="iron" />
-            <ParamInput label="Zinc" value={soil.zinc} onChange={setSoilField('zinc')} unit="ppm" benchmarkKey="zinc" />
-            <ParamInput label="Copper" value={soil.copper} onChange={setSoilField('copper')} unit="ppm" benchmarkKey="copper" />
-            <ParamInput label="Manganese" value={soil.manganese} onChange={setSoilField('manganese')} unit="ppm" benchmarkKey="manganese" />
-            <ParamInput label="Boron" value={soil.boron} onChange={setSoilField('boron')} unit="mg/kg" benchmarkKey="boron" />
-          </div>
-
-          {/* Soil texture */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <SectionHeader title="Soil Texture" />
-            <ParamInput label="Sand" value={soil.sand} onChange={setSoilField('sand')} unit="%" />
-            <ParamInput label="Clay" value={soil.clay} onChange={setSoilField('clay')} unit="%" />
-            <ParamInput label="Silt" value={soil.silt} onChange={setSoilField('silt')} unit="%" />
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Texture Class</label>
-              <select
-                value={soil.textureClass}
-                onChange={e => setSoilField('textureClass')(e.target.value)}
-                className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-              >
-                <option value="">— Select —</option>
-                <option value="Loam">Loam</option>
-                <option value="Clay">Clay</option>
-                <option value="Sandy">Sandy</option>
-                <option value="Silty">Silty</option>
-                <option value="Peaty">Peaty</option>
-                <option value="Chalky">Chalky</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Optional sensor readings */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <SectionHeader title="Optional Sensor Readings" />
-            <ParamInput label="Soil Moisture" value={soilMoisture} onChange={setSoilMoisture} unit="% vol" />
-            <ParamInput label="Root Zone Temp" value={rootZoneTemp} onChange={setRootZoneTemp} unit="°C" />
-            <ParamInput label="Water Deficit" value={waterDeficit} onChange={setWaterDeficit} unit="mm" />
-          </div>
-
-          {/* Notes & file */}
-          <div className="grid grid-cols-1 gap-3">
-            <SectionHeader title="Notes & Attachment" />
-            <textarea
-              rows={3}
-              placeholder="Observations, context, or lab comments…"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              className={`${inputCls} resize-none`}
-            />
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 px-4 py-3 text-sm text-slate-500 hover:border-brand-400 hover:text-brand-600 dark:hover:border-brand-500 dark:hover:text-brand-400 transition-colors">
-              {extracting
-                ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-brand-500" />
-                : <Paperclip className="h-4 w-4 shrink-0" />}
-              <span className="truncate">
-                {extracting
-                  ? 'Reading document and extracting values…'
-                  : file ? file.name : 'Attach lab report (PDF or image) — values will be extracted automatically'}
-              </span>
-              <input
-                type="file"
-                accept=".pdf,image/*"
-                className="sr-only"
-                onChange={e => handleFileSelect(e.target.files?.[0] ?? null)}
-              />
-            </label>
-            {extractMsg && (
-              <div className="flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
-                {extractMsg}
+              {/* Sample info */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <SectionHeader title="Sample Information" />
+                <div className="col-span-3 flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Block / Scope</label>
+                  <select value={blockId} onChange={e => setBlockId(e.target.value)} className={inputCls}>
+                    <option value="__farm__">🌾 Whole Farm (no specific block)</option>
+                    {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Test Date</label>
+                  <input type="date" value={recordedAt} onChange={e => setRecordedAt(e.target.value)} className={inputCls} />
+                </div>
+                <div className="col-span-2 flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Lab Reference</label>
+                  <input type="text" placeholder="e.g. SA250023" value={labReference} onChange={e => setLabReference(e.target.value)} className={inputCls} />
+                </div>
               </div>
-            )}
-            {extractedCount !== null && (
-              <div className="flex items-center gap-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                {extractedCount > 0
-                  ? `${extractedCount} field${extractedCount === 1 ? '' : 's'} auto-filled from document — review and adjust as needed.`
-                  : 'Could not extract values from this document — please fill in manually.'}
-              </div>
-            )}
-          </div>
 
-        </div>}
+              {/* Basic properties — soil pH/EC + water EC in one section */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <SectionHeader title="Basic Properties" />
+                <ParamInput label="pH" value={ph} onChange={setPh} unit="" benchmarkKey="ph" />
+                <ParamInput label="Soil EC" value={soilEc} onChange={setSoilEc} unit="ms/cm" benchmarkKey="ec_soil" />
+                <ParamInput label="Water EC" value={waterEc} onChange={setWaterEc} unit="µs/cm" benchmarkKey="ec_water" />
+              </div>
+
+              {/* Macronutrients & chemistry */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <SectionHeader title="Macronutrients & Chemistry" />
+                <ParamInput label="Organic Matter" value={soil.organicMatter} onChange={setSoilField('organicMatter')} unit="%" benchmarkKey="organic_matter" />
+                <ParamInput label="Phosphorus (P₂O₅)" value={soil.phosphorus} onChange={setSoilField('phosphorus')} unit="kg/da" benchmarkKey="phosphorus" />
+                <ParamInput label="Potassium (K₂O)" value={soil.potassium} onChange={setSoilField('potassium')} unit="kg/da" benchmarkKey="potassium" />
+                <ParamInput label="Lime (CaCO₃)" value={soil.lime} onChange={setSoilField('lime')} unit="%" benchmarkKey="lime" />
+                <ParamInput label="CEC" value={soil.cec} onChange={setSoilField('cec')} unit="meq/100g" benchmarkKey="cec" />
+              </div>
+
+              {/* Minerals */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <SectionHeader title="Minerals" />
+                <ParamInput label="Calcium" value={soil.calcium} onChange={setSoilField('calcium')} unit="ppm" benchmarkKey="calcium" />
+                <ParamInput label="Magnesium" value={soil.magnesium} onChange={setSoilField('magnesium')} unit="ppm" benchmarkKey="magnesium" />
+                <ParamInput label="Sodium" value={soil.sodium} onChange={setSoilField('sodium')} unit="ppm" />
+                <ParamInput label="Iron" value={soil.iron} onChange={setSoilField('iron')} unit="ppm" benchmarkKey="iron" />
+                <ParamInput label="Zinc" value={soil.zinc} onChange={setSoilField('zinc')} unit="ppm" benchmarkKey="zinc" />
+                <ParamInput label="Copper" value={soil.copper} onChange={setSoilField('copper')} unit="ppm" benchmarkKey="copper" />
+                <ParamInput label="Manganese" value={soil.manganese} onChange={setSoilField('manganese')} unit="ppm" benchmarkKey="manganese" />
+                <ParamInput label="Boron" value={soil.boron} onChange={setSoilField('boron')} unit="mg/kg" benchmarkKey="boron" />
+              </div>
+
+              {/* Soil texture */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <SectionHeader title="Soil Texture" />
+                <ParamInput label="Sand" value={soil.sand} onChange={setSoilField('sand')} unit="%" />
+                <ParamInput label="Clay" value={soil.clay} onChange={setSoilField('clay')} unit="%" />
+                <ParamInput label="Silt" value={soil.silt} onChange={setSoilField('silt')} unit="%" />
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Texture Class</label>
+                  <select
+                    value={soil.textureClass}
+                    onChange={e => setSoilField('textureClass')(e.target.value)}
+                    className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  >
+                    <option value="">— Select —</option>
+                    <option value="Loam">Loam</option>
+                    <option value="Clay">Clay</option>
+                    <option value="Sandy">Sandy</option>
+                    <option value="Silty">Silty</option>
+                    <option value="Peaty">Peaty</option>
+                    <option value="Chalky">Chalky</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Optional sensor readings */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <SectionHeader title="Optional Sensor Readings" />
+                <ParamInput label="Soil Moisture" value={soilMoisture} onChange={setSoilMoisture} unit="% vol" />
+                <ParamInput label="Root Zone Temp" value={rootZoneTemp} onChange={setRootZoneTemp} unit="°C" />
+                <ParamInput label="Water Deficit" value={waterDeficit} onChange={setWaterDeficit} unit="mm" />
+              </div>
+
+              {/* Notes & file */}
+              <div className="grid grid-cols-1 gap-3">
+                <SectionHeader title="Notes & Attachment" />
+                <textarea
+                  rows={3}
+                  placeholder="Observations, context, or lab comments…"
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  className={`${inputCls} resize-none`}
+                />
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 px-4 py-3 text-sm text-slate-500 hover:border-brand-400 hover:text-brand-600 dark:hover:border-brand-500 dark:hover:text-brand-400 transition-colors">
+                  {extracting
+                    ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-brand-500" />
+                    : <Paperclip className="h-4 w-4 shrink-0" />}
+                  <span className="truncate">
+                    {extracting
+                      ? 'Reading document and extracting values…'
+                      : file ? file.name : existingFileUrl ? `Attached report: ${existingFileUrl.split('/').pop()} (Click to change)` : 'Attach lab report (PDF or image) — values will be extracted automatically'}
+                  </span>
+                  <input
+                    type="file"
+                    accept=".pdf,image/*"
+                    className="sr-only"
+                    onChange={e => handleFileSelect(e.target.files?.[0] ?? null)}
+                  />
+                </label>
+                {existingFileUrl && !file && (
+                  <div className="flex items-center gap-1.5 text-xs text-brand-600 dark:text-brand-400">
+                    <Paperclip className="h-3 w-3" />
+                    <span>An analysis report is currently saved for this test. Uploading a new one will replace it.</span>
+                  </div>
+                )}
+                {extractMsg && (
+                  <div className="flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
+                    {extractMsg}
+                  </div>
+                )}
+                {extractedCount !== null && (
+                  <div className="flex items-center gap-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    {extractedCount > 0
+                      ? `${extractedCount} field${extractedCount === 1 ? '' : 's'} auto-filled from document — review and adjust as needed.`
+                      : 'Could not extract values from this document — please fill in manually.'}
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )
+        )}
 
         {/* Error (form only) */}
         {view === 'form' && error && (
