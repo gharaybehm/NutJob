@@ -269,13 +269,18 @@ export default function SoilWaterTab({ data, blockId, sensorCount = 0, refreshKe
   useEffect(() => {
     if (!blockId) return;
     setHistoryLoading(true);
-    fetch(`/api/lab-readings?blockId=${encodeURIComponent(blockId)}`)
-      .then(r => r.json())
-      .then(({ data, error }) => {
-        if (!error) setHistory((data ?? []) as ManualReading[]);
-        setHistoryLoading(false);
-      })
-      .catch(() => setHistoryLoading(false));
+    import('@/utils/supabase/client').then(async ({ createClient }) => {
+      const sb = createClient();
+      const { data: rows } = await sb
+        .from('soil_water_readings')
+        .select('id, recorded_at, test_type, ph, soil_ec, soil_moisture, root_zone_temp, water_deficit, lab_reference, file_url, notes, parameters')
+        .or(`block_id.eq.${blockId},block_id.is.null`)
+        .eq('source', 'manual')
+        .order('recorded_at', { ascending: false })
+        .limit(20);
+      setHistory((rows ?? []) as ManualReading[]);
+      setHistoryLoading(false);
+    });
   }, [blockId, refreshKey]);
 
   const moistureStatus =
