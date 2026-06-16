@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition, useRef } from 'react';
+import { useState, useTransition, useRef, useEffect } from 'react';
 import { Plus, FlaskConical, Map, Check, X as XIcon, Pencil } from 'lucide-react';
+import { getFarmLabReadings } from '@/app/actions/soilTests';
 import type { Block, BlockProfile, LatLng } from './types';
 import { BLOCK_PROFILES, makeDefaultProfile } from './mockData';
 import type { BlockFormValues } from './BlockFormModal';
@@ -56,6 +57,11 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
   const [testModalOpen, setTestModalOpen] = useState(false);
   const [soilRefreshKey, setSoilRefreshKey] = useState(0);
   const [isPending, startTransition] = useTransition();
+  const [farmLabReadings, setFarmLabReadings] = useState<Awaited<ReturnType<typeof getFarmLabReadings>>['data']>([]);
+
+  useEffect(() => {
+    getFarmLabReadings().then(r => setFarmLabReadings(r.data ?? []));
+  }, [soilRefreshKey]);
 
   // ─── Map edit mode state ────────────────────────────────────────────────────
   const [isEditingMap, setIsEditingMap] = useState(false);
@@ -438,8 +444,37 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
             soilRefreshKey={soilRefreshKey}
           />
         ) : (
-          <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-400">
-            Select a block to view its profile
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-white">Farm Lab Test History</h2>
+              <p className="text-xs text-slate-400 mt-0.5">{farmLabReadings?.length ?? 0} farm-level reading{(farmLabReadings?.length ?? 0) !== 1 ? 's' : ''}</p>
+            </div>
+            {!farmLabReadings || farmLabReadings.length === 0 ? (
+              <div className="px-5 py-10 text-center text-sm text-slate-400">
+                No farm-level lab results yet. Use &ldquo;Log Test Result&rdquo; to add one.
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800 px-5 py-2">
+                {farmLabReadings.map(r => (
+                  <div key={r.id} className="py-3 flex items-start justify-between gap-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-medium text-slate-800 dark:text-white">
+                        {new Date(r.recorded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {r.lab_reference && <span className="ml-2 text-xs text-slate-400">· {r.lab_reference}</span>}
+                      </span>
+                      <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                        {r.ph != null && <span>pH {r.ph}</span>}
+                        {r.soil_ec != null && <span>EC {r.soil_ec} ms/cm</span>}
+                        {r.notes && <span className="italic">{r.notes}</span>}
+                      </div>
+                    </div>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${r.test_type === 'water' ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'}`}>
+                      {r.test_type === 'water' ? 'Water' : 'Soil'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
