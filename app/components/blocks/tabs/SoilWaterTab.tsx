@@ -266,12 +266,18 @@ function ReadingCard({ r }: { r: ManualReading }) {
 export default function SoilWaterTab({ data, blockId, sensorCount = 0, refreshKey }: Props) {
   const [history, setHistory]               = useState<ManualReading[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [debugMsg, setDebugMsg]             = useState<string>('');
 
   useEffect(() => {
-    if (!blockId) return;
+    if (!blockId) { setDebugMsg('no blockId'); return; }
     setHistoryLoading(true);
+    setDebugMsg(`fetching for blockId=${blockId} key=${refreshKey}`);
     getLabReadings(blockId).then(result => {
+      setDebugMsg(`blockId=${blockId} rows=${result.data?.length ?? 0} error=${result.error ?? 'none'}`);
       setHistory((result.data ?? []) as ManualReading[]);
+      setHistoryLoading(false);
+    }).catch(e => {
+      setDebugMsg(`exception: ${e instanceof Error ? e.message : String(e)}`);
       setHistoryLoading(false);
     });
   }, [blockId, refreshKey]);
@@ -359,6 +365,7 @@ export default function SoilWaterTab({ data, blockId, sensorCount = 0, refreshKe
             {historyLoading ? '…' : `${history.length} reading${history.length !== 1 ? 's' : ''}`}
           </span>
         </div>
+        <div className="px-4 py-1 text-[10px] font-mono text-slate-400 border-b border-slate-100 dark:border-slate-800 break-all">{debugMsg || '—'}</div>
         {historyLoading ? (
           <div className="px-4 py-6 text-center text-sm text-slate-400">Loading…</div>
         ) : history.length === 0 ? (
