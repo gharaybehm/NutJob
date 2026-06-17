@@ -13,6 +13,8 @@ import {
   updateSensor,
   deleteSensor,
   generateSensorApiKey,
+  saveSensecapCredentials,
+  testSensecapConnection,
 } from './actions'
 import {
   User,
@@ -82,6 +84,8 @@ interface SettingsFormsProps {
   farmGpsLat?: number | null
   farmGpsLng?: number | null
   sensors?: SensorWithBlock[]
+  initialSensecapApiId?: string | null
+  initialSensecapAccessKey?: string | null
 }
 
 type TabId = 'profile' | 'team' | 'blocks' | 'alerts' | 'sensors' | 'weather' | 'language'
@@ -761,10 +765,14 @@ function SensorConnectionsTab({
   initialSensors,
   blocks,
   farmId,
+  initialSensecapApiId,
+  initialSensecapAccessKey,
 }: {
   initialSensors: SensorWithBlock[]
   blocks: Block[]
   farmId: string
+  initialSensecapApiId?: string | null
+  initialSensecapAccessKey?: string | null
 }) {
   const [sensors, setSensors] = useState<SensorWithBlock[]>(initialSensors)
   const [modalOpen, setModalOpen] = useState(false)
@@ -775,6 +783,38 @@ function SensorConnectionsTab({
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [newApiKey, setNewApiKey] = useState<string | null>(null)
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null)
+
+  // SenseCAP credentials state
+  const [sensecapApiId, setSensecapApiId] = useState(initialSensecapApiId ?? '')
+  const [sensecapAccessKey, setSensecapAccessKey] = useState(initialSensecapAccessKey ?? '')
+  const [showAccessKey, setShowAccessKey] = useState(false)
+  const [sensecapSaving, setSensecapSaving] = useState(false)
+  const [sensecapTesting, setSensecapTesting] = useState(false)
+  const [sensecapStatus, setSensecapStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  async function handleSaveSensecap() {
+    setSensecapSaving(true)
+    setSensecapStatus(null)
+    const res = await saveSensecapCredentials(farmId, sensecapApiId.trim(), sensecapAccessKey.trim())
+    setSensecapSaving(false)
+    if (res.error) {
+      setSensecapStatus({ type: 'error', message: res.error })
+    } else {
+      setSensecapStatus({ type: 'success', message: 'SenseCAP credentials saved.' })
+    }
+  }
+
+  async function handleTestSensecap() {
+    setSensecapTesting(true)
+    setSensecapStatus(null)
+    const res = await testSensecapConnection(sensecapApiId.trim(), sensecapAccessKey.trim())
+    setSensecapTesting(false)
+    if (res.error) {
+      setSensecapStatus({ type: 'error', message: `Connection failed: ${res.error}` })
+    } else {
+      setSensecapStatus({ type: 'success', message: `Connected — Organisation ID: ${res.org_id}` })
+    }
+  }
 
   const webhookBase = typeof window !== 'undefined'
     ? `${window.location.origin}/api/ingest`
@@ -854,6 +894,74 @@ function SensorConnectionsTab({
 
   return (
     <div className="space-y-8">
+      {/* SenseCAP Cloud Integration */}
+      <SectionCard title="SenseCAP Cloud Integration" icon={Wifi}
+        description="Connect your SenseCAP LoRaWAN/4G sensors. Telemetry is pulled 3× per day and written directly into the block state.">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                API ID
+              </label>
+              <input
+                type="text"
+                value={sensecapApiId}
+                onChange={e => setSensecapApiId(e.target.value)}
+                placeholder="e.g. 7D4A..."
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                Access Key
+              </label>
+              <div className="relative">
+                <input
+                  type={showAccessKey ? 'text' : 'password'}
+                  value={sensecapAccessKey}
+                  onChange={e => setSensecapAccessKey(e.target.value)}
+                  placeholder="Access Key"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 pr-10 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAccessKey(v => !v)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  tabIndex={-1}
+                >
+                  {showAccessKey ? <WifiOff className="h-4 w-4" /> : <Wifi className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <StatusBanner status={sensecapStatus} />
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleSaveSensecap}
+              disabled={sensecapSaving || !sensecapApiId.trim() || !sensecapAccessKey.trim()}
+              className="flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {sensecapSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save Credentials
+            </button>
+            <button
+              onClick={handleTestSensecap}
+              disabled={sensecapTesting || !sensecapApiId.trim() || !sensecapAccessKey.trim()}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {sensecapTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Test Connection
+            </button>
+          </div>
+
+          <p className="text-xs text-slate-400 dark:text-slate-500">
+            Find your API credentials in the SenseCAP portal under Account → Access API. The Device EUI for each sensor is entered per-sensor below.
+          </p>
+        </div>
+      </SectionCard>
+
       {/* One-time API key banner */}
       {newApiKey && (
         <div className="rounded-xl border border-brand-300 bg-brand-50 dark:bg-brand-900/20 dark:border-brand-700 p-4">
@@ -1323,6 +1431,8 @@ export default function SettingsForms({
   farmGpsLat,
   farmGpsLng,
   sensors = [],
+  initialSensecapApiId = null,
+  initialSensecapAccessKey = null,
 }: SettingsFormsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('profile')
 
@@ -1362,7 +1472,7 @@ export default function SettingsForms({
       {activeTab === 'team'     && <TeamTab userRole={userRole} initialProfile={initialProfile} allUsers={allUsers} />}
       {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} />}
       {activeTab === 'alerts'   && <NotificationAlertsTab farmId={farmId ?? ''} />}
-      {activeTab === 'sensors'  && <SensorConnectionsTab initialSensors={sensors} blocks={blocks} farmId={farmId ?? ''} />}
+      {activeTab === 'sensors'  && <SensorConnectionsTab initialSensors={sensors} blocks={blocks} farmId={farmId ?? ''} initialSensecapApiId={initialSensecapApiId} initialSensecapAccessKey={initialSensecapAccessKey} />}
       {activeTab === 'weather'  && <WeatherAPITab farmId={farmId} farmName={farmName} farmAddress={farmAddress} initialLat={farmGpsLat} initialLng={farmGpsLng} />}
       {activeTab === 'language' && <LanguageTab />}
     </div>

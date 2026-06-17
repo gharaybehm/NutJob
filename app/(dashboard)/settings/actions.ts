@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { routing, LOCALE_COOKIE, type Locale } from '@/i18n/routing'
 import type { SensorFormValues, Sensor } from '@/types/sensors'
+import { createSensecapClient } from '@/utils/sensecap-client'
 
 export async function setLocale(locale: string) {
   if (!routing.locales.includes(locale as Locale)) {
@@ -327,4 +328,38 @@ export async function updateBlockConfig(
   revalidatePath('/blocks')
   revalidatePath('/settings')
   return { success: 'Block configuration saved' }
+}
+
+// ─── SenseCAP integration ─────────────────────────────────────────────────────
+
+export async function saveSensecapCredentials(
+  farmId: string,
+  apiId: string,
+  accessKey: string
+): Promise<{ error?: string }> {
+  const { error: authError } = await requireAdmin()
+  if (authError) return { error: authError }
+  const adminClient = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (adminClient as any).from('farms')
+    .update({ sensecap_api_id: apiId, sensecap_access_key: accessKey })
+    .eq('id', farmId)
+  if (error) return { error: error.message }
+  revalidatePath(`/${farmId}/settings`)
+  return {}
+}
+
+export async function testSensecapConnection(
+  apiId: string,
+  accessKey: string
+): Promise<{ org_id?: string; error?: string }> {
+  const { error: authError } = await requireAdmin()
+  if (authError) return { error: authError }
+  try {
+    const client = createSensecapClient(apiId, accessKey)
+    const orgId = await client.verifyConnection()
+    return { org_id: orgId }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Connection failed' }
+  }
 }

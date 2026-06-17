@@ -19,6 +19,7 @@ import {
   X as XIcon,
   Edit2,
   Cpu,
+  CalendarClock,
 } from "lucide-react";
 
 type Category = "irrigate" | "fertilize" | "spray" | "scout" | "prune" | "other";
@@ -35,6 +36,7 @@ interface Recommendation {
   manager_note: string | null;
   blocks?: { name: string } | null;
   created_at: string;
+  expires_at: string | null;
 }
 
 interface Props {
@@ -157,6 +159,18 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
     return matchesStatus && matchesCategory;
   });
 
+  // Derive batch metadata from the most-recently-generated pending recommendations
+  const pendingRecs = initialRecommendations.filter((r) => r.status === "pending");
+  const latestBatchDate = pendingRecs.length > 0
+    ? new Date(Math.max(...pendingRecs.map((r) => new Date(r.created_at).getTime())))
+    : null;
+  const latestExpiry = pendingRecs.length > 0 && pendingRecs[0].expires_at
+    ? new Date(Math.max(...pendingRecs.map((r) => r.expires_at ? new Date(r.expires_at).getTime() : 0)))
+    : null;
+  const formatShort = (d: Date) =>
+    d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const isExpiringSoon = latestExpiry && (latestExpiry.getTime() - Date.now()) < 2 * 24 * 60 * 60 * 1000;
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -214,6 +228,28 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
           </select>
         </div>
       </div>
+
+      {/* Batch info banner — shown when there are pending recommendations with dates */}
+      {statusFilter === "pending" && latestBatchDate && (
+        <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm border ${
+          isExpiringSoon
+            ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-300"
+            : "bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+        }`}>
+          <CalendarClock className="h-4 w-4 shrink-0" />
+          <span>
+            Generated: <span className="font-medium">{formatShort(latestBatchDate)}</span>
+            {latestExpiry && (
+              <>
+                {" · "}
+                {isExpiringSoon ? "Expires soon: " : "Valid until: "}
+                <span className="font-medium">{formatShort(latestExpiry)}</span>
+              </>
+            )}
+            {" · "}Refreshed weekly by the AI Agronomist
+          </span>
+        </div>
+      )}
 
       {filteredRecommendations.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

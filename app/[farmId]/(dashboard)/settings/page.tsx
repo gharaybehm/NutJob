@@ -63,7 +63,7 @@ export default async function SettingsPage({
 
   // Fetch farm details for the Farm Identity and Weather sections
   const { data: farmData } = await db.from('farms')
-    .select('name, address, gps_lat, gps_lng')
+    .select('name, address, gps_lat, gps_lng, sensecap_api_id, sensecap_access_key')
     .eq('id', farmId)
     .single()
 
@@ -104,6 +104,8 @@ export default async function SettingsPage({
         farmGpsLat={farmData?.gps_lat ?? null}
         farmGpsLng={farmData?.gps_lng ?? null}
         sensors={sensors}
+        initialSensecapApiId={farmData?.sensecap_api_id ?? null}
+        initialSensecapAccessKey={farmData?.sensecap_access_key ?? null}
       />
     </div>
   )
