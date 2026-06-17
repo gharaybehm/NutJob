@@ -240,6 +240,132 @@ export type Database = {
           },
         ]
       }
+      calendar_event_materials: {
+        Row: {
+          id: string
+          calendar_event_id: string
+          consumable_id: string
+          planned_quantity: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          calendar_event_id: string
+          consumable_id: string
+          planned_quantity: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          calendar_event_id?: string
+          consumable_id?: string
+          planned_quantity?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_event_materials_calendar_event_id_fkey"
+            columns: ["calendar_event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_event_materials_consumable_id_fkey"
+            columns: ["consumable_id"]
+            isOneToOne: false
+            referencedRelation: "consumables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consumable_usage_log: {
+        Row: {
+          id: string
+          consumable_id: string
+          quantity: number
+          calendar_event_id: string | null
+          block: string | null
+          notes: string | null
+          logged_by: string | null
+          usage_date: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          consumable_id: string
+          quantity: number
+          calendar_event_id?: string | null
+          block?: string | null
+          notes?: string | null
+          logged_by?: string | null
+          usage_date: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          consumable_id?: string
+          quantity?: number
+          calendar_event_id?: string | null
+          block?: string | null
+          notes?: string | null
+          logged_by?: string | null
+          usage_date?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consumable_usage_log_consumable_id_fkey"
+            columns: ["consumable_id"]
+            isOneToOne: false
+            referencedRelation: "consumables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consumable_usage_log_calendar_event_id_fkey"
+            columns: ["calendar_event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consumables: {
+        Row: {
+          id: string
+          name: string
+          category: string
+          unit: string
+          starting_balance: number
+          current_balance: number
+          minimum_stock: number | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          category: string
+          unit: string
+          starting_balance: number
+          current_balance: number
+          minimum_stock?: number | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          category?: string
+          unit?: string
+          starting_balance?: number
+          current_balance?: number
+          minimum_stock?: number | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       fertigation_log: {
         Row: {
           amount_kg_per_tree: number

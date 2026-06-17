@@ -1,6 +1,6 @@
 # NutJob — Progress vs Requirements
 
-> Last updated: 2026-06-17 (SenseCAP IoT sensor integration — full pull pipeline 3×/day)
+> Last updated: 2026-06-18 (Calendar ↔ Inventory: planned materials on tasks + auto-deduction on completion)
 
 ## Overall Status: ~99% Complete  <!-- Web Push notifications added 2026-06-05 -->
 
@@ -66,6 +66,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 - "Add Event" modal with activity-specific field blocks
 - "Log Completion" modal to capture actual start/end and notes
 - Shared types and mock data in `types.ts`
+- ✅ **Inventory integration** — "Planned Materials" picker in AddEventModal lets managers assign consumables + quantities when creating tasks; stored in `calendar_event_materials` table. LogCompletionModal shows pre-filled actual quantities; on completion, inventory is automatically deducted (inserts into `consumable_usage_log`, updates `consumables.current_balance`). Migration: `supabase/migrations/20260618000000_add_calendar_event_materials.sql`.
 
 ### 5. Recommendations Page — ✅ 100% Done
 - Route: `app/(dashboard)/recommendations/page.tsx` ✅
@@ -119,7 +120,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | Manual logs (irrigation, spray, scouting, etc.) | ✅ Done | `LogActivityModal` extended with activity-specific fields (duration/volume/method for irrigation; product/amount/unit for fertigation; product/rate/target/PHI for spraying; risk/observations/next-date for scouting; type/intensity for pruning). Structured details stored in `activity_log.details` JSONB. Fertigation side-writes to `fertigation_log`; scouting side-writes to `scouting_reports` (both guarded by block_id). Detail chips rendered inline in Activity Log entries. Offline queue carries details through sync. |
 | Initial block data / PDF upload & extraction | ✅ Done | AI extraction of soil/water test results from both PDF and image uploads using OpenRouter + Trigger.dev |
 | Computed fields (ETo, water deficit, GDD, chill hours, risk indices) | ✅ Done | Daily cron writes to DB. Blocks page now queries `soil_water_latest`, `phenology_latest`, `weather_latest` views and displays real values. When a sensor reading arrives within 24 h the cron carries its `soil_moisture` into the computed row. |
-| DB schema / migrations | ✅ Done | 12 migrations applied — see table list below |
+| DB schema / migrations | ✅ Done | 13 migrations applied — see table list below. Latest: `20260618000000_add_calendar_event_materials.sql` |
 
 ---
 

@@ -9,8 +9,11 @@ import DayView from './DayView';
 import dynamic from 'next/dynamic';
 const AddEventModal = dynamic(() => import('./AddEventModal'), { ssr: false });
 const LogCompletionModal = dynamic(() => import('./LogCompletionModal'), { ssr: false });
-import { CalendarEvent, ACTIVITY_COLORS, ACTIVITY_LABELS } from './types';
+import { CalendarEvent, PlannedMaterial, ACTIVITY_COLORS, ACTIVITY_LABELS } from './types';
 import { createEvent, logEventCompletion } from '@/app/(dashboard)/calendar/actions';
+
+type ConsumableSummary = { id: string; name: string; unit: string; currentBalance: number; category: string };
+type MaterialActual = { consumableId: string; actualQuantity: number; currentBalance: number };
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
@@ -153,10 +156,12 @@ const LEGEND_TYPES = ['irrigation', 'fertigation', 'spraying', 'pruning', 'scout
 
 export default function CalendarPage({
   initialEvents = [],
+  consumables = [],
   userRole = "worker",
   farmId,
 }: {
   initialEvents?: CalendarEvent[];
+  consumables?: ConsumableSummary[];
   userRole?: "admin" | "supervisor" | "worker";
   farmId?: string;
 }) {
@@ -202,7 +207,7 @@ export default function CalendarPage({
     setDetailEvent(event);
   }, []);
 
-  const handleSaveEvent = useCallback((event: CalendarEvent) => {
+  const handleSaveEvent = useCallback((event: CalendarEvent, materials: PlannedMaterial[]) => {
     setEvents((prev) => [...prev, event]);
     startTransition(async () => {
       try {
@@ -214,7 +219,7 @@ export default function CalendarPage({
           block: event.block ?? null,
           notes: event.notes ?? null,
           details: event.details ?? null,
-        });
+        }, materials);
         setEvents((prev) =>
           prev.map((e) => (e.id === event.id ? { ...e, id: realId } : e))
         );
@@ -225,7 +230,7 @@ export default function CalendarPage({
     });
   }, []);
 
-  const handleLogCompletion = useCallback((eventId: string, actualStart: Date, actualEnd: Date, notes: string) => {
+  const handleLogCompletion = useCallback((eventId: string, actualStart: Date, actualEnd: Date, notes: string, materialActuals: MaterialActual[]) => {
     setEvents((prev) =>
       prev.map((e) =>
         e.id === eventId
@@ -235,7 +240,7 @@ export default function CalendarPage({
     );
     startTransition(async () => {
       try {
-        await logEventCompletion(eventId, actualStart, actualEnd, notes);
+        await logEventCompletion(eventId, actualStart, actualEnd, notes, materialActuals);
       } catch (err) {
         console.error('[Calendar] Failed to log completion:', err);
       }
@@ -305,6 +310,7 @@ export default function CalendarPage({
       {showAdd && (
         <AddEventModal
           defaultDate={addDefaultDate}
+          consumables={consumables}
           onClose={() => setShowAdd(false)}
           onSave={handleSaveEvent}
         />

@@ -50,6 +50,24 @@ export const ACTIVITY_LABELS: Record<ActivityType, string> = {
 
 export const BLOCKS = ['Block A', 'Block B', 'Block C', 'Block D', 'Block E', 'Block F'];
 
+// ─── Material types ──────────────────────────────────────────────────────────
+
+export interface MaterialLine {
+  id: string;
+  consumableId: string;
+  consumableName: string;
+  unit: string;
+  plannedQuantity: number;
+  currentBalance: number;
+}
+
+export interface PlannedMaterial {
+  consumableId: string;
+  consumableName: string;
+  unit: string;
+  plannedQuantity: number;
+}
+
 // ─── Event interface ─────────────────────────────────────────────────────────
 
 export interface CalendarEvent {
@@ -77,6 +95,7 @@ export interface CalendarEvent {
     // Pruning
     pruningType?: string;
   };
+  materials?: MaterialLine[];
 }
 
 // ─── Helper ──────────────────────────────────────────────────────────────────

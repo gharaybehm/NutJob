@@ -5,10 +5,21 @@ import { X, CheckCircle, Clock, MapPin } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { CalendarEvent, ACTIVITY_COLORS, ACTIVITY_LABELS } from './types';
 
+type MaterialActualState = {
+  consumableId: string;
+  consumableName: string;
+  unit: string;
+  currentBalance: number;
+  plannedQuantity: number;
+  actualQuantity: string;
+};
+
+type MaterialActual = { consumableId: string; actualQuantity: number; currentBalance: number };
+
 interface LogCompletionModalProps {
   event: CalendarEvent;
   onClose: () => void;
-  onComplete: (eventId: string, actualStart: Date, actualEnd: Date, notes: string) => void;
+  onComplete: (eventId: string, actualStart: Date, actualEnd: Date, notes: string, materialActuals: MaterialActual[]) => void;
 }
 
 function pad2(n: number) { return String(n).padStart(2, '0'); }
@@ -24,12 +35,26 @@ export default function LogCompletionModal({ event, onClose, onComplete }: LogCo
   const [actualEnd,   setActualEnd]   = useState(toDatetimeLocal(event.endDate));
   const [notes,       setNotes]       = useState('');
 
+  const [materialActuals, setMaterialActuals] = useState<MaterialActualState[]>(() =>
+    (event.materials ?? []).map((m) => ({
+      consumableId: m.consumableId,
+      consumableName: m.consumableName,
+      unit: m.unit,
+      currentBalance: m.currentBalance,
+      plannedQuantity: m.plannedQuantity,
+      actualQuantity: String(m.plannedQuantity),
+    }))
+  );
+
   const fieldCls = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white';
   const labelCls = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400';
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onComplete(event.id, new Date(actualStart), new Date(actualEnd), notes);
+    const actuals: MaterialActual[] = materialActuals
+      .map((m) => ({ consumableId: m.consumableId, actualQuantity: Number(m.actualQuantity), currentBalance: m.currentBalance }))
+      .filter((m) => m.actualQuantity > 0);
+    onComplete(event.id, new Date(actualStart), new Date(actualEnd), notes, actuals);
     onClose();
   }
 
@@ -81,6 +106,54 @@ export default function LogCompletionModal({ event, onClose, onComplete }: LogCo
                 value={actualEnd} onChange={(e) => setActualEnd(e.target.value)} required />
             </div>
           </div>
+
+          {materialActuals.length > 0 && (
+            <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                Materials Used
+              </p>
+              <div className="space-y-2">
+                {materialActuals.map((m, i) => {
+                  const qty = Number(m.actualQuantity);
+                  const isOver = qty > m.currentBalance;
+                  return (
+                    <div key={m.consumableId} className="flex items-center gap-3">
+                      <span className="flex-1 min-w-0 truncate text-sm text-slate-700 dark:text-slate-300">
+                        {m.consumableName}
+                        <span className="ml-1 text-xs text-slate-400">(planned: {m.plannedQuantity} {m.unit})</span>
+                      </span>
+                      <div className="flex flex-col items-end gap-0.5 shrink-0">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={m.actualQuantity}
+                            onChange={(e) =>
+                              setMaterialActuals((prev) =>
+                                prev.map((x, j) => j === i ? { ...x, actualQuantity: e.target.value } : x)
+                              )
+                            }
+                            className={`w-24 rounded-lg border px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:bg-slate-800 dark:text-white ${
+                              isOver
+                                ? 'border-amber-400 bg-amber-50 dark:border-amber-600 dark:bg-amber-900/20'
+                                : 'border-slate-200 bg-white dark:border-slate-700'
+                            }`}
+                          />
+                          <span className="text-xs text-slate-500 w-8">{m.unit}</span>
+                        </div>
+                        {isOver && (
+                          <p className="text-[10px] text-amber-600 dark:text-amber-400">
+                            Stock: {m.currentBalance} {m.unit}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div>
             <label className={labelCls}>{t('notes')}</label>

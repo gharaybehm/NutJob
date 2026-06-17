@@ -3,12 +3,15 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { CalendarEvent, ActivityType, ACTIVITY_LABELS, BLOCKS } from './types';
+import { CalendarEvent, ActivityType, PlannedMaterial, ACTIVITY_LABELS, BLOCKS } from './types';
+
+type ConsumableSummary = { id: string; name: string; unit: string; currentBalance: number; category: string };
 
 interface AddEventModalProps {
   defaultDate?: Date;
+  consumables?: ConsumableSummary[];
   onClose: () => void;
-  onSave: (event: CalendarEvent) => void;
+  onSave: (event: CalendarEvent, materials: PlannedMaterial[]) => void;
 }
 
 function pad2(n: number) { return String(n).padStart(2, '0'); }
@@ -18,7 +21,7 @@ function toDatetimeLocal(d: Date) {
 
 const ACTIVITY_TYPES: ActivityType[] = ['irrigation', 'fertigation', 'spraying', 'pruning', 'scouting', 'pollinating', 'tilling', 'plowing', 'weeding', 'other'];
 
-export default function AddEventModal({ defaultDate, onClose, onSave }: AddEventModalProps) {
+export default function AddEventModal({ defaultDate, consumables = [], onClose, onSave }: AddEventModalProps) {
   const t = useTranslations('calendar.addEvent');
   const tTypes = useTranslations('activityTypes');
   const TYPE_LABELS: Record<ActivityType, string> = {
@@ -49,6 +52,10 @@ export default function AddEventModal({ defaultDate, onClose, onSave }: AddEvent
   const [amountLPerHa, setAmountLPerHa]           = useState('');
   const [pestTarget, setPestTarget]               = useState('');
   const [pruningType, setPruningType]             = useState('');
+
+  const [materials, setMaterials]         = useState<PlannedMaterial[]>([]);
+  const [pickedConsumableId, setPickedConsumableId] = useState('');
+  const [pickedQty, setPickedQty]         = useState('');
 
   const fieldCls = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500';
   const labelCls = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400';
@@ -84,7 +91,7 @@ export default function AddEventModal({ defaultDate, onClose, onSave }: AddEvent
         ...(type === 'pruning' && { pruningType, growthStageNote }),
       },
     };
-    onSave(event);
+    onSave(event, materials);
     onClose();
   }
 
@@ -213,6 +220,64 @@ export default function AddEventModal({ defaultDate, onClose, onSave }: AddEvent
                   <label className={labelCls}>{t('growthStageNote')}</label>
                   <input className={fieldCls} value={growthStageNote} onChange={(e) => setGrowthStageNote(e.target.value)} placeholder={t('growthStagePostHarvest')} />
                 </div>
+              </div>
+            </div>
+          )}
+
+          {consumables.length > 0 && (
+            <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+                Planned Materials
+              </p>
+              {materials.length > 0 && (
+                <ul className="space-y-1.5">
+                  {materials.map((m, i) => (
+                    <li key={m.consumableId} className="flex items-center justify-between gap-2 text-sm">
+                      <span className="truncate text-slate-700 dark:text-slate-300">{m.consumableName}</span>
+                      <span className="shrink-0 text-slate-500">{m.plannedQuantity} {m.unit}</span>
+                      <button type="button"
+                        onClick={() => setMaterials((prev) => prev.filter((_, j) => j !== i))}
+                        className="shrink-0 text-xs text-red-400 hover:text-red-600 transition-colors">
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="flex gap-2 items-end">
+                <div className="flex-1 min-w-0">
+                  <label className={labelCls}>Consumable</label>
+                  <select className={fieldCls} value={pickedConsumableId}
+                    onChange={(e) => setPickedConsumableId(e.target.value)}>
+                    <option value="">-- Select --</option>
+                    {consumables.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name} ({c.unit})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-24 shrink-0">
+                  <label className={labelCls}>Qty</label>
+                  <input type="number" className={fieldCls} value={pickedQty}
+                    onChange={(e) => setPickedQty(e.target.value)} min="0.01" step="0.01" />
+                </div>
+                <button type="button"
+                  onClick={() => {
+                    const c = consumables.find((x) => x.id === pickedConsumableId);
+                    const qty = Number(pickedQty);
+                    if (!c || !qty || qty <= 0) return;
+                    setMaterials((prev) => {
+                      const existing = prev.find((m) => m.consumableId === c.id);
+                      if (existing) {
+                        return prev.map((m) => m.consumableId === c.id ? { ...m, plannedQuantity: qty } : m);
+                      }
+                      return [...prev, { consumableId: c.id, consumableName: c.name, unit: c.unit, plannedQuantity: qty }];
+                    });
+                    setPickedConsumableId('');
+                    setPickedQty('');
+                  }}
+                  className="shrink-0 rounded-lg bg-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 transition-colors whitespace-nowrap">
+                  + Add
+                </button>
               </div>
             </div>
           )}
