@@ -166,7 +166,21 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
               <p className="text-xs font-semibold uppercase tracking-wide text-green-600 dark:text-green-400">{t('fertigationDetails')}</p>
               <div>
                 <label className={labelCls}>{t('fertilizerType')}</label>
-                <input className={fieldCls} value={fertilizerType} onChange={(e) => setFertilizerType(e.target.value)} placeholder={t('fertilizerPlaceholder')} />
+                {(() => {
+                  const opts = consumables.filter(c => c.category === 'fertilizer').length > 0
+                    ? consumables.filter(c => c.category === 'fertilizer')
+                    : consumables;
+                  return opts.length > 0 ? (
+                    <select className={fieldCls} value={fertilizerType} onChange={(e) => setFertilizerType(e.target.value)}>
+                      <option value="">-- Select fertilizer --</option>
+                      {opts.map(c => (
+                        <option key={c.id} value={c.name}>{c.name} ({c.currentBalance} {c.unit} available)</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input className={fieldCls} value={fertilizerType} onChange={(e) => setFertilizerType(e.target.value)} placeholder={t('fertilizerPlaceholder')} />
+                  );
+                })()}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -186,7 +200,21 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
               <p className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">{t('sprayingDetails')}</p>
               <div>
                 <label className={labelCls}>{t('pesticideProduct')}</label>
-                <input className={fieldCls} value={pesticideType} onChange={(e) => setPesticideType(e.target.value)} placeholder={t('pesticidePlaceholder')} />
+                {(() => {
+                  const opts = consumables.filter(c => c.category === 'pesticide' || c.category === 'herbicide').length > 0
+                    ? consumables.filter(c => c.category === 'pesticide' || c.category === 'herbicide')
+                    : consumables;
+                  return opts.length > 0 ? (
+                    <select className={fieldCls} value={pesticideType} onChange={(e) => setPesticideType(e.target.value)}>
+                      <option value="">-- Select product --</option>
+                      {opts.map(c => (
+                        <option key={c.id} value={c.name}>{c.name} ({c.currentBalance} {c.unit} available)</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input className={fieldCls} value={pesticideType} onChange={(e) => setPesticideType(e.target.value)} placeholder={t('pesticidePlaceholder')} />
+                  );
+                })()}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
