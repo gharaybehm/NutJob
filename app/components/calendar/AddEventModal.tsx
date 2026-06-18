@@ -46,9 +46,13 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
   const [litresPerTree, setLitresPerTree]         = useState('2');
   const [repeatDays, setRepeatDays]               = useState('14');
   const [fertilizerType, setFertilizerType]       = useState('');
+  const [fertilizerConsumableId, setFertilizerConsumableId] = useState('');
+  const [fertigationTotalQty, setFertigationTotalQty]       = useState('');
   const [amountKgPerTree, setAmountKgPerTree]     = useState('');
   const [growthStageNote, setGrowthStageNote]     = useState('');
   const [pesticideType, setPesticideType]         = useState('');
+  const [pesticideConsumableId, setPesticideConsumableId]   = useState('');
+  const [sprayingTotalQty, setSprayingTotalQty]             = useState('');
   const [amountLPerHa, setAmountLPerHa]           = useState('');
   const [pestTarget, setPestTarget]               = useState('');
   const [pruningType, setPruningType]             = useState('');
@@ -91,7 +95,30 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
         ...(type === 'pruning' && { pruningType, growthStageNote }),
       },
     };
-    onSave(event, materials.filter(m => m.plannedQuantity > 0));
+    // Merge inline qty fields into the materials list
+    let finalMaterials = [...materials.filter(m => m.plannedQuantity > 0)];
+
+    if (type === 'fertigation' && fertilizerConsumableId && Number(fertigationTotalQty) > 0) {
+      const cons = consumables.find(c => c.id === fertilizerConsumableId);
+      if (cons) {
+        const already = finalMaterials.find(m => m.consumableId === cons.id);
+        if (!already) {
+          finalMaterials = [...finalMaterials, { consumableId: cons.id, consumableName: cons.name, unit: cons.unit, plannedQuantity: Number(fertigationTotalQty) }];
+        }
+      }
+    }
+
+    if (type === 'spraying' && pesticideConsumableId && Number(sprayingTotalQty) > 0) {
+      const cons = consumables.find(c => c.id === pesticideConsumableId);
+      if (cons) {
+        const already = finalMaterials.find(m => m.consumableId === cons.id);
+        if (!already) {
+          finalMaterials = [...finalMaterials, { consumableId: cons.id, consumableName: cons.name, unit: cons.unit, plannedQuantity: Number(sprayingTotalQty) }];
+        }
+      }
+    }
+
+    onSave(event, finalMaterials);
     onClose();
   }
 
@@ -164,39 +191,42 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
           {type === 'fertigation' && (
             <div className="rounded-xl bg-green-50 p-4 ring-1 ring-green-100 dark:bg-green-900/20 dark:ring-green-800 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-green-600 dark:text-green-400">{t('fertigationDetails')}</p>
-              <div>
-                <label className={labelCls}>{t('fertilizerType')}</label>
-                {(() => {
-                  const opts = consumables.filter(c => c.category === 'fertilizer').length > 0
-                    ? consumables.filter(c => c.category === 'fertilizer')
-                    : consumables;
-                  return opts.length > 0 ? (
-                    <select className={fieldCls} value={fertilizerType} onChange={(e) => {
-                      const name = e.target.value;
-                      setFertilizerType(name);
-                      const cons = opts.find(c => c.name === name);
-                      if (cons) {
-                        setMaterials(prev => {
-                          const exists = prev.find(m => m.consumableId === cons.id);
-                          if (exists) return prev;
-                          return [...prev, { consumableId: cons.id, consumableName: cons.name, unit: cons.unit, plannedQuantity: 0 }];
-                        });
-                      }
-                    }}>
-                      <option value="">-- Select fertilizer --</option>
-                      {opts.map(c => (
-                        <option key={c.id} value={c.name}>{c.name} ({c.currentBalance} {c.unit} available)</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input className={fieldCls} value={fertilizerType} onChange={(e) => setFertilizerType(e.target.value)} placeholder={t('fertilizerPlaceholder')} />
-                  );
-                })()}
-                {fertilizerType && consumables.find(c => c.name === fertilizerType) && (
-                  <p className="mt-1 text-xs text-green-600 dark:text-green-400">
-                    ↓ Set the total quantity in <strong>Planned Materials</strong> below to track inventory deduction.
-                  </p>
-                )}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>{t('fertilizerType')}</label>
+                  {(() => {
+                    const opts = consumables.filter(c => c.category === 'fertilizer').length > 0
+                      ? consumables.filter(c => c.category === 'fertilizer')
+                      : consumables;
+                    return opts.length > 0 ? (
+                      <select className={fieldCls} value={fertilizerConsumableId} onChange={(e) => {
+                        const id = e.target.value;
+                        setFertilizerConsumableId(id);
+                        const cons = opts.find(c => c.id === id);
+                        setFertilizerType(cons?.name ?? '');
+                      }}>
+                        <option value="">-- Select fertilizer --</option>
+                        {opts.map(c => (
+                          <option key={c.id} value={c.id}>{c.name} ({c.currentBalance} {c.unit} avail.)</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input className={fieldCls} value={fertilizerType} onChange={(e) => setFertilizerType(e.target.value)} placeholder={t('fertilizerPlaceholder')} />
+                    );
+                  })()}
+                </div>
+                <div>
+                  <label className={labelCls}>Total Qty ({consumables.find(c => c.id === fertilizerConsumableId)?.unit ?? 'kg'})</label>
+                  <input
+                    type="number"
+                    className={fieldCls}
+                    value={fertigationTotalQty}
+                    onChange={(e) => setFertigationTotalQty(e.target.value)}
+                    min="0" step="0.01"
+                    placeholder="e.g. 200"
+                    disabled={!fertilizerConsumableId}
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -214,34 +244,42 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
           {type === 'spraying' && (
             <div className="rounded-xl bg-amber-50 p-4 ring-1 ring-amber-100 dark:bg-amber-900/20 dark:ring-amber-800 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">{t('sprayingDetails')}</p>
-              <div>
-                <label className={labelCls}>{t('pesticideProduct')}</label>
-                {(() => {
-                  const opts = consumables.filter(c => c.category === 'pesticide' || c.category === 'herbicide').length > 0
-                    ? consumables.filter(c => c.category === 'pesticide' || c.category === 'herbicide')
-                    : consumables;
-                  return opts.length > 0 ? (
-                    <select className={fieldCls} value={pesticideType} onChange={(e) => {
-                      const name = e.target.value;
-                      setPesticideType(name);
-                      const cons = opts.find(c => c.name === name);
-                      if (cons) {
-                        setMaterials(prev => {
-                          const exists = prev.find(m => m.consumableId === cons.id);
-                          if (exists) return prev;
-                          return [...prev, { consumableId: cons.id, consumableName: cons.name, unit: cons.unit, plannedQuantity: 0 }];
-                        });
-                      }
-                    }}>
-                      <option value="">-- Select product --</option>
-                      {opts.map(c => (
-                        <option key={c.id} value={c.name}>{c.name} ({c.currentBalance} {c.unit} available)</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input className={fieldCls} value={pesticideType} onChange={(e) => setPesticideType(e.target.value)} placeholder={t('pesticidePlaceholder')} />
-                  );
-                })()}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>{t('pesticideProduct')}</label>
+                  {(() => {
+                    const opts = consumables.filter(c => c.category === 'pesticide' || c.category === 'herbicide').length > 0
+                      ? consumables.filter(c => c.category === 'pesticide' || c.category === 'herbicide')
+                      : consumables;
+                    return opts.length > 0 ? (
+                      <select className={fieldCls} value={pesticideConsumableId} onChange={(e) => {
+                        const id = e.target.value;
+                        setPesticideConsumableId(id);
+                        const cons = opts.find(c => c.id === id);
+                        setPesticideType(cons?.name ?? '');
+                      }}>
+                        <option value="">-- Select product --</option>
+                        {opts.map(c => (
+                          <option key={c.id} value={c.id}>{c.name} ({c.currentBalance} {c.unit} avail.)</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input className={fieldCls} value={pesticideType} onChange={(e) => setPesticideType(e.target.value)} placeholder={t('pesticidePlaceholder')} />
+                    );
+                  })()}
+                </div>
+                <div>
+                  <label className={labelCls}>Total Qty ({consumables.find(c => c.id === pesticideConsumableId)?.unit ?? 'L'})</label>
+                  <input
+                    type="number"
+                    className={fieldCls}
+                    value={sprayingTotalQty}
+                    onChange={(e) => setSprayingTotalQty(e.target.value)}
+                    min="0" step="0.01"
+                    placeholder="e.g. 50"
+                    disabled={!pesticideConsumableId}
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
