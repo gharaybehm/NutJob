@@ -3,12 +3,14 @@ import { Package, Droplets, Leaf, Fuel, AlertTriangle, Calendar as CalendarIcon 
 import { useState } from 'react';
 import Link from 'next/link';
 
-export default function ConsumableRow({ 
-  consumable, 
-  onLogUsage 
-}: { 
+export default function ConsumableRow({
+  consumable,
+  onLogUsage,
+  onAddStock,
+}: {
   consumable: Consumable;
   onLogUsage: (consumable: Consumable) => void;
+  onAddStock: (consumable: Consumable) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   
@@ -84,7 +86,13 @@ export default function ConsumableRow({
           >
             {expanded ? 'Hide Log' : `View Log (${consumable.usageLog.length})`}
           </button>
-          <button 
+          <button
+            onClick={() => onAddStock(consumable)}
+            className="rounded-lg bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/40 transition-colors"
+          >
+            + Add Stock
+          </button>
+          <button
             onClick={() => onLogUsage(consumable)}
             className="rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100 dark:bg-brand-900/20 dark:text-brand-300 dark:hover:bg-brand-900/40 transition-colors"
           >

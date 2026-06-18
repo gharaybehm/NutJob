@@ -269,6 +269,38 @@ export async function logUsage(
   if (farmId) revalidatePath(`/${farmId}/inventory`);
 }
 
+export async function addStock(
+  consumableId: string,
+  quantity: number,
+  farmId?: string,
+) {
+  const supabase = await createClient();
+
+  // Fetch current balances
+  const { data: cons } = await (supabase as any)
+    .from('consumables')
+    .select('current_balance, starting_balance')
+    .eq('id', consumableId)
+    .single();
+
+  if (!cons) return;
+
+  const newCurrentBalance  = Number(cons.current_balance)  + quantity;
+  const newStartingBalance = Number(cons.starting_balance) + quantity;
+
+  const { error } = await (supabase as any)
+    .from('consumables')
+    .update({ current_balance: newCurrentBalance, starting_balance: newStartingBalance })
+    .eq('id', consumableId);
+
+  if (error) {
+    console.warn('[Inventory] Failed to add stock:', error);
+  }
+
+  if (farmId) revalidatePath(`/${farmId}/inventory`);
+  revalidatePath('/inventory');
+}
+
 export async function getRecentCalendarEvents(farmId?: string) {
   const supabase = await createClient();
 

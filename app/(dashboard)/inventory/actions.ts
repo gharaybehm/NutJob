@@ -310,3 +310,29 @@ export async function getRecentCalendarEvents() {
     type: d.type
   }));
 }
+
+export async function addStock(consumableId: string, quantity: number) {
+  const supabase = await createClient();
+
+  const { data: cons } = await (supabase as any)
+    .from('consumables')
+    .select('current_balance, starting_balance')
+    .eq('id', consumableId)
+    .single();
+
+  if (!cons) return;
+
+  const { error } = await (supabase as any)
+    .from('consumables')
+    .update({
+      current_balance:  Number(cons.current_balance)  + quantity,
+      starting_balance: Number(cons.starting_balance) + quantity,
+    })
+    .eq('id', consumableId);
+
+  if (error) {
+    console.warn('[Inventory] Failed to add stock:', error);
+  }
+
+  revalidatePath('/inventory');
+}

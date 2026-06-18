@@ -9,9 +9,10 @@ import { Search, Plus, AlertTriangle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 const AddAssetModal = dynamic(() => import('./AddAssetModal'), { ssr: false });
 const AddConsumableModal = dynamic(() => import('./AddConsumableModal'), { ssr: false });
+const AddStockModal = dynamic(() => import('./AddStockModal'), { ssr: false });
 const LogMaintenanceModal = dynamic(() => import('./LogMaintenanceModal'), { ssr: false });
 const LogUsageModal = dynamic(() => import('./LogUsageModal'), { ssr: false });
-import { createAsset, createConsumable, logMaintenance, logUsage } from '@/app/(dashboard)/inventory/actions';
+import { createAsset, createConsumable, logMaintenance, logUsage, addStock } from '@/app/(dashboard)/inventory/actions';
 
 export default function InventoryPage({
   initialAssets,
@@ -42,6 +43,7 @@ export default function InventoryPage({
   const [showAddConsumable, setShowAddConsumable] = useState(false);
   const [maintAsset, setMaintAsset] = useState<Asset | null>(null);
   const [usageConsumable, setUsageConsumable] = useState<Consumable | null>(null);
+  const [stockConsumable, setStockConsumable] = useState<Consumable | null>(null);
 
   // Filters
   const filteredAssets = assets.filter(a => 
@@ -104,6 +106,17 @@ export default function InventoryPage({
     
     startTransition(async () => {
       await logMaintenance(maintAsset.id, data);
+    });
+  };
+
+  const handleAddStock = (consumable: Consumable, quantity: number) => {
+    setConsumables(prev => prev.map(c =>
+      c.id === consumable.id
+        ? { ...c, currentBalance: c.currentBalance + quantity, startingBalance: c.startingBalance + quantity }
+        : c
+    ));
+    startTransition(async () => {
+      await addStock(consumable.id, quantity);
     });
   };
 
@@ -259,7 +272,7 @@ export default function InventoryPage({
               </div>
             ) : (
               filteredConsumables.map(cons => (
-                <ConsumableRow key={cons.id} consumable={cons} onLogUsage={setUsageConsumable} />
+                <ConsumableRow key={cons.id} consumable={cons} onLogUsage={setUsageConsumable} onAddStock={setStockConsumable} />
               ))
             )}
           </div>
@@ -284,12 +297,20 @@ export default function InventoryPage({
       )}
       
       {usageConsumable && (
-        <LogUsageModal 
-          consumable={usageConsumable} 
+        <LogUsageModal
+          consumable={usageConsumable}
           events={recentCalendarEvents}
           blocks={blocks}
-          onClose={() => setUsageConsumable(null)} 
-          onSave={(data, eventTitle) => { handleSaveUsage(data, eventTitle); setUsageConsumable(null); }} 
+          onClose={() => setUsageConsumable(null)}
+          onSave={(data, eventTitle) => { handleSaveUsage(data, eventTitle); setUsageConsumable(null); }}
+        />
+      )}
+
+      {stockConsumable && (
+        <AddStockModal
+          consumable={stockConsumable}
+          onClose={() => setStockConsumable(null)}
+          onSave={(qty) => { handleAddStock(stockConsumable, qty); setStockConsumable(null); }}
         />
       )}
     </div>
