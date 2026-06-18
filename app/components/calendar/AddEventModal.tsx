@@ -91,7 +91,7 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
         ...(type === 'pruning' && { pruningType, growthStageNote }),
       },
     };
-    onSave(event, materials);
+    onSave(event, materials.filter(m => m.plannedQuantity > 0));
     onClose();
   }
 
@@ -171,7 +171,18 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
                     ? consumables.filter(c => c.category === 'fertilizer')
                     : consumables;
                   return opts.length > 0 ? (
-                    <select className={fieldCls} value={fertilizerType} onChange={(e) => setFertilizerType(e.target.value)}>
+                    <select className={fieldCls} value={fertilizerType} onChange={(e) => {
+                      const name = e.target.value;
+                      setFertilizerType(name);
+                      const cons = opts.find(c => c.name === name);
+                      if (cons) {
+                        setMaterials(prev => {
+                          const exists = prev.find(m => m.consumableId === cons.id);
+                          if (exists) return prev;
+                          return [...prev, { consumableId: cons.id, consumableName: cons.name, unit: cons.unit, plannedQuantity: 0 }];
+                        });
+                      }
+                    }}>
                       <option value="">-- Select fertilizer --</option>
                       {opts.map(c => (
                         <option key={c.id} value={c.name}>{c.name} ({c.currentBalance} {c.unit} available)</option>
@@ -181,6 +192,11 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
                     <input className={fieldCls} value={fertilizerType} onChange={(e) => setFertilizerType(e.target.value)} placeholder={t('fertilizerPlaceholder')} />
                   );
                 })()}
+                {fertilizerType && consumables.find(c => c.name === fertilizerType) && (
+                  <p className="mt-1 text-xs text-green-600 dark:text-green-400">
+                    ↓ Set the total quantity in <strong>Planned Materials</strong> below to track inventory deduction.
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -205,7 +221,18 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
                     ? consumables.filter(c => c.category === 'pesticide' || c.category === 'herbicide')
                     : consumables;
                   return opts.length > 0 ? (
-                    <select className={fieldCls} value={pesticideType} onChange={(e) => setPesticideType(e.target.value)}>
+                    <select className={fieldCls} value={pesticideType} onChange={(e) => {
+                      const name = e.target.value;
+                      setPesticideType(name);
+                      const cons = opts.find(c => c.name === name);
+                      if (cons) {
+                        setMaterials(prev => {
+                          const exists = prev.find(m => m.consumableId === cons.id);
+                          if (exists) return prev;
+                          return [...prev, { consumableId: cons.id, consumableName: cons.name, unit: cons.unit, plannedQuantity: 0 }];
+                        });
+                      }
+                    }}>
                       <option value="">-- Select product --</option>
                       {opts.map(c => (
                         <option key={c.id} value={c.name}>{c.name} ({c.currentBalance} {c.unit} available)</option>
