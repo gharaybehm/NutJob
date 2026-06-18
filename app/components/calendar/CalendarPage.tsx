@@ -9,7 +9,7 @@ import DayView from './DayView';
 import dynamic from 'next/dynamic';
 const AddEventModal = dynamic(() => import('./AddEventModal'), { ssr: false });
 const LogCompletionModal = dynamic(() => import('./LogCompletionModal'), { ssr: false });
-import { CalendarEvent, PlannedMaterial, ACTIVITY_COLORS, ACTIVITY_LABELS } from './types';
+import { CalendarEvent, PlannedMaterial, MaterialLine, ACTIVITY_COLORS, ACTIVITY_LABELS } from './types';
 import { createEvent, logEventCompletion } from '@/app/(dashboard)/calendar/actions';
 
 type ConsumableSummary = { id: string; name: string; unit: string; currentBalance: number; category: string };
@@ -208,7 +208,19 @@ export default function CalendarPage({
   }, []);
 
   const handleSaveEvent = useCallback((event: CalendarEvent, materials: PlannedMaterial[]) => {
-    setEvents((prev) => [...prev, event]);
+    // Enrich with MaterialLine so LogCompletionModal has balances without a page refresh
+    const materialLines: MaterialLine[] = materials.map((m) => {
+      const cons = consumables.find((c) => c.id === m.consumableId);
+      return {
+        id: `local-${m.consumableId}`,
+        consumableId: m.consumableId,
+        consumableName: m.consumableName,
+        unit: m.unit,
+        plannedQuantity: m.plannedQuantity,
+        currentBalance: cons?.currentBalance ?? 0,
+      };
+    });
+    setEvents((prev) => [...prev, { ...event, materials: materialLines }]);
     startTransition(async () => {
       try {
         const { id: realId } = await createEvent({
@@ -228,7 +240,7 @@ export default function CalendarPage({
         setEvents((prev) => prev.filter((e) => e.id !== event.id));
       }
     });
-  }, []);
+  }, [consumables]);
 
   const handleLogCompletion = useCallback((eventId: string, actualStart: Date, actualEnd: Date, notes: string, materialActuals: MaterialActual[]) => {
     setEvents((prev) =>
