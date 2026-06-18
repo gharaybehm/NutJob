@@ -322,7 +322,17 @@
       "passwordLabel": "Password",
       "rememberMe": "Remember me",
       "forgotPassword": "Forgot password?",
-      "signIn": "Sign in to command center"
+      "signIn": "Sign in to command center",
+      "signUpTitle": "Create your account",
+      "signUpSubtitle": "Sign up to start managing your farm.",
+      "fullNameLabel": "Full name",
+      "fullNamePlaceholder": "John Doe",
+      "signUpButton": "Create account",
+      "googleButton": "Continue with Google",
+      "hasAccountLink": "Already have an account? Sign In",
+      "noAccountLink": "Don't have an account? Sign Up",
+      "signingUp": "Creating account...",
+      "signingIn": "Signing in..."
     },
     "signOut": "Sign out"
   },

@@ -322,7 +322,17 @@
       "passwordLabel": "كلمة المرور",
       "rememberMe": "تذكّرني",
       "forgotPassword": "نسيت كلمة المرور؟",
-      "signIn": "الدخول إلى مركز التحكم"
+      "signIn": "الدخول إلى مركز التحكم",
+      "signUpTitle": "إنشاء حسابك",
+      "signUpSubtitle": "سجّل للبدء في إدارة مزرعتك.",
+      "fullNameLabel": "الاسم الكامل",
+      "fullNamePlaceholder": "أحمد محمد",
+      "signUpButton": "إنشاء الحساب",
+      "googleButton": "المتابعة باستخدام Google",
+      "hasAccountLink": "لديك حساب بالفعل؟ تسجيل الدخول",
+      "noAccountLink": "ليس لديك حساب؟ إنشاء حساب",
+      "signingUp": "جاري إنشاء الحساب...",
+      "signingIn": "جاري تسجيل الدخول..."
     },
     "signOut": "تسجيل الخروج"
   },

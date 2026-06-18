@@ -322,7 +322,17 @@
       "passwordLabel": "Şifre",
       "rememberMe": "Beni hatırla",
       "forgotPassword": "Şifremi unuttum?",
-      "signIn": "Komuta merkezine giriş yap"
+      "signIn": "Komuta merkezine giriş yap",
+      "signUpTitle": "Hesap oluşturun",
+      "signUpSubtitle": "Çiftliğinizi yönetmeye başlamak için kaydolun.",
+      "fullNameLabel": "Adınız Soyadınız",
+      "fullNamePlaceholder": "Ahmet Yılmaz",
+      "signUpButton": "Hesap oluştur",
+      "googleButton": "Google ile Devam Et",
+      "hasAccountLink": "Zaten bir hesabınız var mı? Giriş Yapın",
+      "noAccountLink": "Bir hesabınız yok mu? Kaydolun",
+      "signingUp": "Hesap oluşturuluyor...",
+      "signingIn": "Giriş yapılıyor..."
     },
     "signOut": "Çıkış Yap"
   },
