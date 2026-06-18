@@ -191,7 +191,7 @@ export async function buildAllBlockContexts(
   const climateByFarm = new Map<string, any>();
   const uniqueFarmIds = [...new Set(blocks.map((b: any) => b.farm_id).filter(Boolean))];
   await Promise.all(
-    uniqueFarmIds.map(async (fid: string) => {
+    (uniqueFarmIds as string[]).map(async (fid: string) => {
       const farm = farmsById.get(fid);
       if (!farm?.gps_lat || !farm?.gps_lng) return;
       const profile = await getOrFetchClimateProfile(fid, farm.gps_lat, farm.gps_lng);

@@ -9,6 +9,7 @@ const SENSECAP_HOST = "https://sensecap.seeed.cc/openapi";
 
 interface SensecapPoint {
   measurement_value: number;
+  value?: number;
   measurement_id: string;
   time: string; // ISO 8601
 }
