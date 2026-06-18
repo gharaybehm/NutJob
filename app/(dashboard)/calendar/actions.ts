@@ -115,19 +115,26 @@ export async function logEventCompletion(
   }
 
   // Deduct inventory for each material used
+  console.log('[Calendar] logEventCompletion materialActuals:', JSON.stringify(materialActuals));
+
   if (materialActuals.length > 0) {
     const usageDate = actualEnd.toISOString().split('T')[0];
     for (const mat of materialActuals) {
-      if (mat.actualQuantity <= 0) continue;
+      if (mat.actualQuantity <= 0) {
+        console.log('[Calendar] Skipping material with qty <= 0:', mat.consumableId);
+        continue;
+      }
 
       // Re-fetch live balance to avoid stale-read races
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: cons } = await (supabase as any)
+      const { data: cons, error: fetchErr } = await (supabase as any)
         .from('consumables')
         .select('current_balance')
         .eq('id', mat.consumableId)
         .single();
+      if (fetchErr) console.error('[Calendar] Failed to fetch consumable balance:', fetchErr.message);
       const liveBalance = cons ? Number(cons.current_balance) : mat.currentBalance;
+      console.log('[Calendar] Deducting', mat.actualQuantity, 'from balance', liveBalance, 'consumable:', mat.consumableId);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: usageError } = await (supabase as any)
@@ -151,9 +158,11 @@ export async function logEventCompletion(
         .eq('id', mat.consumableId);
       if (balError) {
         console.error('[Calendar] Failed to update consumable balance:', balError.message);
+      } else {
+        console.log('[Calendar] Balance updated to', liveBalance - mat.actualQuantity);
       }
     }
-    revalidatePath('/inventory');
+    revalidatePath('/', 'layout');
   }
 
   revalidatePath('/calendar');

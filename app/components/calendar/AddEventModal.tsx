@@ -317,7 +317,7 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
             </div>
           )}
 
-          {consumables.length > 0 && (
+          {consumables.length > 0 && type !== 'fertigation' && type !== 'spraying' && (
             <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
                 Planned Materials
