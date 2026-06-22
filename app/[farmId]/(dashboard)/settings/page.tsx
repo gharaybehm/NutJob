@@ -6,7 +6,7 @@ import { getTranslations } from 'next-intl/server'
 import SettingsForms from '@/app/(dashboard)/settings/SettingsForms'
 
 export const metadata = {
-  title: 'Settings — NutJob',
+  title: 'Settings — RootLoot',
   description: 'Manage your account, team, blocks, alerts, sensors, and weather API.',
 }
 

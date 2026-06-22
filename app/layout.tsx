@@ -29,13 +29,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "NutJob Farm Management",
+  title: "RootLoot Farm Management",
   description: "AI-powered farm management system for multi-block almond farms.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "NutJob",
+    title: "RootLoot",
   },
 };
 

@@ -4,7 +4,7 @@ import FarmPicker from '@/app/components/farms/FarmPicker';
 import { getFarms } from '@/app/actions/farms';
 
 export const metadata = {
-  title: 'Your Farms — NutJob',
+  title: 'Your Farms — RootLoot',
 };
 
 export default async function FarmsPage() {

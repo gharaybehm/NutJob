@@ -58,7 +58,7 @@ export default function Sidebar({ userEmail, userName, userRole, farmId }: Sideb
       {/* Logo */}
       <div className="flex h-16 shrink-0 items-center px-6">
         <div className="flex items-center gap-2">
-          <Image src="/icon.png" alt="NutJob" width={36} height={40} className="object-contain" />
+          <Image src="/icon.png" alt="RootLoot" width={36} height={40} className="object-contain" />
         </div>
       </div>
 

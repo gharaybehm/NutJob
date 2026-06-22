@@ -22,7 +22,11 @@ export default async function LoginPage({
           alt={t('orchardAlt')}
           fill
           priority
-          className="absolute inset-0 object-cover opacity-40 mix-blend-overlay"
+          className="absolute inset-0 object-cover mix-blend-overlay"
+          style={{
+            maskImage: 'linear-gradient(to bottom right, rgba(0,0,0,0.50) 0%, rgba(0,0,0,0.05) 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom right, rgba(0,0,0,0.50) 0%, rgba(0,0,0,0.05) 100%)',
+          }}
         />
 
         <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/90 via-emerald-900/50 to-transparent mix-blend-multiply" />
@@ -32,7 +36,7 @@ export default async function LoginPage({
             className="absolute -inset-12 rounded-full"
             style={{ background: "radial-gradient(ellipse at center, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.25) 45%, transparent 72%)" }}
           />
-          <Image src="/logo-full.png" alt={t('logoAlt')} width={180} height={254} className="relative object-contain" />
+          <Image src="/logo-full.png" alt={t('logoAlt')} width={196} height={150} className="relative object-contain" unoptimized />
         </div>
 
         <div className="relative z-10 max-w-lg pb-12">
@@ -49,7 +53,7 @@ export default async function LoginPage({
       <div className="flex w-full flex-col overflow-y-auto px-4 py-12 sm:px-6 lg:w-1/2 lg:px-20 lg:justify-center xl:px-32 relative bg-zinc-50">
         <div className="mx-auto w-full max-w-sm lg:max-w-md">
           <div className="mb-10 flex items-center justify-center lg:hidden">
-            <Image src="/logo-full.png" alt={t('logoAlt')} width={130} height={183} className="object-contain" />
+            <Image src="/logo-full.png" alt={t('logoAlt')} width={126} height={97} className="object-contain" unoptimized />
           </div>
 
           <div className="mb-6">

@@ -101,7 +101,7 @@ const DEFAULT_PREFS = {
 }
 type NotifPrefs = typeof DEFAULT_PREFS
 
-const STORAGE_KEY_PREFS = 'nutjob:notification_prefs'
+const STORAGE_KEY_PREFS = 'rootloot:notification_prefs'
 
 function loadFromStorage<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback

@@ -5,7 +5,7 @@ import { makeSoilWater, makeNutrition, makePestDisease, makeWeather, makePhenolo
 import { redirect } from 'next/navigation';
 
 export const metadata = {
-  title: 'Blocks — NutJob',
+  title: 'Blocks — RootLoot',
   description: 'Per-block live agronomic profile across soil & water, phenology, nutrition, pest & disease, and weather domains.',
 };
 

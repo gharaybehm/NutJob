@@ -6,4 +6,4 @@ export const routing = defineRouting({
 });
 
 export type Locale = (typeof routing.locales)[number];
-export const LOCALE_COOKIE = 'NUTJOB_LOCALE';
+export const LOCALE_COOKIE = 'ROOTLOOT_LOCALE';

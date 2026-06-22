@@ -69,7 +69,7 @@ export default function TopNav({ farmId, alertCount = 0 }: TopNavProps) {
       {/* Mobile header */}
       <div className="md:hidden flex flex-1 items-center gap-2">
         {isHome ? (
-          <Image src="/icon.png" alt="NutJob" width={30} height={34} className="object-contain" />
+          <Image src="/icon.png" alt="RootLoot" width={30} height={34} className="object-contain" />
         ) : (
           <>
             <button

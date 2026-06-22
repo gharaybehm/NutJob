@@ -9,7 +9,7 @@ const LogActivityModal = dynamic(() => import('./LogActivityModal'), { ssr: fals
 
 type ActivityType = ActivityLogEntry["activity_type"] | "all";
 
-const QUEUE_KEY = "nutjob-pending-activities";
+const QUEUE_KEY = "rootloot-pending-activities";
 
 interface QueuedActivity {
   id: string;

@@ -4,7 +4,7 @@ import InventoryPage from '@/app/components/inventory/InventoryPage';
 import { redirect } from 'next/navigation';
 
 export const metadata = {
-  title: 'Inventory | NutJob',
+  title: 'Inventory | RootLoot',
   description: 'Farm asset and consumable inventory management',
 };
 

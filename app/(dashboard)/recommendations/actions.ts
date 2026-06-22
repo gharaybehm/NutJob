@@ -12,8 +12,8 @@ const openrouter = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY ?? "",
   baseURL: "https://openrouter.ai/api/v1",
   defaultHeaders: {
-    "HTTP-Referer": "https://nutjob.farm",
-    "X-Title": "NutJob Farm Management",
+    "HTTP-Referer": "https://rootloot.ai",
+    "X-Title": "RootLoot Farm Management",
   },
 });
 

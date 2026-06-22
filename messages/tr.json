@@ -237,7 +237,7 @@
   },
   "recommendations": {
     "pageTitle": "Öneriler",
-    "pageSubtitle": "NutJob yapay zeka motoru tarafından oluşturulan öncelikli tarımsal önerileri inceleyin ve harekete geçin.",
+    "pageSubtitle": "RootLoot yapay zeka motoru tarafından oluşturulan öncelikli tarımsal önerileri inceleyin ve harekete geçin.",
     "accept": "Kabul Et",
     "skip": "Atla",
     "edit": "Düzenle",
@@ -312,7 +312,7 @@
   "auth": {
     "login": {
       "orchardAlt": "Badem Bahçesi",
-      "logoAlt": "NutJob",
+      "logoAlt": "RootLoot",
       "tagline": "İçgörüler ektin. Zeka ile büyüdün.",
       "taglineSubtitle": "Çok bloklu badem çiftlikleri için yapay zeka destekli çiftlik yönetim sistemi. Gerçek zamanlı veri, daha akıllı tarımsal kararlar.",
       "title": "Tekrar hoş geldiniz",

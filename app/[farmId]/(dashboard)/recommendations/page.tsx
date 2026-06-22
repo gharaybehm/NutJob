@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 export const metadata = {
-  title: "Recommendations | NutJob",
+  title: "Recommendations | RootLoot",
   description: "AI-powered agronomic insights and action items",
 };
 

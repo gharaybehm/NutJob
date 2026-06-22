@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { CalendarEvent, ActivityType, MaterialLine } from '@/app/components/calendar/types';
 
 export const metadata = {
-  title: 'Calendar — NutJob',
+  title: 'Calendar — RootLoot',
   description: 'Farm calendar for irrigation, fertigation, spraying, pruning, and scouting events.',
 };
 

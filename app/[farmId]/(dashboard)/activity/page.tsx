@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getTranslations, getLocale } from "next-intl/server";
 
 export const metadata = {
-  title: "Activity Log | NutJob",
+  title: "Activity Log | RootLoot",
   description: "Full history of all farm actions across all blocks",
 };
 

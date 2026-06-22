@@ -1,6 +1,6 @@
 {
-  "name": "NutJob Farm Management",
-  "short_name": "NutJob",
+  "name": "RootLoot Farm Management",
+  "short_name": "RootLoot",
   "description": "AI-powered farm management system for multi-block almond farms",
   "start_url": "/dashboard",
   "display": "standalone",
