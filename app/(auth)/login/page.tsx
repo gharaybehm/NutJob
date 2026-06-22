@@ -33,7 +33,7 @@ export default async function LoginPage({
 
         <div className="relative z-10">
           <Image
-            src="/logo-dark-transparent.png"
+            src="/logo-final.png"
             alt={t('logoAlt')}
             width={250}
             height={192}
