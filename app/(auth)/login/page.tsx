@@ -16,7 +16,7 @@ export default async function LoginPage({
   return (
     <div className="flex h-full overflow-hidden bg-white">
       {/* Left side - Image & Branding */}
-      <div className="relative hidden w-1/2 lg:flex lg:flex-col lg:justify-between p-12 overflow-hidden bg-emerald-900">
+      <div className="relative hidden w-1/2 lg:flex lg:flex-col lg:justify-between p-12 overflow-hidden bg-[#1B4332]">
         <Image
           src="/farm-bg.png"
           alt={t('orchardAlt')}
@@ -29,21 +29,24 @@ export default async function LoginPage({
           }}
         />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/90 via-emerald-900/50 to-transparent mix-blend-multiply" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0F1923]/80 via-[#1B4332]/40 to-transparent" />
 
         <div className="relative z-10">
-          <div
-            className="absolute -inset-12 rounded-full"
-            style={{ background: "radial-gradient(ellipse at center, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.25) 45%, transparent 72%)" }}
+          <Image
+            src="/logo-dark-transparent.png"
+            alt={t('logoAlt')}
+            width={250}
+            height={192}
+            className="object-contain"
+            unoptimized
           />
-          <Image src="/logo-full.png" alt={t('logoAlt')} width={196} height={150} className="relative object-contain" unoptimized />
         </div>
 
         <div className="relative z-10 max-w-lg pb-12">
           <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-5xl leading-tight">
             {t('tagline')}
           </h1>
-          <p className="mt-6 text-lg text-emerald-100/80 leading-relaxed font-light">
+          <p className="mt-6 text-lg text-[#E8F5E9]/80 leading-relaxed font-light">
             {t('taglineSubtitle')}
           </p>
         </div>
@@ -113,7 +116,7 @@ export default async function LoginPage({
                     </div>
                     <input
                       id="full_name" name="full_name" type="text" required
-                      className="block w-full rounded-xl border-0 py-3 ps-10 pe-3 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6 transition-all duration-200"
+                      className="block w-full rounded-xl border-0 py-3 ps-10 pe-3 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-[#1B4332] sm:text-sm sm:leading-6 transition-all duration-200"
                       placeholder={t('fullNamePlaceholder')}
                     />
                   </div>
@@ -130,7 +133,7 @@ export default async function LoginPage({
                   </div>
                   <input
                     id="email" name="email" type="email" autoComplete="email" required
-                    className="block w-full rounded-xl border-0 py-3 ps-10 pe-3 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6 transition-all duration-200"
+                    className="block w-full rounded-xl border-0 py-3 ps-10 pe-3 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-[#1B4332] sm:text-sm sm:leading-6 transition-all duration-200"
                     placeholder={t('emailPlaceholder')}
                   />
                 </div>
@@ -146,7 +149,7 @@ export default async function LoginPage({
                   </div>
                   <input
                     id="password" name="password" type="password" autoComplete="current-password" required
-                    className="block w-full rounded-xl border-0 py-3 ps-10 pe-3 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600 sm:text-sm sm:leading-6 transition-all duration-200"
+                    className="block w-full rounded-xl border-0 py-3 ps-10 pe-3 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-[#1B4332] sm:text-sm sm:leading-6 transition-all duration-200"
                     placeholder="••••••••"
                   />
                 </div>
@@ -164,7 +167,7 @@ export default async function LoginPage({
                     </label>
                   </div>
                   <div className="text-sm leading-6">
-                    <a href="#" className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors">
+                    <a href="#" className="font-medium text-[#1B4332] hover:text-[#2D6A4F] transition-colors">
                       {t('forgotPassword')}
                     </a>
                   </div>
@@ -174,7 +177,7 @@ export default async function LoginPage({
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="group relative flex w-full justify-center rounded-xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 hover:shadow-md hover:shadow-emerald-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 transition-all duration-200 cursor-pointer"
+                  className="group relative flex w-full justify-center rounded-xl bg-[#1B4332] px-3 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#2D6A4F] hover:shadow-md hover:shadow-[#1B4332]/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1B4332] transition-all duration-200 cursor-pointer"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     {mode === 'signup' ? t('signUpButton') : t('signIn')}
@@ -185,11 +188,11 @@ export default async function LoginPage({
 
             <div className="mt-6 text-center text-sm">
               {mode === 'signup' ? (
-                <a href="/login?mode=signin" className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors">
+                <a href="/login?mode=signin" className="font-medium text-[#1B4332] hover:text-[#2D6A4F] transition-colors">
                   {t('hasAccountLink')}
                 </a>
               ) : (
-                <a href="/login?mode=signup" className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors">
+                <a href="/login?mode=signup" className="font-medium text-[#1B4332] hover:text-[#2D6A4F] transition-colors">
                   {t('noAccountLink')}
                 </a>
               )}
