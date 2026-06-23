@@ -35,8 +35,8 @@ export default async function LoginPage({
           <Image
             src="/logo-final.png"
             alt={t('logoAlt')}
-            width={250}
-            height={192}
+            width={325}
+            height={250}
             className="object-contain"
             unoptimized
           />
@@ -56,7 +56,7 @@ export default async function LoginPage({
       <div className="flex w-full flex-col overflow-y-auto px-4 py-12 sm:px-6 lg:w-1/2 lg:px-20 lg:justify-center xl:px-32 relative bg-zinc-50">
         <div className="mx-auto w-full max-w-sm lg:max-w-md">
           <div className="mb-10 flex items-center justify-center lg:hidden">
-            <Image src="/logo-full.png" alt={t('logoAlt')} width={126} height={97} className="object-contain" unoptimized />
+            <Image src="/logo-full.png" alt={t('logoAlt')} width={164} height={126} className="object-contain" unoptimized />
           </div>
 
           <div className="mb-6">
