@@ -54,12 +54,9 @@ export default function Sidebar({ userEmail, userName, userRole, farmId }: Sideb
   });
 
   return (
-    <div className="hidden md:flex h-full w-64 flex-col border-e border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800">
-      {/* Logo */}
+    <div className="hidden md:flex h-full w-64 flex-col border-e border-slate-200 bg-white dark:bg-[#0F1923] dark:border-[#1B4332]">
       <div className="flex h-16 shrink-0 items-center px-6">
-        <div className="flex items-center gap-2">
-          <Image src="/icon.png" alt="RootLoot" width={36} height={40} className="object-contain" />
-        </div>
+        <Image src="/icon.png" alt="RootLoot" width={63} height={48} className="object-contain" unoptimized />
       </div>
 
       <div className="flex flex-1 flex-col overflow-y-auto">
@@ -92,7 +89,7 @@ export default function Sidebar({ userEmail, userName, userRole, farmId }: Sideb
       </div>
 
       {/* User profile footer */}
-      <div className="border-t border-slate-200 p-4 dark:border-slate-800">
+      <div className="border-t border-slate-200 p-4 dark:border-[#1B4332]">
         <div className="mb-4">
           <SignOutButton />
         </div>

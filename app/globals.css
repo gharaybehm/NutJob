@@ -1,23 +1,33 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: #f0fdf4;
-  --color-brand-100: #dcfce7;
-  --color-brand-200: #bbf7d0;
-  --color-brand-300: #86efac;
-  --color-brand-400: #4ade80;
-  --color-brand-500: #22c55e;
-  --color-brand-600: #16a34a;
-  --color-brand-700: #15803d;
-  --color-brand-800: #166534;
-  --color-brand-900: #14532d;
-  
-  --color-amber-500: #f59e0b;
-  --color-red-500: #ef4444;
-  
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-arabic: var(--font-noto-arabic), 'Noto Sans Arabic', sans-serif;
+  /* ── Brand: Forest Green scale (primary) ── */
+  --color-brand-50:  #E8F5E9;
+  --color-brand-100: #C8E6C9;
+  --color-brand-200: #A5D6A7;
+  --color-brand-300: #81C784;
+  --color-brand-400: #4CAF7D;
+  --color-brand-500: #2D6A4F;
+  --color-brand-600: #1B4332;
+  --color-brand-700: #163825;
+  --color-brand-800: #112D1C;
+  --color-brand-900: #0A1F12;
+
+  /* ── Semantic brand tokens ── */
+  --color-gold:  #D4A843;
+  --color-navy:  #0F1923;
+  --color-teal:  #2A9D8F;
+  --color-mint:  #E8F5E9;
+  --color-parchment: #FFF8E1;
+
+  /* ── Status colors ── */
+  --color-amber-500: #F39C12;
+  --color-red-500:   #E74C3C;
+
+  /* ── Fonts ── */
+  --font-sans:    var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-arabic:  var(--font-noto-arabic), 'Noto Sans Arabic', sans-serif;
 }
 
 @layer base {
@@ -28,7 +38,7 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --background: #0f172a;
+      --background: #0F1923;
       --foreground: #f8fafc;
     }
   }

@@ -24,9 +24,8 @@ export default function FarmPicker({ farms }: Props) {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center px-4 py-12">
       {/* Logo */}
-      <div className="mb-8 flex items-center gap-3">
-        <Image src="/icon.png" alt="RootLoot" width={44} height={48} className="object-contain" />
-        <span className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">RootLoot</span>
+      <div className="mb-8">
+        <Image src="/logo-full.png" alt="RootLoot" width={180} height={138} className="object-contain" unoptimized />
       </div>
 
       <div className="w-full max-w-4xl">

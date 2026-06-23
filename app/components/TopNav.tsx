@@ -65,11 +65,11 @@ export default function TopNav({ farmId, alertCount = 0 }: TopNavProps) {
   const isHome = pageSlug === 'dashboard';
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800">
+    <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-6 dark:bg-[#0F1923] dark:border-[#1B4332]">
       {/* Mobile header */}
       <div className="md:hidden flex flex-1 items-center gap-2">
         {isHome ? (
-          <Image src="/icon.png" alt="RootLoot" width={30} height={34} className="object-contain" />
+          <Image src="/icon.png" alt="RootLoot" width={30} height={23} className="object-contain" unoptimized />
         ) : (
           <>
             <button

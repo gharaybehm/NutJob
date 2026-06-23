@@ -37,7 +37,7 @@ export default async function LoginPage({
             alt={t('logoAlt')}
             width={325}
             height={250}
-            className="object-contain"
+            className="object-contain -ml-4 -mt-8 -mb-16"
             unoptimized
           />
         </div>
