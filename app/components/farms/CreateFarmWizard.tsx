@@ -12,6 +12,11 @@ interface Props {
 
 type Step = 'identity' | 'gps';
 
+function truncateTo4(val: string): string {
+  const dot = val.indexOf('.');
+  return dot === -1 ? val : val.slice(0, dot + 5);
+}
+
 export default function CreateFarmWizard({ open, onClose }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -44,8 +49,8 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
     setLocError('');
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLat(pos.coords.latitude.toFixed(6));
-        setLng(pos.coords.longitude.toFixed(6));
+        setLat(pos.coords.latitude.toFixed(4));
+        setLng(pos.coords.longitude.toFixed(4));
         setGettingLocation(false);
       },
       () => {
@@ -169,9 +174,9 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
                 <input
                   type="number"
                   value={lat}
-                  onChange={e => setLat(e.target.value)}
+                  onChange={e => setLat(truncateTo4(e.target.value))}
                   placeholder="31.7683"
-                  step="0.000001"
+                  step="0.0001"
                   className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
@@ -182,9 +187,9 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
                 <input
                   type="number"
                   value={lng}
-                  onChange={e => setLng(e.target.value)}
+                  onChange={e => setLng(truncateTo4(e.target.value))}
                   placeholder="35.2137"
-                  step="0.000001"
+                  step="0.0001"
                   className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>

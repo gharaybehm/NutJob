@@ -48,8 +48,8 @@ export async function createFarm(values: {
       slug: s,
       created_by: user.id,
       address: values.address?.trim() || null,
-      gps_lat: values.gps_lat ?? null,
-      gps_lng: values.gps_lng ?? null,
+      gps_lat: values.gps_lat != null ? Math.round(values.gps_lat * 10000) / 10000 : null,
+      gps_lng: values.gps_lng != null ? Math.round(values.gps_lng * 10000) / 10000 : null,
       gps_zoom: values.gps_zoom ?? 14,
     }).select('id').single();
 
@@ -154,8 +154,14 @@ export async function updateFarm(
   if (!user) return { error: 'Not authenticated' };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const payload = {
+    ...values,
+    ...(values.gps_lat != null ? { gps_lat: Math.round(values.gps_lat * 10000) / 10000 } : {}),
+    ...(values.gps_lng != null ? { gps_lng: Math.round(values.gps_lng * 10000) / 10000 } : {}),
+    updated_at: new Date().toISOString(),
+  };
   const { error } = await (supabase as any).from('farms')
-    .update({ ...values, updated_at: new Date().toISOString() })
+    .update(payload)
     .eq('id', farmId);
 
   if (error) return { error: error.message };

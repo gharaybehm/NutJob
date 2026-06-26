@@ -1221,8 +1221,8 @@ function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initia
     if (!farmId) return
     setGpsSaving(true)
     setGpsStatus(null)
-    const parsedLat = coords.lat ? parseFloat(coords.lat) : null
-    const parsedLng = coords.lng ? parseFloat(coords.lng) : null
+    const parsedLat = coords.lat ? Math.round(parseFloat(coords.lat) * 10000) / 10000 : null
+    const parsedLng = coords.lng ? Math.round(parseFloat(coords.lng) * 10000) / 10000 : null
     const result = await updateFarm(farmId, { gps_lat: parsedLat, gps_lng: parsedLng })
     setGpsSaving(false)
     setGpsStatus(result.error
@@ -1295,13 +1295,13 @@ function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initia
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="lat" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Latitude</label>
-              <input id="lat" type="number" step="0.0001" value={coords.lat} onChange={e => setCoords(c => ({ ...c, lat: e.target.value }))}
+              <input id="lat" type="number" step="0.0001" value={coords.lat} onChange={e => { const v = e.target.value; const d = v.indexOf('.'); setCoords(c => ({ ...c, lat: d === -1 ? v : v.slice(0, d + 5) })); }}
                 placeholder="e.g. 31.7683"
                 className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition" />
             </div>
             <div>
               <label htmlFor="lng" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Longitude</label>
-              <input id="lng" type="number" step="0.0001" value={coords.lng} onChange={e => setCoords(c => ({ ...c, lng: e.target.value }))}
+              <input id="lng" type="number" step="0.0001" value={coords.lng} onChange={e => { const v = e.target.value; const d = v.indexOf('.'); setCoords(c => ({ ...c, lng: d === -1 ? v : v.slice(0, d + 5) })); }}
                 placeholder="e.g. 35.2137"
                 className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition" />
             </div>
