@@ -20,5 +20,7 @@ export default async function FarmsPage() {
     redirect(`/${farms[0].id}/dashboard`);
   }
 
-  return <FarmPicker farms={farms} />;
+  const userName = (user.user_metadata?.full_name || user.user_metadata?.name || user.email) as string | undefined;
+
+  return <FarmPicker farms={farms} userName={userName} />;
 }

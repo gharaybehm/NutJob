@@ -52,11 +52,13 @@ function getActivityIcon(type: string) {
 }
 
 function getActivityColor(type: string) {
-  if (type === 'irrigation') return 'text-blue-500 bg-blue-50 dark:bg-blue-950/20';
-  if (type === 'fertigation') return 'text-brand-500 bg-brand-50 dark:bg-brand-950/20';
-  if (type === 'tissue-sample') return 'text-purple-500 bg-purple-50 dark:bg-purple-950/20';
-  if (type === 'spraying') return 'text-red-500 bg-red-50 dark:bg-red-950/20';
-  return 'text-slate-500 bg-slate-50 dark:bg-slate-800';
+  if (type === 'irrigation') return 'text-blue bg-blue-soft';
+  if (type === 'fertigation') return 'text-gold bg-gold-soft';
+  if (type === 'tissue-sample') return 'text-purple bg-purple-soft';
+  if (type === 'spraying') return 'text-purple bg-purple-soft';
+  if (type === 'scouting') return 'text-green bg-green-soft';
+  if (type === 'pruning') return 'text-teal bg-teal-soft';
+  return 'text-ink-3 bg-tile';
 }
 
 export default async function ActivityFeed({ farmId }: { farmId: string }) {
@@ -80,58 +82,52 @@ export default async function ActivityFeed({ farmId }: { farmId: string }) {
   }
 
   return (
-    <div className="flex flex-col rounded-xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
-      <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
-        <h2 className="text-base font-semibold text-slate-900 dark:text-white">{t('title')}</h2>
+    <div className="flex flex-col rounded-2xl border border-line bg-surface">
+      <div className="flex items-center justify-between border-b border-line px-5 py-4">
+        <h2 className="font-heading text-base font-semibold text-ink">{t('title')}</h2>
         <Link
           href={`/${farmId}/activity`}
-          className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline"
+          className="text-xs font-semibold text-ink-2 hover:underline"
         >
           {t('viewLog')}
         </Link>
       </div>
       <div className="p-4 min-h-[200px]">
         {count === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center gap-1 text-slate-400 dark:text-slate-500">
+          <div className="flex flex-col items-center justify-center py-10 text-center gap-1 text-ink-4">
             <ShieldAlert className="h-8 w-8 stroke-1" />
             <p className="text-sm font-medium">{t('noActivities')}</p>
           </div>
         ) : (
           <div className="flow-root">
-            <ul role="list" className="-mb-8">
+            <ul role="list">
               {activities.slice(0, 4).map((activity, activityIdx) => {
                 const Icon = getActivityIcon(activity.type);
                 const colorTheme = getActivityColor(activity.type);
                 const locationStr = activity.blockName ? ` ${t('inBlock', { name: activity.blockName })}` : "";
 
                 return (
-                  <li key={activity.id}>
-                    <div className="relative pb-8">
-                      {activityIdx !== activities.length - 1 ? (
-                        <span className="absolute start-4 top-4 -ms-px h-full w-0.5 bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
-                      ) : null}
-                      <div className="relative flex space-x-3">
-                        <div>
-                          <span className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-slate-900 ${colorTheme}`}>
-                            <Icon className="h-4 w-4" aria-hidden="true" />
-                          </span>
-                        </div>
-                        <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm text-slate-900 dark:text-white font-semibold truncate">
-                              {activity.action}
-                              <span className="font-normal text-slate-500 dark:text-slate-400">
-                                {locationStr}
-                              </span>
-                            </p>
-                            <p className="text-[11px] text-slate-400 mt-0.5">
-                              {t('by', { user: activity.user })}
-                            </p>
-                          </div>
-                          <div className="whitespace-nowrap text-right text-xs text-slate-400 dark:text-slate-500">
-                            {relativeTime(activity.performed_at)}
-                          </div>
-                        </div>
+                  <li key={activity.id} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <span className={`h-[30px] w-[30px] shrink-0 rounded-[9px] flex items-center justify-center ${colorTheme}`}>
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                      {activityIdx !== activities.length - 1 && (
+                        <span className="w-px flex-1 my-1 bg-line-soft" aria-hidden="true" />
+                      )}
+                    </div>
+                    <div className={`flex min-w-0 flex-1 justify-between gap-4 ${activityIdx !== activities.length - 1 ? 'pb-3.5' : ''}`}>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] text-ink">
+                          <span className="font-semibold">{activity.action}</span>
+                          <span className="text-ink-2">{locationStr}</span>
+                        </p>
+                        <p className="font-mono text-[10px] text-ink-4 mt-0.5">
+                          {t('by', { user: activity.user })}
+                        </p>
+                      </div>
+                      <div className="whitespace-nowrap text-right font-mono text-[10px] text-ink-4">
+                        {relativeTime(activity.performed_at)}
                       </div>
                     </div>
                   </li>

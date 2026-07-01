@@ -25,9 +25,9 @@ const TABS: { id: AgroDomain; label: string; icon: string }[] = [
 ];
 
 const statusConfig = {
-  green: { badge: 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300', dot: 'bg-brand-500', label: 'Healthy' },
-  amber: { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300', dot: 'bg-amber-500', label: 'Attention' },
-  red:   { badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',         dot: 'bg-red-500',   label: 'Critical' },
+  green: { badge: 'bg-green-soft text-green', dot: 'bg-green', label: 'Healthy' },
+  amber: { badge: 'bg-amber-soft text-amber', dot: 'bg-amber', label: 'Attention' },
+  red:   { badge: 'bg-red-soft text-red',     dot: 'bg-red',   label: 'Critical' },
 };
 
 function alertCountForDomain(profile: BlockProfile, domain: AgroDomain): number {
@@ -47,36 +47,36 @@ export default function BlockDetailPanel({ profile, onEdit, onDelete, soilRefres
   const allAlerts = block.alerts;
 
   return (
-    <div className="flex flex-col gap-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 overflow-hidden h-full">
+    <div className="flex flex-col gap-0 rounded-2xl border border-line bg-tile overflow-hidden h-full">
       {/* Block header */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-5 py-4">
+      <div className="bg-surface border-b border-line px-5 py-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">{block.name}</h2>
+              <h2 className="font-heading text-xl font-bold text-ink">{block.name}</h2>
               <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.badge}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
                 {cfg.label}
               </span>
             </div>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-sm text-ink-2 mt-0.5">
               {block.cropType || 'Almond'} - {block.variety} · {block.area} {block.areaUnit} · Planted {block.plantingYear} · {block.rootstock} rootstock · {block.treeCount.toLocaleString()} trees
             </p>
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0">
             <div className="flex items-center gap-2">
               {onEdit && (
-                <button onClick={onEdit} className="text-xs font-medium text-slate-500 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400 transition-colors">
+                <button onClick={onEdit} className="text-xs font-medium text-ink-3 hover:text-green transition-colors">
                   Edit
                 </button>
               )}
               {onDelete && (
-                <button onClick={onDelete} className="text-xs font-medium text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors">
+                <button onClick={onDelete} className="text-xs font-medium text-ink-3 hover:text-red transition-colors">
                   Delete
                 </button>
               )}
             </div>
-            <div className="text-right text-xs text-slate-400">
+            <div className="text-right text-xs text-ink-4">
               <p>{block.rowSpacing}m × {block.treeSpacing}m spacing</p>
             </div>
           </div>
@@ -93,7 +93,7 @@ export default function BlockDetailPanel({ profile, onEdit, onDelete, soilRefres
       </div>
 
       {/* Domain tab bar */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-5">
+      <div className="bg-surface border-b border-line px-5">
         <div className="flex gap-0 overflow-x-auto">
           {TABS.map(tab => {
             const count = alertCountForDomain(profile, tab.id);
@@ -104,14 +104,14 @@ export default function BlockDetailPanel({ profile, onEdit, onDelete, soilRefres
                 onClick={() => setActiveTab(tab.id)}
                 className={`relative flex items-center gap-1 sm:gap-1.5 whitespace-nowrap border-b-2 px-2 sm:px-3 py-2.5 sm:py-3 text-xs sm:text-sm font-medium transition-colors ${
                   isActive
-                    ? 'border-brand-600 text-brand-700 dark:text-brand-400 dark:border-brand-400'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    ? 'border-green text-green'
+                    : 'border-transparent text-ink-3 hover:text-ink-2'
                 }`}
               >
                 <span>{tab.icon}</span>
                 <span>{tab.label}</span>
                 {count > 0 && (
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold leading-none">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red text-white text-xs font-bold leading-none">
                     {count}
                   </span>
                 )}

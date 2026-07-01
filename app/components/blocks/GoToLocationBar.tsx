@@ -27,8 +27,8 @@ export default function GoToLocationBar({ mapHandleRef }: Props) {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-2 flex-wrap">
-        <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-        <span className="text-xs text-slate-500 dark:text-slate-400">
+        <MapPin className="h-4 w-4 text-ink-3 shrink-0" />
+        <span className="text-xs text-ink-2">
           Navigate to a distant plot — enter GPS coordinates to jump to its location
         </span>
       </div>
@@ -39,7 +39,7 @@ export default function GoToLocationBar({ mapHandleRef }: Props) {
           value={lat}
           onChange={e => { setLat(e.target.value); setError(''); }}
           step="any"
-          className="flex-1 min-w-0 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="flex-1 min-w-0 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green/30"
         />
         <input
           type="number"
@@ -47,16 +47,16 @@ export default function GoToLocationBar({ mapHandleRef }: Props) {
           value={lng}
           onChange={e => { setLng(e.target.value); setError(''); }}
           step="any"
-          className="flex-1 min-w-0 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="flex-1 min-w-0 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green/30"
         />
         <button
           onClick={handleGo}
-          className="shrink-0 rounded-lg bg-slate-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-600 active:scale-95 transition-all"
+          className="shrink-0 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:brightness-125 transition-all"
         >
           Go
         </button>
       </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-red">{error}</p>}
     </div>
   );
 }

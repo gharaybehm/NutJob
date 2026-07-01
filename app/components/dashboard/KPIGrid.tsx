@@ -95,8 +95,8 @@ export default async function KPIGrid({ farmId }: { farmId: string }) {
       change: t('liveSensorAverage'),
       changeType: "neutral",
       icon: Droplets,
-      color: "text-blue-500",
-      bg: "bg-blue-100 dark:bg-blue-900/30",
+      color: "text-blue",
+      bg: "bg-blue-soft",
     },
     {
       name: t('rainForecast'),
@@ -104,8 +104,8 @@ export default async function KPIGrid({ farmId }: { farmId: string }) {
       change: t('expectedTotal'),
       changeType: rainForecastMm > 0 ? "positive" : "neutral",
       icon: CloudRain,
-      color: "text-brand-500",
-      bg: "bg-brand-100 dark:bg-brand-900/30",
+      color: "text-green",
+      bg: "bg-green-soft",
     },
     {
       name: t('activeAlerts'),
@@ -113,8 +113,8 @@ export default async function KPIGrid({ farmId }: { farmId: string }) {
       change: activeAlertsCount > 0 ? t('unresolved', { count: activeAlertsCount }) : t('allSystemsNominal'),
       changeType: activeAlertsCount > 0 ? "negative" : "positive",
       icon: AlertTriangle,
-      color: activeAlertsCount > 0 ? "text-red-500" : "text-slate-400",
-      bg: activeAlertsCount > 0 ? "bg-red-100 dark:bg-red-900/30" : "bg-slate-100 dark:bg-slate-800/30",
+      color: activeAlertsCount > 0 ? "text-red" : "text-ink-3",
+      bg: activeAlertsCount > 0 ? "bg-red-soft" : "bg-tile",
     },
     {
       name: t('nextIrrigation'),
@@ -122,8 +122,8 @@ export default async function KPIGrid({ farmId }: { farmId: string }) {
       change: t('scheduledQueue'),
       changeType: "neutral",
       icon: Timer,
-      color: "text-amber-500",
-      bg: "bg-amber-100 dark:bg-amber-900/30",
+      color: "text-amber",
+      bg: "bg-amber-soft",
     },
   ];
 
@@ -132,32 +132,30 @@ export default async function KPIGrid({ farmId }: { farmId: string }) {
       {kpis.map((kpi) => (
         <div
           key={kpi.name}
-          className="relative overflow-hidden rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800"
+          className="rounded-2xl border border-line bg-surface p-[18px]"
         >
-          <dt>
-            <div className={`absolute rounded-lg p-3 ${kpi.bg}`}>
-              <kpi.icon className={`h-6 w-6 ${kpi.color}`} aria-hidden="true" />
+          <div className="flex items-center gap-2">
+            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${kpi.bg}`}>
+              <kpi.icon className={`h-[18px] w-[18px] ${kpi.color}`} aria-hidden="true" />
             </div>
-            <p className="ms-16 truncate text-sm font-medium text-slate-500 dark:text-slate-400">
-              {kpi.name}
+            <p className="truncate font-mono text-[10px] tracking-wide text-ink-3">
+              {kpi.name.toUpperCase()}
             </p>
-          </dt>
-          <dd className="ms-16 flex items-baseline pb-1 sm:pb-2">
-            <p className="text-2xl font-semibold text-slate-900 dark:text-white">
-              {kpi.value}
-            </p>
-            <p
-              className={`ms-2 flex items-baseline text-sm font-semibold ${
-                kpi.changeType === "positive"
-                  ? "text-brand-600 dark:text-brand-400"
-                  : kpi.changeType === "negative"
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-slate-500 dark:text-slate-400"
-              }`}
-            >
-              {kpi.change}
-            </p>
-          </dd>
+          </div>
+          <p className="mt-3 font-heading text-[34px] font-bold leading-none tracking-tight text-ink">
+            {kpi.value}
+          </p>
+          <p
+            className={`mt-2 text-xs font-semibold ${
+              kpi.changeType === "positive"
+                ? "text-green"
+                : kpi.changeType === "negative"
+                ? "text-red"
+                : "text-ink-3"
+            }`}
+          >
+            {kpi.change}
+          </p>
         </div>
       ))}
     </div>

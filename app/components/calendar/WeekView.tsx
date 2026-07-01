@@ -53,20 +53,20 @@ export default function WeekView({ currentDate, events, onEventClick }: WeekView
   const hours = Array.from({ length: TOTAL_HOURS }, (_, i) => i + START_HOUR);
 
   return (
-    <div className="overflow-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div className="overflow-auto rounded-2xl border border-line bg-surface">
       {/* Day header */}
-      <div className="sticky top-0 z-10 grid bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700"
+      <div className="sticky top-0 z-10 grid bg-surface border-b border-line"
         style={{ gridTemplateColumns: '56px repeat(7, 1fr)' }}
       >
-        <div className="border-r border-slate-100 dark:border-slate-800" />
+        <div className="border-r border-line-soft" />
         {days.map((day, i) => {
           const isToday = isSameDay(day, today);
           return (
-            <div key={i} className="border-r border-slate-100 py-3 text-center last:border-r-0 dark:border-slate-800">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            <div key={i} className="border-r border-line-soft py-3 text-center last:border-r-0">
+              <p className="font-mono text-[10px] font-medium uppercase tracking-wide text-ink-4">
                 {DAY_LABELS[day.getDay()]}
               </p>
-              <p className={`mt-0.5 text-xl font-semibold ${isToday ? 'text-brand-600' : 'text-slate-900 dark:text-white'}`}>
+              <p className={`mt-0.5 font-heading text-xl font-semibold ${isToday ? 'text-green' : 'text-ink'}`}>
                 {day.getDate()}
               </p>
             </div>
@@ -80,15 +80,15 @@ export default function WeekView({ currentDate, events, onEventClick }: WeekView
         <div className="col-span-full grid" style={{ gridTemplateColumns: '56px repeat(7, 1fr)' }}>
           {hours.map((h) => (
             <div key={h} className="contents">
-              <div className="border-r border-slate-100 dark:border-slate-800 pr-2 pt-0.5 text-right"
+              <div className="border-r border-line-soft pr-2 pt-0.5 text-right"
                 style={{ height: HOUR_HEIGHT }}>
-                <span className="text-xs text-slate-400 dark:text-slate-500 select-none">
+                <span className="text-xs text-ink-4 select-none">
                   {String(h).padStart(2, '0')}:00
                 </span>
               </div>
               {days.map((_, di) => (
                 <div key={di}
-                  className="border-r border-b border-slate-100 last:border-r-0 dark:border-slate-800"
+                  className="border-r border-b border-line-soft last:border-r-0"
                   style={{ height: HOUR_HEIGHT }}
                 />
               ))}

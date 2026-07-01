@@ -9,9 +9,9 @@ interface AlertBadgeProps {
 }
 
 const severityConfig = {
-  info:     { bar: 'bg-brand-500',  bg: 'bg-brand-50 dark:bg-brand-950/40',  border: 'border-brand-200 dark:border-brand-800',  text: 'text-brand-800 dark:text-brand-200',  icon: '💡', label: 'Info' },
-  warning:  { bar: 'bg-amber-500',  bg: 'bg-amber-50 dark:bg-amber-950/40',  border: 'border-amber-200 dark:border-amber-800',  text: 'text-amber-800 dark:text-amber-200',  icon: '⚠️', label: 'Warning' },
-  critical: { bar: 'bg-red-500',    bg: 'bg-red-50 dark:bg-red-950/40',      border: 'border-red-200 dark:border-red-800',      text: 'text-red-800 dark:text-red-200',      icon: '🔴', label: 'Critical' },
+  info:     { bar: 'bg-blue',  bg: 'bg-blue-soft',  border: 'border-blue/20',  text: 'text-blue',  icon: '💡', label: 'Info' },
+  warning:  { bar: 'bg-amber', bg: 'bg-amber-soft', border: 'border-amber/20', text: 'text-amber', icon: '⚠️', label: 'Warning' },
+  critical: { bar: 'bg-red',   bg: 'bg-red-soft',   border: 'border-red/20',   text: 'text-red',   icon: '🔴', label: 'Critical' },
 };
 
 export default function AlertBadge({ severity, message, source, timestamp, compact = false }: AlertBadgeProps) {
@@ -36,7 +36,7 @@ export default function AlertBadge({ severity, message, source, timestamp, compa
             {cfg.label}
           </span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+        <div className="flex items-center gap-2 text-xs text-ink-3">
           {source && <span>Source: <span className="font-medium capitalize">{source}</span></span>}
           {source && timestamp && <span>·</span>}
           {timestamp && (

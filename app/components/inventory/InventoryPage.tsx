@@ -150,8 +150,8 @@ export default function InventoryPage({
     <div className="space-y-6 max-w-7xl mx-auto p-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('title')}</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t('description')}</p>
+          <h1 className="font-heading text-2xl font-bold text-ink">{t('title')}</h1>
+          <p className="text-sm text-ink-3 mt-1">{t('description')}</p>
         </div>
         
         {/* Top actions */}
@@ -159,7 +159,7 @@ export default function InventoryPage({
           {activeTab === 'assets' && canAdd && (
             <button
               onClick={() => setShowAddAsset(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700"
+              className="inline-flex items-center gap-2 rounded-lg bg-green px-4 py-2 text-sm font-medium text-white shadow-sm hover:brightness-105"
             >
               <Plus className="h-4 w-4" /> {t('addAsset')}
             </button>
@@ -167,7 +167,7 @@ export default function InventoryPage({
           {activeTab === 'consumables' && canAdd && (
             <button
               onClick={() => setShowAddConsumable(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700"
+              className="inline-flex items-center gap-2 rounded-lg bg-green px-4 py-2 text-sm font-medium text-white shadow-sm hover:brightness-105"
             >
               <Plus className="h-4 w-4" /> {t('addConsumable')}
             </button>
@@ -177,29 +177,29 @@ export default function InventoryPage({
 
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('stats.totalAssets')}</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{assets.length}</p>
+        <div className="rounded-xl border border-line bg-surface p-4">
+          <p className="text-xs font-medium text-ink-3 uppercase tracking-wider">{t('stats.totalAssets')}</p>
+          <p className="mt-1 text-2xl font-semibold text-ink">{assets.length}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('stats.needsMaintenance')}</p>
+        <div className="rounded-xl border border-line bg-surface p-4">
+          <p className="text-xs font-medium text-ink-3 uppercase tracking-wider">{t('stats.needsMaintenance')}</p>
           <div className="mt-1 flex items-baseline gap-2">
-            <p className={`text-2xl font-semibold ${assetsNeedingMaint > 0 ? 'text-amber-600 dark:text-amber-500' : 'text-slate-900 dark:text-white'}`}>
+            <p className={`text-2xl font-semibold ${assetsNeedingMaint > 0 ? 'text-amber' : 'text-ink'}`}>
               {assetsNeedingMaint}
             </p>
           </div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('stats.consumables')}</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{consumables.length}</p>
+        <div className="rounded-xl border border-line bg-surface p-4">
+          <p className="text-xs font-medium text-ink-3 uppercase tracking-wider">{t('stats.consumables')}</p>
+          <p className="mt-1 text-2xl font-semibold text-ink">{consumables.length}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm">
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1">
+        <div className="rounded-xl border border-line bg-surface p-4">
+          <p className="text-xs font-medium text-ink-3 uppercase tracking-wider flex items-center gap-1">
             {t('stats.lowStockAlerts')}
-            {lowStockCount > 0 && <AlertTriangle className="h-3 w-3 text-red-500" />}
+            {lowStockCount > 0 && <AlertTriangle className="h-3 w-3 text-red" />}
           </p>
           <div className="mt-1 flex items-baseline gap-2">
-            <p className={`text-2xl font-semibold ${lowStockCount > 0 ? 'text-red-600 dark:text-red-500' : 'text-slate-900 dark:text-white'}`}>
+            <p className={`text-2xl font-semibold ${lowStockCount > 0 ? 'text-red' : 'text-ink'}`}>
               {lowStockCount}
             </p>
           </div>
@@ -207,14 +207,14 @@ export default function InventoryPage({
       </div>
 
       {/* Controls: Tabs & Search */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-surface p-1.5 rounded-xl border border-line">
         <div className="flex gap-1 w-full sm:w-auto">
           <button
             onClick={() => setActiveTab('assets')}
             className={`flex-1 sm:flex-none rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === 'assets'
-                ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300'
-                : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50'
+                ? 'bg-green-soft text-green'
+                : 'text-ink-2 hover:bg-tile'
             }`}
           >
             {t('tabs.assets')}
@@ -223,13 +223,13 @@ export default function InventoryPage({
             onClick={() => setActiveTab('consumables')}
             className={`flex-1 sm:flex-none rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === 'consumables'
-                ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300'
-                : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50'
+                ? 'bg-green-soft text-green'
+                : 'text-ink-2 hover:bg-tile'
             }`}
           >
             {t('tabs.consumables')}
             {lowStockCount > 0 && (
-              <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-[10px] font-bold text-red-700 dark:bg-red-900/50 dark:text-red-400">
+              <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-soft text-[10px] font-bold text-red">
                 {lowStockCount}
               </span>
             )}
@@ -238,14 +238,14 @@ export default function InventoryPage({
         
         <div className="w-full sm:w-72 relative">
           <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3">
-            <Search className="h-4 w-4 text-slate-400" />
+            <Search className="h-4 w-4 text-ink-4" />
           </div>
           <input
             type="text"
             placeholder={activeTab === 'assets' ? t('searchAssetsPlaceholder') : t('searchConsumablesPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full rounded-lg border-0 py-2 ps-9 pe-3 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 dark:bg-slate-800 dark:text-white dark:ring-slate-700 dark:focus:ring-brand-500"
+            className="block w-full rounded-lg border-0 py-2 ps-9 pe-3 text-sm text-ink ring-1 ring-inset ring-line placeholder:text-ink-4 focus:ring-2 focus:ring-inset focus:ring-green"
           />
         </div>
       </div>
@@ -255,8 +255,8 @@ export default function InventoryPage({
         {activeTab === 'assets' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredAssets.length === 0 ? (
-              <div className="col-span-full py-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                <p className="text-slate-500 dark:text-slate-400">{t('noAssetsFound')}</p>
+              <div className="col-span-full py-12 text-center border-2 border-dashed border-line rounded-xl">
+                <p className="text-ink-3">{t('noAssetsFound')}</p>
               </div>
             ) : (
               filteredAssets.map(asset => (
@@ -267,8 +267,8 @@ export default function InventoryPage({
         ) : (
           <div className="space-y-3">
             {filteredConsumables.length === 0 ? (
-              <div className="py-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                <p className="text-slate-500 dark:text-slate-400">{t('noConsumablesFound')}</p>
+              <div className="py-12 text-center border-2 border-dashed border-line rounded-xl">
+                <p className="text-ink-3">{t('noConsumablesFound')}</p>
               </div>
             ) : (
               filteredConsumables.map(cons => (

@@ -1,51 +1,55 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Brand: Forest Green scale (primary) ── */
-  --color-brand-50:  #E8F5E9;
-  --color-brand-100: #C8E6C9;
-  --color-brand-200: #A5D6A7;
-  --color-brand-300: #81C784;
-  --color-brand-400: #4CAF7D;
-  --color-brand-500: #2D6A4F;
-  --color-brand-600: #1B4332;
-  --color-brand-700: #163825;
-  --color-brand-800: #112D1C;
-  --color-brand-900: #0A1F12;
+  /* ── Neutrals (paper/ink) ── */
+  --color-paper: #F4F1E9;
+  --color-paper-2: #FBFAF5;
+  --color-surface: #FFFFFF;
+  --color-line: #E7E3D6;
+  --color-line-soft: #F0EDE3;
+  --color-tile: #FAF8F1;
+  --color-tile-2: #F1EDE1;
+  --color-ink: #17251C;
+  --color-ink-2: #5F7266;
+  --color-ink-3: #8A968C;
+  --color-ink-4: #A0AAA1;
 
-  /* ── Semantic brand tokens ── */
-  --color-gold:  #D4A843;
-  --color-navy:  #0F1923;
-  --color-teal:  #2A9D8F;
-  --color-mint:  #E8F5E9;
-  --color-parchment: #FFF8E1;
+  /* ── Sidebar (dark) ── */
+  --color-sidebar-from: #15281D;
+  --color-sidebar-to: #0F1F16;
+  --color-sidebar-text: #B9C5BB;
+  --color-sidebar-text-muted: #8C9A8F;
 
-  /* ── Status colors ── */
-  --color-amber-500: #F39C12;
-  --color-red-500:   #E74C3C;
+  /* ── Brand ── */
+  --color-green: #2F7D4F;
+  --color-green-soft: #EAF3EC;
+  --color-gold: #C4922E;
+  --color-gold-bright: #E7BE56;
+  --color-gold-soft: #F8F0DC;
+
+  /* ── Status / category ── */
+  --color-blue: #3C7EA1;
+  --color-blue-soft: #E9F1F5;
+  --color-amber: #DDA02A;
+  --color-amber-soft: #FBF1DC;
+  --color-red: #C24B39;
+  --color-red-soft: #F7E7E3;
+  --color-purple: #8156A8;
+  --color-purple-soft: #F1EAF7;
+  --color-teal: #2E8E8E;
+  --color-teal-soft: #E4F1F1;
 
   /* ── Fonts ── */
-  --font-sans:    var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  --font-mono:    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-arabic:  var(--font-noto-arabic), 'Noto Sans Arabic', sans-serif;
+  --font-sans:   var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-space-grotesk), var(--font-plex-sans), ui-sans-serif, sans-serif;
+  --font-mono:   var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-arabic: var(--font-noto-arabic), 'Noto Sans Arabic', sans-serif;
 }
 
 @layer base {
-  :root {
-    --background: #f8fafc;
-    --foreground: #0f172a;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background: #0F1923;
-      --foreground: #f8fafc;
-    }
-  }
-
   body {
-    background-color: var(--background);
-    color: var(--foreground);
+    background-color: var(--color-paper);
+    color: var(--color-ink);
     font-family: var(--font-sans);
   }
 

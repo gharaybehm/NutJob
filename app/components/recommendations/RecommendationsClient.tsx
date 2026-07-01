@@ -173,15 +173,15 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface p-4 rounded-2xl border border-line">
         {/* Status Toggle */}
-        <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+        <div className="flex p-1 bg-tile-2 rounded-lg">
           <button
             onClick={() => setStatusFilter("pending")}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
               statusFilter === "pending"
-                ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                ? "bg-surface text-ink shadow-sm"
+                : "text-ink-2 hover:text-ink"
             }`}
           >
             <Clock className="h-4 w-4" />
@@ -191,8 +191,8 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
             onClick={() => setStatusFilter("acted")}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
               statusFilter === "acted"
-                ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                ? "bg-surface text-ink shadow-sm"
+                : "text-ink-2 hover:text-ink"
             }`}
           >
             <CheckCircle2 className="h-4 w-4" />
@@ -204,7 +204,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
         <button
           onClick={handleGenerateAI}
           disabled={processingIds.has("ai-generate") || isPending}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          className="flex items-center gap-2 px-4 py-2 rounded-[11px] bg-gradient-to-b from-[#37905C] to-green text-white text-sm font-semibold shadow-[0_6px_16px_-4px_rgba(47,125,79,.5)] transition hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
         >
           {processingIds.has("ai-generate") ? (
             <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -216,11 +216,11 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
 
         {/* Category Filter */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
-          <Filter className="h-4 w-4 text-slate-400 shrink-0 ms-1" />
+          <Filter className="h-4 w-4 text-ink-3 shrink-0 ms-1" />
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value as Category | "all")}
-            className="bg-slate-50 dark:bg-slate-800 border-none text-sm font-medium text-slate-700 dark:text-slate-300 rounded-lg py-2 ps-3 pe-8 focus:ring-2 focus:ring-brand-500 cursor-pointer"
+            className="bg-tile-2 border-none text-sm font-medium text-ink-2 rounded-lg py-2 ps-3 pe-8 focus:ring-2 focus:ring-green/40 cursor-pointer"
           >
             {CATEGORIES.map((cat) => (
               <option key={cat.id} value={cat.id}>{cat.label}</option>
@@ -233,8 +233,8 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
       {statusFilter === "pending" && latestBatchDate && (
         <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm border ${
           isExpiringSoon
-            ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-300"
-            : "bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+            ? "bg-amber-soft border-amber/30 text-amber"
+            : "bg-tile border-line text-ink-2"
         }`}>
           <CalendarClock className="h-4 w-4 shrink-0" />
           <span>
@@ -272,23 +272,23 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
           ))}
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
-          <div className="h-16 w-16 bg-brand-50 dark:bg-brand-900/30 rounded-full flex items-center justify-center mb-4">
-            <Activity className="h-8 w-8 text-brand-600 dark:text-brand-400" />
+        <div className="bg-surface rounded-2xl border border-dashed border-line p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
+          <div className="h-16 w-16 bg-green-soft rounded-full flex items-center justify-center mb-4">
+            <Activity className="h-8 w-8 text-green" />
           </div>
-          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+          <h3 className="font-heading text-xl font-semibold text-ink mb-2">
             {statusFilter === "pending" ? t('noPending') : t('noHistory')}
           </h3>
-          <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-8 leading-relaxed">
+          <p className="text-ink-2 max-w-md mx-auto mb-8 leading-relaxed">
             {statusFilter === "pending" ? t('pendingDesc') : t('historyDesc')}
           </p>
           <button
             onClick={handleGenerateMock}
             disabled={processingIds.has("generate") || isPending}
-            className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 px-6 py-3 rounded-lg font-medium shadow-sm transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-ink text-white hover:brightness-110 px-6 py-3 rounded-lg font-medium shadow-sm transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {processingIds.has("generate") ? (
-              <div className="h-5 w-5 border-2 border-slate-500 border-t-white dark:border-t-slate-900 rounded-full animate-spin" />
+              <div className="h-5 w-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
             ) : (
               <Sparkles className="h-5 w-5" />
             )}
@@ -303,45 +303,45 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget) closeEdit(); }}
         >
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2 text-slate-900 dark:text-white font-semibold">
-                <Edit2 className="h-4 w-4 text-brand-600 dark:text-brand-400" />
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg border border-line overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-line-soft">
+              <div className="flex items-center gap-2 text-ink font-semibold">
+                <Edit2 className="h-4 w-4 text-green" />
                 {t('editTitle')}
               </div>
-              <button onClick={closeEdit} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              <button onClick={closeEdit} className="p-1.5 rounded-lg text-ink-3 hover:bg-tile transition-colors">
                 <XIcon className="h-5 w-5" />
               </button>
             </div>
 
             <div className="p-5 space-y-4">
               {editTarget.blockName && (
-                <p className="text-sm font-medium text-brand-600 dark:text-brand-400">
+                <p className="text-sm font-medium text-green">
                   {t('target', { name: editTarget.blockName })}
                 </p>
               )}
               <div>
-                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                  {t('actionTitle')}
+                <label className="block font-mono text-[10px] text-ink-3 tracking-wide mb-1.5">
+                  {t('actionTitle').toUpperCase()}
                 </label>
                 <input
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+                  className="w-full px-3 py-2.5 rounded-lg border border-line bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-green/30 transition"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                  {t('aiRationale')}
+                <label className="block font-mono text-[10px] text-ink-3 tracking-wide mb-1.5">
+                  {t('aiRationale').toUpperCase()}
                 </label>
-                <p className="text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 rounded-lg px-3 py-2.5 leading-relaxed">
+                <p className="text-sm text-ink-2 bg-tile rounded-lg px-3 py-2.5 leading-relaxed">
                   {editTarget.rationale}
                 </p>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                  {t('managerNote')} <span className="font-normal normal-case">{t('managerNoteOptional')}</span>
+                <label className="block font-mono text-[10px] text-ink-3 tracking-wide mb-1.5">
+                  {t('managerNote').toUpperCase()} <span className="font-normal normal-case">{t('managerNoteOptional')}</span>
                 </label>
                 <textarea
                   ref={noteRef}
@@ -349,18 +349,18 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
                   onChange={(e) => setEditNote(e.target.value)}
                   rows={3}
                   placeholder={t('managerNotePlaceholder')}
-                  className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition resize-none placeholder:text-slate-400"
+                  className="w-full px-3 py-2.5 rounded-lg border border-line bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-green/30 transition resize-none placeholder:text-ink-4"
                 />
               </div>
             </div>
 
-            <div className="flex gap-3 p-5 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex gap-3 p-5 border-t border-line-soft">
               <button onClick={closeEdit} disabled={isSaving}
-                className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50">
+                className="flex-1 px-4 py-2.5 rounded-lg border border-line text-sm font-medium text-ink hover:border-ink-4 transition-colors disabled:opacity-50">
                 {t('cancel')}
               </button>
               <button onClick={handleSaveEdit} disabled={isSaving}
-                className="flex-1 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                className="flex-1 bg-green hover:brightness-105 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-50">
                 {isSaving ? (
                   <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 ) : (

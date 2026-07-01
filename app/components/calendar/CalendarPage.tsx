@@ -78,8 +78,8 @@ function EventDetailPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700 overflow-hidden">
+      <div className="absolute inset-0 bg-ink/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-md rounded-2xl bg-surface shadow-2xl border border-line overflow-hidden">
         <div className={`px-6 py-5 ${colors.bg}`}>
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -87,7 +87,7 @@ function EventDetailPanel({
                 <span className={`h-1.5 w-1.5 rounded-full ${colors.dot}`} />
                 {ACTIVITY_LABELS[event.type]}
               </span>
-              <h2 className={`text-base font-bold leading-snug ${colors.text}`}>{event.title}</h2>
+              <h2 className={`font-heading text-base font-bold leading-snug ${colors.text}`}>{event.title}</h2>
               <p className={`mt-1 text-xs opacity-70 ${colors.text}`}>
                 {event.startDate.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })}
                 {' · '}
@@ -111,22 +111,22 @@ function EventDetailPanel({
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
               {infoRows.map((row) => (
                 <div key={row.label}>
-                  <dt className="text-xs text-slate-500 dark:text-slate-400">{row.label}</dt>
-                  <dd className="text-sm font-medium text-slate-900 dark:text-white">{row.value}</dd>
+                  <dt className="text-xs text-ink-3">{row.label}</dt>
+                  <dd className="text-sm font-medium text-ink">{row.value}</dd>
                 </div>
               ))}
             </dl>
           )}
           {event.notes && (
-            <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">{t('notes')}</p>
-              <p className="text-sm text-slate-700 dark:text-slate-300">{event.notes}</p>
+            <div className="rounded-lg bg-tile p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-3 mb-1">{t('notes')}</p>
+              <p className="text-sm text-ink-2">{event.notes}</p>
             </div>
           )}
           {done && (
-            <div className="flex items-center gap-2 rounded-lg bg-brand-50 p-3 ring-1 ring-brand-100 dark:bg-brand-900/20 dark:ring-brand-800">
-              <span className="text-brand-600 text-sm font-medium">{t('completed')}</span>
-              <span className="text-xs text-slate-500">
+            <div className="flex items-center gap-2 rounded-lg bg-green-soft p-3 border border-green/20">
+              <span className="text-green text-sm font-medium">{t('completed')}</span>
+              <span className="text-xs text-ink-3">
                 {event.completedAt!.toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}
               </span>
             </div>
@@ -134,10 +134,10 @@ function EventDetailPanel({
         </div>
 
         {!done && (
-          <div className="border-t border-slate-200 px-6 py-4 dark:border-slate-700 flex justify-end">
+          <div className="border-t border-line-soft px-6 py-4 flex justify-end">
             <button
               onClick={() => { onLogCompletion(event); onClose(); }}
-              className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 active:scale-95 transition-all"
+              className="flex items-center gap-2 rounded-[11px] bg-green px-4 py-2 text-sm font-semibold text-white shadow-sm hover:brightness-105 transition-all"
             >
               {t('logCompletion')}
             </button>
@@ -264,20 +264,20 @@ export default function CalendarPage({
       {/* Page title */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('title')}</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">{t('subtitle')}</p>
+          <h1 className="font-heading text-2xl font-bold text-ink">{t('title')}</h1>
+          <p className="text-sm text-ink-2">{t('subtitle')}</p>
         </div>
         {isPending && (
-          <span className="mt-1 text-xs text-slate-400 dark:text-slate-500 animate-pulse">{t('saving')}</span>
+          <span className="mt-1 text-xs text-ink-4 animate-pulse">{t('saving')}</span>
         )}
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4 font-mono text-[10px] tracking-wide text-ink-2">
         {LEGEND_TYPES.map((type) => (
-          <div key={type} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
-            <span className={`h-2.5 w-2.5 rounded-full ${ACTIVITY_COLORS[type].dot}`} />
-            {ACTIVITY_LABELS[type]}
+          <div key={type} className="flex items-center gap-1.5">
+            <span className={`h-2 w-2 rounded-[2px] ${ACTIVITY_COLORS[type].dot}`} />
+            {ACTIVITY_LABELS[type].toUpperCase()}
           </div>
         ))}
       </div>

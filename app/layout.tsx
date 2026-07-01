@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, Geist_Mono, Noto_Sans_Arabic } from "next/font/google";
+import { Space_Grotesk, IBM_Plex_Sans, IBM_Plex_Mono, Noto_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegistration from "@/app/components/ServiceWorkerRegistration";
 import { NextIntlClientProvider } from 'next-intl';
@@ -12,9 +12,18 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const plexSans = IBM_Plex_Sans({
+  variable: "--font-plex-sans",
   subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600"],
+  display: "swap",
 });
 
 const notoSansArabic = Noto_Sans_Arabic({
@@ -54,9 +63,9 @@ export default async function RootLayout({
     <html
       lang={locale}
       dir={isRTL ? 'rtl' : 'ltr'}
-      className={`${spaceGrotesk.variable} ${geistMono.variable} ${isRTL ? notoSansArabic.variable : ''} h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${plexSans.variable} ${plexMono.variable} ${isRTL ? notoSansArabic.variable : ''} h-full antialiased`}
     >
-      <body className="flex h-dvh overflow-hidden bg-slate-50 dark:bg-[#0F1923]">
+      <body className="flex h-dvh overflow-hidden bg-paper">
         <NextIntlClientProvider messages={messages} locale={locale}>
           {children}
         </NextIntlClientProvider>

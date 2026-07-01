@@ -46,8 +46,8 @@ export default function LogCompletionModal({ event, onClose, onComplete }: LogCo
     }))
   );
 
-  const fieldCls = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white';
-  const labelCls = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400';
+  const fieldCls = 'w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-green focus:outline-none focus:ring-2 focus:ring-green/20';
+  const labelCls = 'mb-1 block font-mono text-[10px] font-semibold uppercase tracking-wide text-ink-3';
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -60,15 +60,15 @@ export default function LogCompletionModal({ event, onClose, onComplete }: LogCo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-ink/50 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+      <div className="relative z-10 w-full max-w-md rounded-2xl bg-surface shadow-2xl border border-line">
+        <div className="flex items-center justify-between border-b border-line-soft px-6 py-4">
           <div className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-brand-600" />
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t('title')}</h2>
+            <CheckCircle className="h-5 w-5 text-green" />
+            <h2 className="font-heading text-lg font-semibold text-ink">{t('title')}</h2>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 transition-colors">
+          <button onClick={onClose} className="rounded-lg p-1.5 text-ink-3 hover:bg-tile transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -108,8 +108,8 @@ export default function LogCompletionModal({ event, onClose, onComplete }: LogCo
           </div>
 
           {materialActuals.length > 0 && (
-            <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+            <div className="rounded-xl bg-tile p-4 border border-line space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-2">
                 Materials Used
               </p>
               <div className="space-y-2">
@@ -118,9 +118,9 @@ export default function LogCompletionModal({ event, onClose, onComplete }: LogCo
                   const isOver = qty > m.currentBalance;
                   return (
                     <div key={m.consumableId} className="flex items-center gap-3">
-                      <span className="flex-1 min-w-0 truncate text-sm text-slate-700 dark:text-slate-300">
+                      <span className="flex-1 min-w-0 truncate text-sm text-ink-2">
                         {m.consumableName}
-                        <span className="ml-1 text-xs text-slate-400">(planned: {m.plannedQuantity} {m.unit})</span>
+                        <span className="ml-1 text-xs text-ink-4">(planned: {m.plannedQuantity} {m.unit})</span>
                       </span>
                       <div className="flex flex-col items-end gap-0.5 shrink-0">
                         <div className="flex items-center gap-1.5">
@@ -134,16 +134,16 @@ export default function LogCompletionModal({ event, onClose, onComplete }: LogCo
                                 prev.map((x, j) => j === i ? { ...x, actualQuantity: e.target.value } : x)
                               )
                             }
-                            className={`w-24 rounded-lg border px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:bg-slate-800 dark:text-white ${
+                            className={`w-24 rounded-lg border px-2 py-1 text-sm text-right text-ink focus:outline-none focus:ring-2 focus:ring-green/20 ${
                               isOver
-                                ? 'border-amber-400 bg-amber-50 dark:border-amber-600 dark:bg-amber-900/20'
-                                : 'border-slate-200 bg-white dark:border-slate-700'
+                                ? 'border-amber bg-amber-soft'
+                                : 'border-line bg-surface'
                             }`}
                           />
-                          <span className="text-xs text-slate-500 w-8">{m.unit}</span>
+                          <span className="text-xs text-ink-3 w-8">{m.unit}</span>
                         </div>
                         {isOver && (
-                          <p className="text-[10px] text-amber-600 dark:text-amber-400">
+                          <p className="text-[10px] text-amber">
                             Stock: {m.currentBalance} {m.unit}
                           </p>
                         )}
@@ -164,11 +164,11 @@ export default function LogCompletionModal({ event, onClose, onComplete }: LogCo
 
           <div className="flex justify-end gap-3 pt-1">
             <button type="button" onClick={onClose}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors">
+              className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink hover:border-ink-4 transition-colors">
               {t('cancel')}
             </button>
             <button type="submit" id="mark-complete-btn"
-              className="flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 active:scale-95 transition-all">
+              className="flex items-center gap-2 rounded-lg bg-green px-5 py-2 text-sm font-medium text-white shadow-sm hover:brightness-105 transition-all">
               <CheckCircle className="h-4 w-4" />
               {t('markComplete')}
             </button>

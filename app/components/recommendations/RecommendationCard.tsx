@@ -11,13 +11,17 @@ import {
   Edit2
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { CATEGORY_STYLES, type Category } from "@/app/components/ui/CategoryChip";
+import { ConfidenceBar } from "@/app/components/ui/ConfidenceBar";
 
-type Category = "irrigate" | "fertilize" | "spray" | "scout" | "prune" | "other";
 type Status = "pending" | "accepted" | "edited" | "skipped";
+type CardCategory = Category | "other";
+
+const FALLBACK_STYLE = { bg: "bg-tile-2", text: "text-ink-2", dot: "bg-ink-3", label: "Other" };
 
 interface RecommendationCardProps {
   id: string;
-  category: Category;
+  category: CardCategory;
   title: string;
   rationale: string;
   confidence: number | null;
@@ -29,6 +33,14 @@ interface RecommendationCardProps {
   onEdit: (id: string) => void;
   isProcessing?: boolean;
 }
+
+const CATEGORY_ICONS: Record<Category, React.ReactNode> = {
+  irrigate: <Droplets className="h-5 w-5" />,
+  fertilize: <FlaskConical className="h-5 w-5" />,
+  spray: <ShieldAlert className="h-5 w-5" />,
+  scout: <Search className="h-5 w-5" />,
+  prune: <Scissors className="h-5 w-5" />,
+};
 
 export default function RecommendationCard({
   id,
@@ -46,36 +58,9 @@ export default function RecommendationCard({
 }: RecommendationCardProps) {
   const t = useTranslations('recommendations');
 
-  const getCategoryIcon = (cat: Category) => {
-    switch (cat) {
-      case "irrigate": return <Droplets className="h-5 w-5" />;
-      case "fertilize": return <FlaskConical className="h-5 w-5" />;
-      case "spray": return <ShieldAlert className="h-5 w-5" />;
-      case "scout": return <Search className="h-5 w-5" />;
-      case "prune": return <Scissors className="h-5 w-5" />;
-      default: return <Lightbulb className="h-5 w-5" />;
-    }
-  };
-
-  const getCategoryColor = (cat: Category) => {
-    switch (cat) {
-      case "irrigate": return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
-      case "fertilize": return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
-      case "spray": return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400";
-      case "scout": return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
-      case "prune": return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
-      default: return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400";
-    }
-  };
-
+  const cfg = category in CATEGORY_STYLES ? CATEGORY_STYLES[category as Category] : FALLBACK_STYLE;
+  const icon = category in CATEGORY_ICONS ? CATEGORY_ICONS[category as Category] : <Lightbulb className="h-5 w-5" />;
   const confidencePct = confidence !== null ? Math.round(confidence * 100) : null;
-
-  const getConfidenceColor = (pct: number | null) => {
-    if (pct === null) return "text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400";
-    if (pct >= 90) return "text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400";
-    if (pct >= 75) return "text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400";
-    return "text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-400";
-  };
 
   const STATUS_LABEL: Record<Status, string> = {
     accepted: t('statusAccepted'),
@@ -85,74 +70,74 @@ export default function RecommendationCard({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-md">
-      <div className="p-5 flex-1">
-        <div className="flex justify-between items-start mb-3">
-          <div className={`p-2 rounded-lg ${getCategoryColor(category)}`}>
-            {getCategoryIcon(category)}
-          </div>
-          {confidencePct !== null && (
-            <div className={`text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1 ${getConfidenceColor(confidencePct)}`}>
-              {t('confidenceMatch', { value: confidencePct })}
+    <div className="bg-surface rounded-2xl border border-line overflow-hidden flex flex-col transition-all hover:border-ink-4">
+      <div className="p-[18px] flex-1">
+        <div className="flex justify-between items-start gap-3 mb-3">
+          <div className="flex items-center gap-2.5">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-[11px] ${cfg.bg} ${cfg.text}`}>
+              {icon}
             </div>
-          )}
+            {blockName && (
+              <span className="font-mono text-[10px] text-ink-3">{blockName.toUpperCase()}</span>
+            )}
+          </div>
+          <span className={`inline-flex items-center rounded-md px-2 py-0.5 font-mono text-[9.5px] font-semibold tracking-wide ${cfg.bg} ${cfg.text}`}>
+            {cfg.label.toUpperCase()}
+          </span>
         </div>
 
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{title}</h3>
+        <h3 className="font-heading text-[14.5px] font-semibold text-ink mb-1">{title}</h3>
 
-        {blockName && (
-          <div className="text-sm font-medium text-brand-600 dark:text-brand-400 mb-3">
-            {t('target', { name: blockName })}
-          </div>
-        )}
-
-        <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">{rationale}</p>
+        <p className="text-[12.5px] text-ink-2 line-clamp-3 leading-relaxed">{rationale}</p>
       </div>
 
       {status === "pending" ? (
-        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 border-t border-slate-100 dark:border-slate-800 flex gap-2">
-          <button
-            onClick={() => onAccept(id)}
-            disabled={isProcessing}
-            className="flex-1 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            <Check className="h-4 w-4" />
-            {t('accept')}
-          </button>
-          <button
-            onClick={() => onEdit(id)}
-            disabled={isProcessing}
-            className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-            title={t('edit')}
-          >
-            <Edit2 className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => onSkip(id)}
-            disabled={isProcessing}
-            className="bg-white dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-600 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-            title={t('skip')}
-          >
-            <X className="h-4 w-4" />
-          </button>
+        <div className="flex items-center justify-between px-[18px] py-3.5 border-t border-line-soft">
+          {confidencePct !== null ? (
+            <ConfidenceBar value={confidencePct} />
+          ) : <span />}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => onSkip(id)}
+              disabled={isProcessing}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-3 hover:bg-tile-2 transition-colors disabled:opacity-50"
+            >
+              {t('skip')}
+            </button>
+            <button
+              onClick={() => onEdit(id)}
+              disabled={isProcessing}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-ink border border-line hover:border-ink-4 transition-colors disabled:opacity-50"
+            >
+              {t('edit')}
+            </button>
+            <button
+              onClick={() => onAccept(id)}
+              disabled={isProcessing}
+              className="flex items-center gap-1.5 bg-green hover:brightness-105 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition disabled:opacity-50"
+            >
+              <Check className="h-[15px] w-[15px]" />
+              {t('accept')}
+            </button>
+          </div>
         </div>
       ) : (
-        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+        <div className="px-[18px] py-3.5 border-t border-line-soft space-y-2">
           <div className="flex items-center justify-between">
             <span className={`text-sm font-medium flex items-center gap-1.5 ${
-              status === 'accepted' ? 'text-emerald-600 dark:text-emerald-400' :
-              status === 'skipped' ? 'text-slate-500 dark:text-slate-400' :
-              'text-amber-600 dark:text-amber-400'
+              status === 'accepted' ? 'text-green' :
+              status === 'skipped' ? 'text-ink-3' :
+              'text-amber'
             }`}>
               {status === 'accepted' && <Check className="h-4 w-4" />}
               {status === 'skipped' && <X className="h-4 w-4" />}
               {status === 'edited' && <Edit2 className="h-4 w-4" />}
               {STATUS_LABEL[status]}
             </span>
-            <span className="text-xs text-slate-400 dark:text-slate-500">{t('logged')}</span>
+            <span className="text-xs text-ink-4">{t('logged')}</span>
           </div>
           {managerNote && (
-            <p className="text-xs text-slate-600 dark:text-slate-400 italic border-s-2 border-slate-300 dark:border-slate-600 ps-2">
+            <p className="text-xs text-ink-2 italic border-s-2 border-line ps-2">
               &quot;{managerNote}&quot;
             </p>
           )}

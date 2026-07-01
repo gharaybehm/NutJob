@@ -26,16 +26,16 @@ L.Icon.Default.mergeOptions({
 // always visually distinct regardless of health status.
 
 const BLOCK_PALETTE: Array<{ fill: string; stroke: string }> = [
-  { fill: '#22c55e', stroke: '#16a34a' },  // green
-  { fill: '#3b82f6', stroke: '#2563eb' },  // blue
-  { fill: '#f59e0b', stroke: '#d97706' },  // amber
-  { fill: '#a855f7', stroke: '#9333ea' },  // purple
-  { fill: '#06b6d4', stroke: '#0891b2' },  // cyan
-  { fill: '#f97316', stroke: '#ea580c' },  // orange
-  { fill: '#ec4899', stroke: '#db2777' },  // pink
-  { fill: '#84cc16', stroke: '#65a30d' },  // lime
-  { fill: '#14b8a6', stroke: '#0d9488' },  // teal
-  { fill: '#ef4444', stroke: '#dc2626' },  // red
+  { fill: '#2F7D4F', stroke: '#1E5637' },  // green
+  { fill: '#3C7EA1', stroke: '#2A5A75' },  // blue
+  { fill: '#DDA02A', stroke: '#B57F16' },  // amber
+  { fill: '#8156A8', stroke: '#603E80' },  // purple
+  { fill: '#2E8E8E', stroke: '#20696A' },  // teal
+  { fill: '#C4922E', stroke: '#96701F' },  // gold
+  { fill: '#C24B39', stroke: '#9B3728' },  // red
+  { fill: '#5F9E6E', stroke: '#417050' },  // sage
+  { fill: '#6A8FAE', stroke: '#4A667F' },  // steel blue
+  { fill: '#A8703F', stroke: '#7C512D' },  // ochre
 ];
 
 function blockColor(index: number) {

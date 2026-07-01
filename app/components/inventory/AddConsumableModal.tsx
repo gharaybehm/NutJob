@@ -35,18 +35,18 @@ export default function AddConsumableModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Add Consumable</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-500">
+      <div className="absolute inset-0 bg-ink/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-md rounded-2xl bg-surface shadow-2xl ring-1 ring-line overflow-hidden">
+        <div className="px-6 py-4 border-b border-line flex justify-between items-center">
+          <h2 className="text-lg font-bold text-ink">Add Consumable</h2>
+          <button onClick={onClose} className="text-ink-4 hover:text-ink-3">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="relative">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Item Name *</label>
+            <label className="block text-sm font-medium text-ink-2 mb-1">Item Name *</label>
             <input
               type="text"
               required
@@ -57,15 +57,15 @@ export default function AddConsumableModal({
               }}
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-              className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-brand-500 focus:ring-brand-500"
+              className="w-full rounded-lg border-line bg-surface px-3 py-2 text-sm text-ink focus:border-green focus:ring-green"
               placeholder="e.g. Calcium Nitrate"
             />
             {showSuggestions && filteredSuggestions.length > 0 && (
-              <ul className="absolute z-10 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-40 overflow-y-auto text-sm">
+              <ul className="absolute z-10 mt-1 w-full bg-surface border border-line rounded-md shadow-lg max-h-40 overflow-y-auto text-sm">
                 {filteredSuggestions.map(suggestion => (
                   <li 
                     key={suggestion} 
-                    className="px-3 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
+                    className="px-3 py-2 cursor-pointer hover:bg-tile text-ink-2"
                     onClick={() => {
                       setName(suggestion);
                       setShowSuggestions(false);
@@ -80,11 +80,11 @@ export default function AddConsumableModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Category</label>
+              <label className="block text-sm font-medium text-ink-2 mb-1">Category</label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as ConsumableCategory)}
-                className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-brand-500 focus:ring-brand-500"
+                className="w-full rounded-lg border-line bg-surface px-3 py-2 text-sm text-ink focus:border-green focus:ring-green"
               >
                 <option value="fertilizer">Fertilizer</option>
                 <option value="pesticide">Pesticide</option>
@@ -95,21 +95,21 @@ export default function AddConsumableModal({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unit of Measure *</label>
+              <label className="block text-sm font-medium text-ink-2 mb-1">Unit of Measure *</label>
               <input
                 type="text"
                 required
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
                 placeholder="kg, L, bags, etc."
-                className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-brand-500 focus:ring-brand-500"
+                className="w-full rounded-lg border-line bg-surface px-3 py-2 text-sm text-ink focus:border-green focus:ring-green"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Starting Balance *</label>
+              <label className="block text-sm font-medium text-ink-2 mb-1">Starting Balance *</label>
               <input
                 type="number"
                 required
@@ -117,11 +117,11 @@ export default function AddConsumableModal({
                 step="0.01"
                 value={startingBalance}
                 onChange={(e) => setStartingBalance(e.target.value)}
-                className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-brand-500 focus:ring-brand-500"
+                className="w-full rounded-lg border-line bg-surface px-3 py-2 text-sm text-ink focus:border-green focus:ring-green"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Min Stock Alert</label>
+              <label className="block text-sm font-medium text-ink-2 mb-1">Min Stock Alert</label>
               <input
                 type="number"
                 min="0"
@@ -129,16 +129,16 @@ export default function AddConsumableModal({
                 value={minimumStock}
                 onChange={(e) => setMinimumStock(e.target.value)}
                 placeholder="Optional"
-                className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-brand-500 focus:ring-brand-500"
+                className="w-full rounded-lg border-line bg-surface px-3 py-2 text-sm text-ink focus:border-green focus:ring-green"
               />
             </div>
           </div>
 
           <div className="pt-4 flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-ink-2 hover:bg-tile rounded-lg">
               Cancel
             </button>
-            <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm">
+            <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-green hover:brightness-105 rounded-lg">
               Save Consumable
             </button>
           </div>

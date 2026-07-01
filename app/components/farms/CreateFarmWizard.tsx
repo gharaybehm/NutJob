@@ -83,21 +83,21 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ring-1 ring-slate-200 dark:ring-slate-700 overflow-hidden">
+      <div className="relative w-full max-w-md bg-surface rounded-2xl shadow-2xl ring-1 ring-line overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-tile">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            <h2 className="text-lg font-semibold text-ink">
               Create a new farm
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-ink-3 mt-0.5">
               Step {step === 'identity' ? '1' : '2'} of 2
             </p>
           </div>
           <button
             onClick={handleClose}
             disabled={isPending}
-            className="h-9 w-9 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-40"
+            className="h-9 w-9 flex items-center justify-center rounded-full text-ink-4 hover:bg-tile transition-colors disabled:opacity-40"
           >
             <X className="h-4 w-4" />
           </button>
@@ -107,35 +107,35 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
         {step === 'identity' && (
           <div className="px-6 py-5 flex flex-col gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                Farm name <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-ink-2 mb-1.5">
+                Farm name <span className="text-red">*</span>
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="e.g. Sunrise Almonds"
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
                 autoFocus
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                Address / location <span className="text-slate-400 font-normal">(optional)</span>
+              <label className="block text-sm font-medium text-ink-2 mb-1.5">
+                Address / location <span className="text-ink-4 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 value={address}
                 onChange={e => setAddress(e.target.value)}
                 placeholder="e.g. Jericho, West Bank"
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
               />
             </div>
             <div className="flex justify-end pt-1">
               <button
                 onClick={() => setStep('gps')}
                 disabled={!name.trim()}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-green px-4 py-2 text-sm font-medium text-white hover:brightness-105 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 Continue
                 <ChevronRight className="h-4 w-4" />
@@ -147,14 +147,14 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
         {/* Step 2 — GPS */}
         {step === 'gps' && (
           <div className="px-6 py-5 flex flex-col gap-4">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-ink-3">
               GPS coordinates help position your farm on the map. You can skip this and add them later in Settings.
             </p>
             <button
               type="button"
               onClick={useMyLocation}
               disabled={gettingLocation}
-              className="inline-flex items-center gap-2 rounded-lg border border-brand-300 dark:border-brand-700 px-3 py-2 text-sm font-medium text-brand-700 dark:text-brand-300 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors disabled:opacity-50 w-fit"
+              className="inline-flex items-center gap-2 rounded-lg border border-green px-3 py-2 text-sm font-medium text-green hover:brightness-105-soft transition-colors disabled:opacity-50 w-fit"
             >
               {gettingLocation ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -164,11 +164,11 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
               Use my location
             </button>
             {locError && (
-              <p className="text-xs text-red-600 dark:text-red-400">{locError}</p>
+              <p className="text-xs text-red">{locError}</p>
             )}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-sm font-medium text-ink-2 mb-1.5">
                   Latitude
                 </label>
                 <input
@@ -177,11 +177,11 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
                   onChange={e => setLat(truncateTo4(e.target.value))}
                   placeholder="31.7683"
                   step="0.0001"
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-sm font-medium text-ink-2 mb-1.5">
                   Longitude
                 </label>
                 <input
@@ -190,12 +190,12 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
                   onChange={e => setLng(truncateTo4(e.target.value))}
                   placeholder="35.2137"
                   step="0.0001"
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
                 />
               </div>
             </div>
             {serverError && (
-              <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
+              <p className="text-sm text-red bg-red-soft rounded-lg px-3 py-2">
                 {serverError}
               </p>
             )}
@@ -203,14 +203,14 @@ export default function CreateFarmWizard({ open, onClose }: Props) {
               <button
                 onClick={() => setStep('identity')}
                 disabled={isPending}
-                className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors disabled:opacity-40"
+                className="text-sm text-ink-3 hover:text-ink-2 transition-colors disabled:opacity-40"
               >
                 ← Back
               </button>
               <button
                 onClick={handleCreate}
                 disabled={isPending}
-                className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-2 rounded-lg bg-green px-4 py-2 text-sm font-medium text-white hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 Create Farm

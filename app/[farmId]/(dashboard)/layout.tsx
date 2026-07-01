@@ -1,7 +1,6 @@
 import Sidebar from "@/app/components/Sidebar";
 import TopNav from "@/app/components/TopNav";
 import BottomNav from "@/app/components/BottomNav";
-import FarmTabs from "@/app/components/farms/FarmTabs";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { getFarms } from "@/app/actions/farms";
@@ -95,8 +94,14 @@ export default async function DashboardLayout({
     unresolvedAlertCount = count ?? 0
   }
 
-  // All farms for the tab bar
+  // All farms for the farm switcher
   const allFarms = await getFarms();
+
+  // Count pending recommendations for the sidebar badge
+  const { count: pendingRecommendationCount } = await db
+    .from("recommendations")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "pending");
 
   return (
     <>
@@ -105,17 +110,17 @@ export default async function DashboardLayout({
         userName={profile.full_name ?? fullName}
         userRole={effectiveRole}
         farmId={farmId}
+        pendingRecommendationCount={pendingRecommendationCount ?? 0}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <TopNav farmId={farmId} alertCount={unresolvedAlertCount} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 md:pb-6 md:pr-14">
+        <TopNav farmId={farmId} alertCount={unresolvedAlertCount} farms={allFarms} />
+        <main className="flex-1 overflow-y-auto bg-paper p-4 md:p-6">
           <div className="mx-auto max-w-7xl">
             {children}
           </div>
         </main>
         <BottomNav userRole={effectiveRole} farmId={farmId} farms={allFarms} />
       </div>
-      <FarmTabs farms={allFarms} currentFarmId={farmId} maxFarms={3} />
     </>
   );
 }

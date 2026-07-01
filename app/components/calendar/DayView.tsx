@@ -45,13 +45,13 @@ export default function DayView({ currentDate, events, onEventClick, onLogComple
     : t('eventCountPlural', { count: dayEvents.length });
 
   return (
-    <div className="overflow-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div className="overflow-auto rounded-2xl border border-line bg-surface">
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-4 dark:border-slate-700 dark:bg-slate-900">
-        <p className={`text-lg font-semibold ${isToday ? 'text-brand-600' : 'text-slate-900 dark:text-white'}`}>
+      <div className="sticky top-0 z-10 border-b border-line bg-surface px-6 py-4">
+        <p className={`font-heading text-lg font-semibold ${isToday ? 'text-green' : 'text-ink'}`}>
           {isToday ? `${t('today')} — ` : ''}{dateLabel}
         </p>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-sm text-ink-2">
           {dayEvents.length === 0 ? t('noEvents') : eventCountStr}
         </p>
       </div>
@@ -61,9 +61,9 @@ export default function DayView({ currentDate, events, onEventClick, onLogComple
         {/* Hour column */}
         <div className="w-16 shrink-0">
           {hours.map((h) => (
-            <div key={h} className="flex items-start justify-end border-b border-slate-100 pr-3 dark:border-slate-800"
+            <div key={h} className="flex items-start justify-end border-b border-line-soft pr-3"
               style={{ height: HOUR_HEIGHT }}>
-              <span className="pt-0.5 text-xs text-slate-400 dark:text-slate-500 select-none">
+              <span className="pt-0.5 text-xs text-ink-4 select-none">
                 {String(h).padStart(2, '0')}:00
               </span>
             </div>
@@ -71,9 +71,9 @@ export default function DayView({ currentDate, events, onEventClick, onLogComple
         </div>
 
         {/* Event area */}
-        <div className="relative flex-1 border-l border-slate-100 dark:border-slate-800">
+        <div className="relative flex-1 border-l border-line-soft">
           {hours.map((h) => (
-            <div key={h} className="border-b border-slate-100 dark:border-slate-800"
+            <div key={h} className="border-b border-line-soft"
               style={{ height: HOUR_HEIGHT }} />
           ))}
 
@@ -127,14 +127,14 @@ export default function DayView({ currentDate, events, onEventClick, onLogComple
                   {!done && (
                     <button
                       onClick={() => onLogCompletion(event)}
-                      className="flex items-center gap-1 rounded-md bg-white/70 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-200 transition-all hover:bg-white active:scale-95"
+                      className="flex items-center gap-1 rounded-md bg-white/70 px-2 py-1 text-xs font-medium text-ink ring-1 ring-inset ring-line transition-all hover:bg-white active:scale-95"
                     >
-                      <CheckCircle className="h-3 w-3 text-brand-600" />
+                      <CheckCircle className="h-3 w-3 text-green" />
                       {t('logCompletion')}
                     </button>
                   )}
                   {done && (
-                    <span className="flex items-center gap-1 text-xs font-medium text-brand-600">
+                    <span className="flex items-center gap-1 text-xs font-medium text-green">
                       <CheckCircle className="h-3 w-3" />
                       {t('completed')}
                     </span>

@@ -121,10 +121,10 @@ function StatusBanner({ status }: { status: { type: 'success' | 'error'; message
   return (
     <div className={`p-4 rounded-xl text-sm border flex items-center gap-3 ${
       status.type === 'success'
-        ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:border-green-800/50 dark:text-green-400'
-        : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:border-red-800/50 dark:text-red-400'
+        ? 'bg-green-soft text-green border-green/25'
+        : 'bg-red-soft text-red border-red/25'
     }`}>
-      <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${status.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
+      <div className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${status.type === 'success' ? 'bg-green' : 'bg-red'}`} />
       {status.message}
     </div>
   )
@@ -137,14 +137,14 @@ function SectionCard({ title, description, icon: Icon, children }: {
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+    <section className="rounded-2xl bg-surface p-8 shadow-sm ring-1 ring-line">
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-          <Icon className="h-5 w-5 text-brand-600 dark:text-brand-400" />
+        <h2 className="text-lg font-semibold text-ink flex items-center gap-2">
+          <Icon className="h-5 w-5 text-green" />
           {title}
         </h2>
         {description && (
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{description}</p>
+          <p className="mt-1 text-sm text-ink-3">{description}</p>
         )}
       </div>
       {children}
@@ -158,7 +158,7 @@ function InputField({ id, label, type = 'text', name, defaultValue, disabled, pl
 }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
+      <label htmlFor={id} className="block text-sm font-medium leading-6 text-ink">
         {label}
       </label>
       <div className={`mt-2 ${prefix ? 'relative' : ''}`}>
@@ -168,12 +168,12 @@ function InputField({ id, label, type = 'text', name, defaultValue, disabled, pl
         <input
           id={id} name={name} type={type}
           defaultValue={defaultValue} disabled={disabled} placeholder={placeholder}
-          className={`block w-full rounded-xl border-0 py-2.5 text-slate-900 shadow-sm ring-1 ring-inset placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 dark:text-white dark:ring-slate-700 dark:placeholder:text-slate-500 ${
+          className={`block w-full rounded-xl border-0 py-2.5 text-ink shadow-sm ring-1 ring-inset placeholder:text-ink-4 focus:ring-2 focus:ring-inset focus:ring-green sm:text-sm sm:leading-6 ${
             prefix ? 'pl-10 pr-3' : 'px-3'
           } ${
             disabled
-              ? 'bg-slate-50 text-slate-500 ring-slate-200 cursor-not-allowed dark:bg-slate-800 dark:text-slate-400'
-              : 'bg-white ring-slate-300 dark:bg-slate-800'
+              ? 'bg-tile text-ink-3 ring-line cursor-not-allowed'
+              : 'bg-surface ring-line'
           }`}
         />
       </div>
@@ -219,11 +219,11 @@ function AccountTab({ initialProfile }: { initialProfile: { email: string; full_
       <SectionCard title="Profile Information" description="Update your personal details." icon={User}>
         <form action={onProfileSubmit} className="space-y-6 max-w-xl">
           <StatusBanner status={profileStatus} />
-          <InputField id="email" label="Email address" type="email" defaultValue={initialProfile.email} disabled placeholder="email" prefix={<Mail className="h-5 w-5 text-slate-400" />} />
-          <p className="-mt-4 text-xs text-slate-500">Email cannot be changed.</p>
+          <InputField id="email" label="Email address" type="email" defaultValue={initialProfile.email} disabled placeholder="email" prefix={<Mail className="h-5 w-5 text-ink-4" />} />
+          <p className="-mt-4 text-xs text-ink-3">Email cannot be changed.</p>
           <InputField id="full_name" label="Full Name" name="full_name" defaultValue={initialProfile.full_name} />
-          <InputField id="phone" label="Phone Number" name="phone" type="tel" defaultValue={initialProfile.phone} prefix={<Phone className="h-5 w-5 text-slate-400" />} />
-          <button type="submit" disabled={isProfilePending} className="flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 disabled:opacity-70 transition-all">
+          <InputField id="phone" label="Phone Number" name="phone" type="tel" defaultValue={initialProfile.phone} prefix={<Phone className="h-5 w-5 text-ink-4" />} />
+          <button type="submit" disabled={isProfilePending} className="flex items-center justify-center rounded-xl bg-green px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-105 disabled:opacity-70 transition-all">
             {isProfilePending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Profile Changes
           </button>
@@ -235,7 +235,7 @@ function AccountTab({ initialProfile }: { initialProfile: { email: string; full_
           <StatusBanner status={passwordStatus} />
           <InputField id="password" label="New Password" name="password" type="password" />
           <InputField id="confirm_password" label="Confirm New Password" name="confirm_password" type="password" />
-          <button type="submit" disabled={isPasswordPending} className="flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-70 transition-all">
+          <button type="submit" disabled={isPasswordPending} className="flex items-center justify-center rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-tile-2 disabled:opacity-70 transition-all">
             {isPasswordPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Update Password
           </button>
@@ -287,10 +287,10 @@ function TeamTab({
 
   const roleBadge = (role: string) => {
     const cfg = role === 'admin'
-      ? 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400'
+      ? 'bg-red-soft text-red'
       : role === 'supervisor'
-      ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400'
-      : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
+      ? 'bg-blue-soft text-blue'
+      : 'bg-green-soft text-green'
     return <span className={`text-xs font-bold tracking-wider uppercase px-2 py-0.5 rounded-md ${cfg}`}>{role}</span>
   }
 
@@ -299,33 +299,33 @@ function TeamTab({
       <SectionCard title="Team Roles & Access Control" icon={ShieldCheck}
         description={userRole === 'admin' ? 'Manage user access levels. Changes take effect on next login.' : 'View current team access levels (Admins only can modify roles).'}>
         {allUsers.length === 0 ? (
-          <div className="text-center py-6 text-slate-400 text-sm">No registered team members found.</div>
+          <div className="text-center py-6 text-ink-4 text-sm">No registered team members found.</div>
         ) : (
           <div className="overflow-x-auto -mx-2">
-            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+            <table className="min-w-full divide-y divide-line">
               <thead>
                 <tr>
                   {['Name', 'Phone', 'Role', ...(userRole === 'admin' ? [''] : [])].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-ink-3 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+              <tbody className="divide-y divide-tile">
                 {allUsers.map((u) => {
                   const isSelf = u.full_name === initialProfile.full_name && u.phone === initialProfile.phone
                   return (
-                    <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
+                    <tr key={u.id} className="hover:bg-tile/50">
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-slate-900 dark:text-white">{u.full_name || 'Anonymous'}</span>
-                          {isSelf && <span className="rounded bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700 dark:bg-brand-950/20 dark:text-brand-400">You</span>}
+                          <span className="text-sm font-medium text-ink">{u.full_name || 'Anonymous'}</span>
+                          {isSelf && <span className="rounded bg-green-soft px-1.5 py-0.5 text-[10px] font-semibold text-green">You</span>}
                         </div>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{u.phone || '—'}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-ink-3">{u.phone || '—'}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         {userRole === 'admin' && !isSelf ? (
                           <select defaultValue={u.role} onChange={(e) => handleRoleChange(u.id, e.target.value as 'admin' | 'supervisor' | 'worker')} disabled={isRolePending[u.id]}
-                            className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50">
+                            className="rounded-lg border border-line bg-surface px-2 py-1 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-green disabled:opacity-50">
                             <option value="admin">Admin</option>
                             <option value="supervisor">Supervisor</option>
                             <option value="worker">Worker</option>
@@ -334,8 +334,8 @@ function TeamTab({
                       </td>
                       {userRole === 'admin' && (
                         <td className="px-4 py-3 whitespace-nowrap text-right text-xs">
-                          {roleUpdateStatus[u.id] && <span className={roleUpdateStatus[u.id].type === 'success' ? 'text-green-600 font-medium' : 'text-red-500'}>{roleUpdateStatus[u.id].message}</span>}
-                          {isRolePending[u.id] && <Loader2 className="inline h-4 w-4 animate-spin text-brand-600" />}
+                          {roleUpdateStatus[u.id] && <span className={roleUpdateStatus[u.id].type === 'success' ? 'text-green font-medium' : 'text-red'}>{roleUpdateStatus[u.id].message}</span>}
+                          {isRolePending[u.id] && <Loader2 className="inline h-4 w-4 animate-spin text-green" />}
                         </td>
                       )}
                     </tr>
@@ -355,16 +355,16 @@ function TeamTab({
           <InputField id="email_new" label="Email Address" name="email" type="email" placeholder="worker@farm.com" />
           <InputField id="password_new" label="Temporary Password" name="password" type="password" placeholder="Minimum 6 characters" />
           <div>
-            <label htmlFor="role_new" className="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">Assigned Role</label>
+            <label htmlFor="role_new" className="block text-sm font-medium leading-6 text-ink">Assigned Role</label>
             <div className="mt-2">
               {userRole === 'admin' ? (
-                <select id="role_new" name="role" className="block w-full rounded-xl border-0 py-2.5 px-3 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:text-white dark:ring-slate-700">
+                <select id="role_new" name="role" className="block w-full rounded-xl border-0 py-2.5 px-3 text-ink shadow-sm ring-1 ring-inset ring-line focus:ring-2 focus:ring-inset focus:ring-green sm:text-sm sm:leading-6">
                   <option value="worker">Worker (Field activity log only)</option>
                   <option value="supervisor">Supervisor (Add calendar events, edit map)</option>
                 </select>
               ) : (
                 <>
-                  <select id="role_new" disabled value="worker" className="block w-full rounded-xl border-0 py-2.5 px-3 text-slate-500 bg-slate-50 ring-1 ring-inset ring-slate-200 sm:text-sm dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700 cursor-not-allowed">
+                  <select id="role_new" disabled value="worker" className="block w-full rounded-xl border-0 py-2.5 px-3 text-ink-3 bg-tile ring-1 ring-inset ring-line sm:text-sm cursor-not-allowed">
                     <option value="worker">Worker (Field activity log only)</option>
                   </select>
                   <input type="hidden" name="role" value="worker" />
@@ -372,7 +372,7 @@ function TeamTab({
               )}
             </div>
           </div>
-          <button type="submit" disabled={isTeamPending} className="flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 disabled:opacity-70 transition-all">
+          <button type="submit" disabled={isTeamPending} className="flex items-center justify-center rounded-xl bg-green px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-105 disabled:opacity-70 transition-all">
             {isTeamPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Create Team Member
           </button>
@@ -407,22 +407,22 @@ function BlockRow({ block }: { block: Block }) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+    <div className="rounded-xl border border-line p-5 space-y-4 hover:border-line transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-semibold text-slate-900 dark:text-white">{block.name}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="font-semibold text-ink">{block.name}</p>
+          <p className="text-xs text-ink-3 mt-0.5">
             {block.crop_type} · {block.variety} · {block.area} {block.area_unit}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {status && (
-            <span className={`text-xs font-medium ${status.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            <span className={`text-xs font-medium ${status.type === 'success' ? 'text-green' : 'text-red'}`}>
               {status.type === 'success' ? <span className="flex items-center gap-1"><Check className="h-3 w-3" />{status.message}</span> : status.message}
             </span>
           )}
           <button onClick={handleSave} disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-60 transition-colors">
+            className="flex items-center gap-1.5 rounded-lg bg-green px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 disabled:opacity-60 transition-colors">
             {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
             Save
           </button>
@@ -431,49 +431,49 @@ function BlockRow({ block }: { block: Block }) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
             Field Capacity (%)
           </label>
           <div className="relative">
             <input type="number" min="0" max="100" step="0.1" value={fieldCapacity}
               onChange={e => setFieldCapacity(e.target.value)} placeholder="e.g. 35"
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition placeholder:text-slate-400" />
+              className="w-full px-3 py-2 rounded-lg border border-line bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-green transition placeholder:text-ink-4" />
             {fieldCapacity && (
               <div className="mt-1.5">
-                <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                  <div className="h-full bg-blue-400 dark:bg-blue-500 rounded-full transition-all" style={{ width: `${Math.min(parseFloat(fieldCapacity), 100)}%` }} />
+                <div className="h-1.5 rounded-full bg-tile overflow-hidden">
+                  <div className="h-full bg-blue rounded-full transition-all" style={{ width: `${Math.min(parseFloat(fieldCapacity), 100)}%` }} />
                 </div>
               </div>
             )}
           </div>
-          <p className="mt-1 text-[11px] text-slate-400">Soil moisture at saturation — irrigation ceiling</p>
+          <p className="mt-1 text-[11px] text-ink-4">Soil moisture at saturation — irrigation ceiling</p>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
             Wilting Point (%)
           </label>
           <div className="relative">
             <input type="number" min="0" max="100" step="0.1" value={wiltingPoint}
               onChange={e => setWiltingPoint(e.target.value)} placeholder="e.g. 15"
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition placeholder:text-slate-400" />
+              className="w-full px-3 py-2 rounded-lg border border-line bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-green transition placeholder:text-ink-4" />
             {wiltingPoint && (
               <div className="mt-1.5">
-                <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                  <div className="h-full bg-amber-400 dark:bg-amber-500 rounded-full transition-all" style={{ width: `${Math.min(parseFloat(wiltingPoint), 100)}%` }} />
+                <div className="h-1.5 rounded-full bg-tile overflow-hidden">
+                  <div className="h-full bg-amber rounded-full transition-all" style={{ width: `${Math.min(parseFloat(wiltingPoint), 100)}%` }} />
                 </div>
               </div>
             )}
           </div>
-          <p className="mt-1 text-[11px] text-slate-400">Minimum moisture before stress — irrigation floor</p>
+          <p className="mt-1 text-[11px] text-ink-4">Minimum moisture before stress — irrigation floor</p>
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+        <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
           Notes
         </label>
         <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Soil type, irrigation method, special notes…"
-          className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder:text-slate-400 resize-none transition" />
+          className="w-full px-3 py-2 rounded-lg border border-line bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-green placeholder:text-ink-4 resize-none transition" />
       </div>
     </div>
   )
@@ -483,8 +483,8 @@ function BlockConfigTab({ blocks }: { blocks: Block[] }) {
   if (blocks.length === 0) {
     return (
       <SectionCard title="Block Configuration" icon={Layers} description="Set water thresholds and notes for each block. These values are used by the AI recommendation engine.">
-        <div className="text-center py-8 text-slate-400 text-sm">
-          No blocks found. Create blocks on the <a href="/blocks" className="text-brand-600 dark:text-brand-400 underline underline-offset-2">Blocks page</a> first.
+        <div className="text-center py-8 text-ink-4 text-sm">
+          No blocks found. Create blocks on the <a href="/blocks" className="text-green underline underline-offset-2">Blocks page</a> first.
         </div>
       </SectionCard>
     )
@@ -509,22 +509,22 @@ function ThresholdSlider({ id, label, description, icon: Icon, value, onChange, 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label htmlFor={id} className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
+        <label htmlFor={id} className="flex items-center gap-2 text-sm font-medium text-ink">
           <Icon className={`h-4 w-4 ${colorClass}`} />
           {label}
         </label>
         <div className="flex items-center gap-1">
           <input type="number" value={value} min={min} max={max} step={step}
             onChange={e => onChange(parseFloat(e.target.value) || min)}
-            className="w-16 text-right px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500" />
-          <span className="text-xs text-slate-500 dark:text-slate-400 w-8">{unit}</span>
+            className="w-16 text-right px-2 py-1 rounded-lg border border-line bg-surface text-sm text-ink focus:outline-none focus:ring-1 focus:ring-green" />
+          <span className="text-xs text-ink-3 w-8">{unit}</span>
         </div>
       </div>
       <input id={id} type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(parseFloat(e.target.value))}
-        style={{ background: `linear-gradient(to right, var(--color-brand-500) ${pct}%, #e2e8f0 ${pct}%)` }}
-        className="w-full h-1.5 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-brand-600 [&::-webkit-slider-thumb]:shadow-sm" />
-      <p className="text-xs text-slate-400 dark:text-slate-500">{description}</p>
+        style={{ background: `linear-gradient(to right, var(--color-green) ${pct}%, #e2e8f0 ${pct}%)` }}
+        className="w-full h-1.5 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-green [&::-webkit-slider-thumb]:shadow-sm" />
+      <p className="text-xs text-ink-4">{description}</p>
     </div>
   )
 }
@@ -590,26 +590,26 @@ function PushNotificationToggle({ farmId }: { farmId: string }) {
 
   if (status === 'unsupported') {
     return (
-      <div className="flex items-start gap-3 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-        <Bell className="h-5 w-5 text-slate-400 mt-0.5 shrink-0" />
+      <div className="flex items-start gap-3 rounded-xl border border-line p-4">
+        <Bell className="h-5 w-5 text-ink-4 mt-0.5 shrink-0" />
         <div>
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Push Notifications</p>
-          <p className="text-xs text-slate-400 mt-1">Not supported in this browser. Use Chrome or Safari on iOS 16.4+.</p>
+          <p className="text-sm font-medium text-ink-2">Push Notifications</p>
+          <p className="text-xs text-ink-4 mt-1">Not supported in this browser. Use Chrome or Safari on iOS 16.4+.</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-3">
+    <div className="rounded-xl border border-line p-5 space-y-3">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className={`rounded-lg p-2 ${isOn ? 'bg-brand-50 dark:bg-brand-900/30' : 'bg-slate-100 dark:bg-slate-800'}`}>
-            <Bell className={`h-5 w-5 ${isOn ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400'}`} />
+          <div className={`rounded-lg p-2 ${isOn ? 'bg-green-soft' : 'bg-tile'}`}>
+            <Bell className={`h-5 w-5 ${isOn ? 'text-green' : 'text-ink-4'}`} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">Push Notifications</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-sm font-semibold text-ink">Push Notifications</p>
+            <p className="text-xs text-ink-3 mt-0.5">
               {status === 'denied'
                 ? 'Permission blocked in browser settings'
                 : isOn
@@ -624,24 +624,24 @@ function PushNotificationToggle({ farmId }: { farmId: string }) {
           onClick={handleToggle}
           disabled={loading || status === 'denied' || status === 'unknown'}
           aria-pressed={isOn}
-          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 ${
-            isOn ? 'bg-brand-600' : 'bg-slate-200 dark:bg-slate-700'
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green focus:ring-offset-2 disabled:opacity-50 ${
+            isOn ? 'bg-green' : 'bg-line'
           }`}
         >
-          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isOn ? 'translate-x-6' : 'translate-x-1'}`} />
+          <span className={`inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform ${isOn ? 'translate-x-6' : 'translate-x-1'}`} />
         </button>
       </div>
       {status === 'denied' && (
-        <p className="text-xs text-amber-600 dark:text-amber-400">
+        <p className="text-xs text-amber">
           Click the lock/info icon in your browser address bar, allow Notifications, then refresh.
         </p>
       )}
       {message && (
-        <p className={`text-xs ${message.startsWith('Push notifications enabled') || message.startsWith('Push notifications disabled') ? 'text-brand-600 dark:text-brand-400' : 'text-red-600 dark:text-red-400'}`}>
+        <p className={`text-xs ${message.startsWith('Push notifications enabled') || message.startsWith('Push notifications disabled') ? 'text-green' : 'text-red'}`}>
           {message}
         </p>
       )}
-      <p className="text-xs text-slate-400 dark:text-slate-500">
+      <p className="text-xs text-ink-4">
         Receive alerts for high-priority block issues and new AI recommendations when you&apos;re away from the app.
       </p>
     </div>
@@ -674,29 +674,29 @@ function NotificationAlertsTab({ farmId }: { farmId: string }) {
       <div className="space-y-8 max-w-xl">
         <PushNotificationToggle farmId={farmId} />
         <ThresholdSlider id="soil-moisture-low" label="Soil Moisture — Low Alert" description="Alert fires when a block's soil moisture reading falls below this level."
-          icon={Droplets} colorClass="text-blue-500" value={prefs.soilMoistureLow} onChange={v => update('soilMoistureLow', v)} min={5} max={50} step={1} unit="%" />
+          icon={Droplets} colorClass="text-blue" value={prefs.soilMoistureLow} onChange={v => update('soilMoistureLow', v)} min={5} max={50} step={1} unit="%" />
         <ThresholdSlider id="water-deficit-high" label="Water Deficit — Critical" description="Alert fires when estimated water deficit exceeds this amount."
-          icon={Droplets} colorClass="text-amber-500" value={prefs.waterDeficitHigh} onChange={v => update('waterDeficitHigh', v)} min={10} max={100} step={5} unit="mm" />
+          icon={Droplets} colorClass="text-amber" value={prefs.waterDeficitHigh} onChange={v => update('waterDeficitHigh', v)} min={10} max={100} step={5} unit="mm" />
         <ThresholdSlider id="temp-heat-stress" label="Heat Stress Temperature" description="Alert fires when the forecast high exceeds this temperature."
-          icon={Thermometer} colorClass="text-red-500" value={prefs.tempHeatStress} onChange={v => update('tempHeatStress', v)} min={28} max={48} step={1} unit="°C" />
+          icon={Thermometer} colorClass="text-red" value={prefs.tempHeatStress} onChange={v => update('tempHeatStress', v)} min={28} max={48} step={1} unit="°C" />
         <ThresholdSlider id="rain-skip" label="Rainfall — Skip Irrigation" description="If forecast or recorded rainfall exceeds this, the AI will recommend skipping irrigation."
-          icon={Wind} colorClass="text-teal-500" value={prefs.rainSkipIrrigation} onChange={v => update('rainSkipIrrigation', v)} min={2} max={30} step={1} unit="mm" />
+          icon={Wind} colorClass="text-teal" value={prefs.rainSkipIrrigation} onChange={v => update('rainSkipIrrigation', v)} min={2} max={30} step={1} unit="mm" />
         <ThresholdSlider id="pest-risk" label="Pest Risk — High Alert" description="Alert fires when AI pest risk score exceeds this confidence threshold."
-          icon={AlertTriangle} colorClass="text-orange-500" value={prefs.pestRiskHigh} onChange={v => update('pestRiskHigh', v)} min={40} max={95} step={5} unit="%" />
+          icon={AlertTriangle} colorClass="text-gold" value={prefs.pestRiskHigh} onChange={v => update('pestRiskHigh', v)} min={40} max={95} step={5} unit="%" />
 
         <div className="flex items-center gap-3 pt-2">
-          <button onClick={handleSave} className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-all">
+          <button onClick={handleSave} className="flex items-center gap-2 rounded-xl bg-green px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-105 transition-all">
             {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
             {saved ? 'Saved!' : 'Save Thresholds'}
           </button>
-          <button onClick={handleReset} className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+          <button onClick={handleReset} className="flex items-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-medium text-ink-2 hover:bg-tile transition-colors">
             <RefreshCw className="h-4 w-4" />
             Reset to Defaults
           </button>
         </div>
-        <div className="flex items-start gap-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 p-3">
-          <Info className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+        <div className="flex items-start gap-2 rounded-lg bg-tile p-3">
+          <Info className="h-4 w-4 text-ink-4 mt-0.5 shrink-0" />
+          <p className="text-xs text-ink-3">
             Alert thresholds are currently stored in your browser. They will persist across page reloads but not across different devices or browsers.
           </p>
         </div>
@@ -716,8 +716,8 @@ function CopyButton({ text }: { text: string }) {
     })
   }
   return (
-    <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-      {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+    <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-tile transition-colors text-ink-4 hover:text-ink-2">
+      {copied ? <Check className="h-3.5 w-3.5 text-green" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
   )
 }
@@ -734,14 +734,14 @@ const SENSOR_TYPE_OPTIONS: { value: SensorType; label: string }[] = [
 
 function StatusDot({ status }: { status: 'online' | 'offline' | 'unknown' }) {
   const cfg = {
-    online:  { cls: 'bg-green-500', label: 'Online'  },
-    offline: { cls: 'bg-amber-400', label: 'Offline' },
-    unknown: { cls: 'bg-slate-400', label: 'Unknown' },
+    online:  { cls: 'bg-green', label: 'Online'  },
+    offline: { cls: 'bg-amber', label: 'Offline' },
+    unknown: { cls: 'bg-ink-4', label: 'Unknown' },
   }[status]
   return (
     <span className="flex items-center gap-1.5">
       <span className={`inline-block h-2 w-2 rounded-full ${cfg.cls}`} />
-      <span className="text-xs text-slate-500 dark:text-slate-400">{cfg.label}</span>
+      <span className="text-xs text-ink-3">{cfg.label}</span>
     </span>
   )
 }
@@ -900,7 +900,7 @@ function SensorConnectionsTab({
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+              <label className="block text-xs font-semibold text-ink-2 mb-1.5 uppercase tracking-wider">
                 API ID
               </label>
               <input
@@ -908,11 +908,11 @@ function SensorConnectionsTab({
                 value={sensecapApiId}
                 onChange={e => setSensecapApiId(e.target.value)}
                 placeholder="e.g. 7D4A..."
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+              <label className="block text-xs font-semibold text-ink-2 mb-1.5 uppercase tracking-wider">
                 Access Key
               </label>
               <div className="relative">
@@ -921,12 +921,12 @@ function SensorConnectionsTab({
                   value={sensecapAccessKey}
                   onChange={e => setSensecapAccessKey(e.target.value)}
                   placeholder="Access Key"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 pr-10 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 pr-10 text-sm text-ink placeholder:text-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
                 />
                 <button
                   type="button"
                   onClick={() => setShowAccessKey(v => !v)}
-                  className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-ink-4 hover:text-ink-2"
                   tabIndex={-1}
                 >
                   {showAccessKey ? <WifiOff className="h-4 w-4" /> : <Wifi className="h-4 w-4" />}
@@ -941,7 +941,7 @@ function SensorConnectionsTab({
             <button
               onClick={handleSaveSensecap}
               disabled={sensecapSaving || !sensecapApiId.trim() || !sensecapAccessKey.trim()}
-              className="flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1.5 rounded-xl bg-green px-4 py-2 text-sm font-semibold text-white hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {sensecapSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save Credentials
@@ -949,14 +949,14 @@ function SensorConnectionsTab({
             <button
               onClick={handleTestSensecap}
               disabled={sensecapTesting || !sensecapApiId.trim() || !sensecapAccessKey.trim()}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1.5 rounded-xl border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink-2 hover:bg-tile disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {sensecapTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               Test Connection
             </button>
           </div>
 
-          <p className="text-xs text-slate-400 dark:text-slate-500">
+          <p className="text-xs text-ink-4">
             Find your API credentials in the SenseCAP portal under Account → Access API. The Device EUI for each sensor is entered per-sensor below.
           </p>
         </div>
@@ -964,21 +964,21 @@ function SensorConnectionsTab({
 
       {/* One-time API key banner */}
       {newApiKey && (
-        <div className="rounded-xl border border-brand-300 bg-brand-50 dark:bg-brand-900/20 dark:border-brand-700 p-4">
+        <div className="rounded-xl border border-green bg-green-soft p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-brand-800 dark:text-brand-200 mb-1">
+              <p className="text-sm font-semibold text-green mb-1">
                 Copy this API key — it won&apos;t be shown in full again
               </p>
-              <div className="flex items-center gap-2 rounded-lg bg-white dark:bg-slate-900 border border-brand-200 dark:border-brand-800 px-3 py-2">
-                <code className="text-xs font-mono text-slate-700 dark:text-slate-200 break-all flex-1">{newApiKey}</code>
+              <div className="flex items-center gap-2 rounded-lg bg-surface border border-green px-3 py-2">
+                <code className="text-xs font-mono text-ink-2 break-all flex-1">{newApiKey}</code>
                 <CopyButton text={newApiKey} />
               </div>
-              <p className="text-xs text-brand-600 dark:text-brand-400 mt-1.5">
+              <p className="text-xs text-green mt-1.5">
                 Flash this key into your sensor firmware as the <code className="font-mono">X-Sensor-Key</code> header value.
               </p>
             </div>
-            <button onClick={() => setNewApiKey(null)} className="text-brand-400 hover:text-brand-600 dark:hover:text-brand-300 mt-0.5">
+            <button onClick={() => setNewApiKey(null)} className="text-green hover:text-green mt-0.5">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -990,56 +990,56 @@ function SensorConnectionsTab({
         description="Register each physical sensor device and assign it to a block. A block can have multiple sensors.">
         <div className="flex justify-end mb-4">
           <button onClick={openAdd}
-            className="flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors">
+            className="flex items-center gap-1.5 rounded-xl bg-green px-4 py-2 text-sm font-semibold text-white hover:brightness-105 transition-colors">
             <Plus className="h-4 w-4" />
             Add Sensor
           </button>
         </div>
 
         {actionError && (
-          <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 p-3 text-sm text-red-700 dark:text-red-300">
+          <div className="mb-4 rounded-lg bg-red-soft border border-red/25 p-3 text-sm text-red">
             {actionError}
           </div>
         )}
 
         {sensors.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Cpu className="h-10 w-10 text-slate-300 dark:text-slate-600 mb-3" />
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">No sensors registered yet</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Add a sensor above to get started</p>
+            <Cpu className="h-10 w-10 text-line mb-3" />
+            <p className="text-sm font-medium text-ink-3">No sensors registered yet</p>
+            <p className="text-xs text-ink-4 mt-1">Add a sensor above to get started</p>
           </div>
         ) : (
           <div className="overflow-x-auto -mx-2">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-left">
+                <tr className="border-b border-line text-left">
                   {['Name', 'Type', 'Block', 'Status', 'Last Seen', 'API Key', ''].map(h => (
-                    <th key={h} className="pb-3 px-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                    <th key={h} className="pb-3 px-2 text-xs font-semibold text-ink-3 uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-tile">
                 {sensors.map(s => (
                   <tr key={s.id} className="group">
                     <td className="py-3 px-2">
-                      <p className="font-medium text-slate-900 dark:text-white">{s.name}</p>
-                      <p className="text-xs text-slate-400 font-mono">{s.device_id}</p>
+                      <p className="font-medium text-ink">{s.name}</p>
+                      <p className="text-xs text-ink-4 font-mono">{s.device_id}</p>
                     </td>
-                    <td className="py-3 px-2 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                    <td className="py-3 px-2 text-ink-2 whitespace-nowrap">
                       {SENSOR_TYPE_LABELS[s.sensor_type] ?? s.sensor_type}
                     </td>
-                    <td className="py-3 px-2 text-slate-600 dark:text-slate-300">
-                      {s.block_name ?? <span className="text-slate-400 italic">Unassigned</span>}
+                    <td className="py-3 px-2 text-ink-2">
+                      {s.block_name ?? <span className="text-ink-4 italic">Unassigned</span>}
                     </td>
                     <td className="py-3 px-2">
                       <StatusDot status={s.status} />
                     </td>
-                    <td className="py-3 px-2 text-slate-500 dark:text-slate-400 whitespace-nowrap text-xs">
+                    <td className="py-3 px-2 text-ink-3 whitespace-nowrap text-xs">
                       {formatLastSeen(s.last_seen_at)}
                     </td>
                     <td className="py-3 px-2">
                       <div className="flex items-center gap-1">
-                        <code className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                        <code className="text-xs font-mono text-ink-3">
                           ···{s.api_key.slice(-8)}
                         </code>
                         <CopyButton text={s.api_key} />
@@ -1047,7 +1047,7 @@ function SensorConnectionsTab({
                           onClick={() => handleRegenerateKey(s.id)}
                           disabled={regeneratingId === s.id}
                           title="Regenerate key"
-                          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 disabled:opacity-50">
+                          className="p-1.5 rounded-lg hover:bg-tile transition-colors text-ink-4 hover:text-ink-2 disabled:opacity-50">
                           <RotateCcw className={`h-3.5 w-3.5 ${regeneratingId === s.id ? 'animate-spin' : ''}`} />
                         </button>
                       </div>
@@ -1055,19 +1055,19 @@ function SensorConnectionsTab({
                     <td className="py-3 px-2">
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => openEdit(s)}
-                          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                          className="p-1.5 rounded-lg hover:bg-tile text-ink-4 hover:text-ink-2 transition-colors">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                         {deleteConfirm === s.id ? (
                           <span className="flex items-center gap-1 text-xs">
                             <button onClick={() => handleDelete(s.id)}
-                              className="px-2 py-0.5 rounded bg-red-600 text-white text-xs hover:bg-red-700">Confirm</button>
+                              className="px-2 py-0.5 rounded bg-red text-white text-xs hover:brightness-105">Confirm</button>
                             <button onClick={() => setDeleteConfirm(null)}
-                              className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs">Cancel</button>
+                              className="px-2 py-0.5 rounded bg-line text-ink-2 text-xs">Cancel</button>
                           </span>
                         ) : (
                           <button onClick={() => setDeleteConfirm(s.id)}
-                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors">
+                            className="p-1.5 rounded-lg hover:bg-red-soft text-ink-4 hover:text-red transition-colors">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         )}
@@ -1084,64 +1084,64 @@ function SensorConnectionsTab({
       {/* Add / Edit modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 shadow-xl ring-1 ring-slate-200 dark:ring-slate-700 p-6">
+          <div className="w-full max-w-md rounded-2xl bg-surface shadow-xl ring-1 ring-line p-6">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+              <h3 className="text-base font-semibold text-ink">
                 {editTarget ? 'Edit Sensor' : 'Add Sensor'}
               </h3>
-              <button onClick={() => setModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+              <button onClick={() => setModalOpen(false)} className="text-ink-4 hover:text-ink-2">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name</label>
+                <label className="block text-sm font-medium text-ink-2 mb-1">Name</label>
                 <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="e.g. Block A — North Probe"
-                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-slate-900 shadow-sm ring-1 ring-slate-300 dark:ring-slate-700 dark:bg-slate-800 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-600" />
+                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-ink shadow-sm ring-1 ring-line placeholder:text-ink-4 focus:ring-2 focus:ring-green" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Device ID</label>
+                <label className="block text-sm font-medium text-ink-2 mb-1">Device ID</label>
                 <input value={form.device_id} onChange={e => setForm(f => ({ ...f, device_id: e.target.value }))}
                   placeholder="MAC address or serial number"
-                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-slate-900 shadow-sm ring-1 ring-slate-300 dark:ring-slate-700 dark:bg-slate-800 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-600" />
+                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-ink shadow-sm ring-1 ring-line placeholder:text-ink-4 focus:ring-2 focus:ring-green" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sensor Type</label>
+                <label className="block text-sm font-medium text-ink-2 mb-1">Sensor Type</label>
                 <select value={form.sensor_type} onChange={e => setForm(f => ({ ...f, sensor_type: e.target.value as SensorType }))}
-                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-slate-900 shadow-sm ring-1 ring-slate-300 dark:ring-slate-700 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-brand-600">
+                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-ink shadow-sm ring-1 ring-line focus:ring-2 focus:ring-green">
                   {SENSOR_TYPE_OPTIONS.map(o => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Block Assignment</label>
+                <label className="block text-sm font-medium text-ink-2 mb-1">Block Assignment</label>
                 <select value={form.block_id ?? ''} onChange={e => setForm(f => ({ ...f, block_id: e.target.value || null }))}
-                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-slate-900 shadow-sm ring-1 ring-slate-300 dark:ring-slate-700 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-brand-600">
+                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-ink shadow-sm ring-1 ring-line focus:ring-2 focus:ring-green">
                   <option value="">Unassigned</option>
                   {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Location Notes <span className="text-slate-400 font-normal">(optional)</span></label>
+                <label className="block text-sm font-medium text-ink-2 mb-1">Location Notes <span className="text-ink-4 font-normal">(optional)</span></label>
                 <textarea value={form.location_notes ?? ''} onChange={e => setForm(f => ({ ...f, location_notes: e.target.value || null }))}
                   rows={2} placeholder="e.g. North corner, 30 cm depth"
-                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-slate-900 shadow-sm ring-1 ring-slate-300 dark:ring-slate-700 dark:bg-slate-800 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-600 resize-none" />
+                  className="block w-full rounded-xl border-0 px-3 py-2.5 text-sm text-ink shadow-sm ring-1 ring-line placeholder:text-ink-4 focus:ring-2 focus:ring-green resize-none" />
               </div>
 
               {actionError && (
-                <p className="text-sm text-red-600 dark:text-red-400">{actionError}</p>
+                <p className="text-sm text-red">{actionError}</p>
               )}
 
               <div className="flex gap-3 pt-1">
                 <button onClick={() => setModalOpen(false)}
-                  className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                  className="flex-1 rounded-xl border border-line py-2.5 text-sm font-semibold text-ink-2 hover:bg-tile transition-colors">
                   Cancel
                 </button>
                 <button onClick={handleSave} disabled={saving || !form.name.trim() || !form.device_id.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-600 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50">
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-green py-2.5 text-sm font-semibold text-white hover:brightness-105 transition-colors disabled:opacity-50">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   {editTarget ? 'Save Changes' : 'Register Sensor'}
                 </button>
@@ -1154,25 +1154,25 @@ function SensorConnectionsTab({
       {/* Ingest reference */}
       <SectionCard title="Ingest Endpoints" icon={Wifi}
         description="When sensors arrive, flash the API key from above and configure the firmware to POST to these endpoints.">
-        <div className="mb-3 rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-700/50 p-3 flex items-start gap-2">
-          <Info className="h-4 w-4 text-brand-600 dark:text-brand-400 mt-0.5 shrink-0" />
-          <p className="text-xs text-brand-700 dark:text-brand-300">
+        <div className="mb-3 rounded-lg bg-green-soft border border-green p-3 flex items-start gap-2">
+          <Info className="h-4 w-4 text-green mt-0.5 shrink-0" />
+          <p className="text-xs text-green">
             All requests must include the header <code className="font-mono font-semibold">X-Sensor-Key: &lt;api-key&gt;</code>. The block is determined automatically from the sensor&apos;s assignment.
           </p>
         </div>
         <div className="space-y-3">
           {INGEST_ENDPOINTS.map(ep => (
-            <div key={ep.path} className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800">
+            <div key={ep.path} className="rounded-xl border border-line overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 bg-tile border-b border-line">
                 <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">POST</span>
-                  <code className="text-sm font-mono text-slate-700 dark:text-slate-300">{webhookBase}{ep.path}</code>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-soft text-green">POST</span>
+                  <code className="text-sm font-mono text-ink-2">{webhookBase}{ep.path}</code>
                 </div>
                 <CopyButton text={`${webhookBase}${ep.path}`} />
               </div>
               <div className="px-4 py-3">
-                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">{ep.label} — Example Payload</p>
-                <code className="text-xs text-slate-600 dark:text-slate-300 font-mono">{ep.payload}</code>
+                <p className="text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">{ep.label} — Example Payload</p>
+                <code className="text-xs text-ink-2 font-mono">{ep.payload}</code>
               </div>
             </div>
           ))}
@@ -1248,19 +1248,19 @@ function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initia
         <div className="space-y-4 max-w-lg">
           <StatusBanner status={farmStatus} />
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-              Farm name <span className="text-red-500">*</span>
+            <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
+              Farm name <span className="text-red">*</span>
             </label>
             <input
               type="text"
               value={farmName}
               onChange={e => setFarmName(e.target.value)}
               placeholder="e.g. Sunrise Almonds"
-              className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+              className="w-full px-3 py-2.5 rounded-lg border border-line bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-green transition"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
               Address / location
             </label>
             <input
@@ -1268,13 +1268,13 @@ function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initia
               value={farmAddress}
               onChange={e => setFarmAddressState(e.target.value)}
               placeholder="e.g. Jericho, West Bank"
-              className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+              className="w-full px-3 py-2.5 rounded-lg border border-line bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-green transition"
             />
           </div>
           <button
             onClick={handleFarmSave}
             disabled={farmSaving || !farmName.trim()}
-            className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 rounded-xl bg-green px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {farmSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save Farm Profile
@@ -1284,49 +1284,49 @@ function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initia
       <SectionCard title="Open-Meteo Weather" icon={Cloud}
         description="Open-Meteo is a free, open-source weather API used for the dashboard weather strip and 7-day forecast. No API key required.">
         <div className="space-y-6 max-w-lg">
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50">
-            <Wifi className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-green-soft border border-green/25">
+            <Wifi className="h-5 w-5 text-green shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-green-800 dark:text-green-300">Open-Meteo — Connected</p>
-              <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">Free tier · No API key · Updates every hour</p>
+              <p className="text-sm font-semibold text-green">Open-Meteo — Connected</p>
+              <p className="text-xs text-green mt-0.5">Free tier · No API key · Updates every hour</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="lat" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Latitude</label>
+              <label htmlFor="lat" className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">Latitude</label>
               <input id="lat" type="number" step="0.0001" value={coords.lat} onChange={e => { const v = e.target.value; const d = v.indexOf('.'); setCoords(c => ({ ...c, lat: d === -1 ? v : v.slice(0, d + 5) })); }}
                 placeholder="e.g. 31.7683"
-                className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition" />
+                className="w-full px-3 py-2.5 rounded-lg border border-line bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-green transition" />
             </div>
             <div>
-              <label htmlFor="lng" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Longitude</label>
+              <label htmlFor="lng" className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">Longitude</label>
               <input id="lng" type="number" step="0.0001" value={coords.lng} onChange={e => { const v = e.target.value; const d = v.indexOf('.'); setCoords(c => ({ ...c, lng: d === -1 ? v : v.slice(0, d + 5) })); }}
                 placeholder="e.g. 35.2137"
-                className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition" />
+                className="w-full px-3 py-2.5 rounded-lg border border-line bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-green transition" />
             </div>
           </div>
-          <p className="text-xs text-slate-400 dark:text-slate-500 -mt-2">Enter your farm&apos;s GPS coordinates. Saved to the database — used by the Dashboard weather strip and all team members.</p>
+          <p className="text-xs text-ink-4 -mt-2">Enter your farm&apos;s GPS coordinates. Saved to the database — used by the Dashboard weather strip and all team members.</p>
 
           <StatusBanner status={gpsStatus} />
 
           <div className="flex items-center gap-3">
-            <button onClick={handleSave} disabled={gpsSaving} className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onClick={handleSave} disabled={gpsSaving} className="flex items-center gap-2 rounded-xl bg-green px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
               {gpsSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save Coordinates
             </button>
-            <button onClick={handleTest} disabled={testing || !coords.lat || !coords.lng} className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-60">
+            <button onClick={handleTest} disabled={testing || !coords.lat || !coords.lng} className="flex items-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-medium text-ink-2 hover:bg-tile transition-colors disabled:opacity-60">
               {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               Test Connection
             </button>
           </div>
           {testResult === 'ok' && (
-            <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+            <div className="flex items-center gap-2 text-sm text-green">
               <Check className="h-4 w-4" /> Connection successful — Open-Meteo is reachable for these coordinates.
             </div>
           )}
           {testResult === 'error' && (
-            <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+            <div className="flex items-center gap-2 text-sm text-red">
               <WifiOff className="h-4 w-4" /> Connection failed — check the coordinates and your internet connection.
             </div>
           )}
@@ -1337,27 +1337,27 @@ function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initia
         description="AI recommendations are generated via OpenRouter. Set your API key in environment variables to enable the Generate AI Insights button.">
         <div className="space-y-4 max-w-lg">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Model</label>
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-              <Cpu className="h-4 w-4 text-brand-500 shrink-0" />
-              <span className="text-sm text-slate-700 dark:text-slate-300 font-mono">google/gemini-2.5-flash</span>
-              <span className="ml-auto text-xs text-slate-400">via OpenRouter</span>
+            <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">Model</label>
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-line bg-tile">
+              <Cpu className="h-4 w-4 text-green shrink-0" />
+              <span className="text-sm text-ink-2 font-mono">google/gemini-2.5-flash</span>
+              <span className="ml-auto text-xs text-ink-4">via OpenRouter</span>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">API Key</label>
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+            <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">API Key</label>
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-line bg-tile">
               {process.env.NEXT_PUBLIC_OPENROUTER_CONFIGURED === 'true' ? (
-                <><Wifi className="h-4 w-4 text-green-500 shrink-0" /><span className="text-xs text-green-700 dark:text-green-400 font-medium">OPENROUTER_API_KEY configured</span></>
+                <><Wifi className="h-4 w-4 text-green shrink-0" /><span className="text-xs text-green font-medium">OPENROUTER_API_KEY configured</span></>
               ) : (
-                <><WifiOff className="h-4 w-4 text-slate-400 shrink-0" /><span className="text-xs text-slate-500">Set <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">OPENROUTER_API_KEY</code> in .env.local or your deployment environment</span></>
+                <><WifiOff className="h-4 w-4 text-ink-4 shrink-0" /><span className="text-xs text-ink-3">Set <code className="bg-tile px-1 rounded">OPENROUTER_API_KEY</code> in .env.local or your deployment environment</span></>
               )}
             </div>
           </div>
-          <div className="flex items-start gap-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 p-3">
-            <Info className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Get a free API key at <span className="font-medium text-slate-600 dark:text-slate-300">openrouter.ai</span>. The key is read server-side only and never exposed to the browser.
+          <div className="flex items-start gap-2 rounded-lg bg-tile p-3">
+            <Info className="h-4 w-4 text-ink-4 mt-0.5 shrink-0" />
+            <p className="text-xs text-ink-3">
+              Get a free API key at <span className="font-medium text-ink-2">openrouter.ai</span>. The key is read server-side only and never exposed to the browser.
             </p>
           </div>
         </div>
@@ -1389,9 +1389,9 @@ function LanguageTab() {
   return (
     <SectionCard title={t('title')} description={t('description')} icon={Globe}>
       <div className="space-y-4 max-w-xs">
-        <div className="flex items-start gap-2 rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800/50 p-3">
-          <Globe className="h-4 w-4 text-brand-600 dark:text-brand-400 mt-0.5 shrink-0" />
-          <p className="text-xs text-brand-700 dark:text-brand-300">{t('topNavHint')}</p>
+        <div className="flex items-start gap-2 rounded-lg bg-green-soft border border-green p-3">
+          <Globe className="h-4 w-4 text-green mt-0.5 shrink-0" />
+          <p className="text-xs text-green">{t('topNavHint')}</p>
         </div>
         <div className="grid grid-cols-1 gap-2">
           {LOCALE_OPTIONS.map(opt => (
@@ -1402,8 +1402,8 @@ function LanguageTab() {
               disabled={isPending}
               className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-sm text-start transition-all disabled:opacity-60 ${
                 currentLocale === opt.value
-                  ? 'border-brand-500 bg-brand-50 text-brand-700 dark:border-brand-400 dark:bg-brand-900/20 dark:text-brand-300 font-medium'
-                  : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
+                  ? 'border-green bg-green-soft text-green font-medium'
+                  : 'border-line text-ink-2 hover:border-line'
               }`}
             >
               <span className="text-xl leading-none">{opt.flag}</span>
@@ -1449,7 +1449,7 @@ export default function SettingsForms({
   return (
     <div className="space-y-6">
       {/* Tab bar */}
-      <div className="flex overflow-x-auto border-b border-slate-200 dark:border-slate-800 pb-px gap-1 scrollbar-hide">
+      <div className="flex overflow-x-auto border-b border-line pb-px gap-1 scrollbar-hide">
         {tabs.map(tab => {
           const Icon = tab.icon
           const isActive = activeTab === tab.id
@@ -1457,8 +1457,8 @@ export default function SettingsForms({
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold tracking-tight whitespace-nowrap border-b-2 transition-all -mb-px ${
                 isActive
-                  ? 'border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+                  ? 'border-green text-green'
+                  : 'border-transparent text-ink-3 hover:text-ink-2'
               }`}>
               <Icon className="h-4 w-4" />
               {tab.label}

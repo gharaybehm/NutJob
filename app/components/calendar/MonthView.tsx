@@ -49,13 +49,13 @@ export default function MonthView({ currentDate, events, onDayClick, onEventClic
     events.filter((e) => isSameDay(e.startDate, day));
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div className="flex flex-col overflow-hidden rounded-2xl border border-line bg-surface">
       {/* Day header row */}
-      <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-700">
+      <div className="grid grid-cols-7 border-b border-line">
         {DAY_NAMES.map((d) => (
           <div
             key={d}
-            className="py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+            className="py-3 text-center font-mono text-[10px] font-semibold uppercase tracking-wide text-ink-3"
           >
             {d}
           </div>
@@ -75,23 +75,23 @@ export default function MonthView({ currentDate, events, onDayClick, onEventClic
             <div
               key={idx}
               onClick={() => onDayClick?.(day)}
-              className={`group min-h-[110px] border-r border-b border-slate-100 p-1.5 transition-colors last:border-r-0 dark:border-slate-800 ${
-                onDayClick 
-                  ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40' 
+              className={`group min-h-[110px] border-r border-b border-line-soft p-1.5 transition-colors last:border-r-0 ${
+                onDayClick
+                  ? 'cursor-pointer hover:bg-tile'
                   : 'cursor-default'
               } ${
-                !isCurrentMonth ? 'bg-slate-50/50 dark:bg-slate-900/50' : ''
+                !isCurrentMonth ? 'bg-tile/50' : isToday ? 'bg-green-soft/60' : ''
               }`}
             >
               {/* Day number */}
               <div className="mb-1 flex items-center justify-between px-0.5">
                 <span
-                  className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium transition-colors ${
+                  className={`flex h-7 w-7 items-center justify-center rounded-full font-heading text-sm font-medium transition-colors ${
                     isToday
-                      ? 'bg-brand-600 text-white'
+                      ? 'bg-green text-white font-bold'
                       : isCurrentMonth
-                        ? 'text-slate-900 group-hover:text-brand-600 dark:text-white'
-                        : 'text-slate-400 dark:text-slate-600'
+                        ? 'text-ink group-hover:text-green'
+                        : 'text-ink-4'
                   }`}
                 >
                   {day.getDate()}
@@ -110,7 +110,7 @@ export default function MonthView({ currentDate, events, onDayClick, onEventClic
                   />
                 ))}
                 {overflow > 0 && (
-                  <p className="ps-1 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="ps-1 text-xs text-ink-3">
                     +{overflow}
                   </p>
                 )}

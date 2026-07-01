@@ -3,117 +3,138 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Plus, MapPin, Layers, SquareStack } from 'lucide-react';
+import { Plus, MapPin, Layers, SquareStack, ArrowRight } from 'lucide-react';
 import type { FarmWithMeta } from '@/utils/supabase/farm-types';
 import CreateFarmWizard from './CreateFarmWizard';
+import SignOutButton from '@/app/components/auth/SignOutButton';
 
 interface Props {
   farms: FarmWithMeta[];
+  userName?: string;
 }
 
 const roleStyles: Record<string, string> = {
-  admin:      'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400',
-  supervisor: 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400',
-  worker:     'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400',
+  admin:      'bg-green-soft text-green',
+  supervisor: 'bg-amber-soft text-amber',
+  worker:     'bg-tile-2 text-ink-2',
 };
 
-export default function FarmPicker({ farms }: Props) {
+const AVATAR_COLORS = ['#2F7D4F', '#3C7EA1', '#C4922E', '#8156A8', '#2E8E8E', '#C24B39'];
+
+function avatarColor(id: string) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+}
+
+export default function FarmPicker({ farms, userName }: Props) {
   const router = useRouter();
   const [wizardOpen, setWizardOpen] = useState(farms.length === 0);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center px-4 py-12">
-      {/* Logo */}
-      <div className="mb-8">
-        <Image src="/logo-full.png" alt="RootLoot" width={180} height={138} className="object-contain" unoptimized />
-      </div>
-
-      <div className="w-full max-w-4xl">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Your Farms</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Select a farm to continue, or create a new one.
-          </p>
+    <div className="min-h-screen bg-paper flex flex-col">
+      <header className="flex h-[66px] shrink-0 items-center justify-between border-b border-line bg-paper-2 px-7">
+        <Image src="/logo-dark-transparent.png" alt="RootLoot" width={140} height={44} className="h-11 w-auto object-contain" unoptimized />
+        <div className="flex items-center gap-3.5">
+          {userName && (
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-gradient-to-br from-blue to-green font-heading text-[13px] font-semibold text-white">
+                {userName.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-[13px] font-semibold text-ink">{userName}</span>
+            </div>
+          )}
+          <SignOutButton compact />
         </div>
+      </header>
 
-        {farms.length === 0 && !wizardOpen && (
-          <div className="rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-12 text-center">
-            <SquareStack className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-500 dark:text-slate-400 font-medium">No farms yet</p>
-            <p className="text-sm text-slate-400 dark:text-slate-500 mt-1 mb-4">
-              Create your first farm to get started.
+      <div className="flex flex-1 flex-col items-center px-4 py-12">
+        <div className="w-full max-w-4xl">
+          <div className="mb-8">
+            <h1 className="font-heading text-[28px] font-bold tracking-tight text-ink">Choose a farm</h1>
+            <p className="mt-1.5 text-sm text-ink-2">
+              Select a farm to continue, or create a new one. Switch anytime from the top bar — no re-login.
             </p>
-            <button
-              onClick={() => setWizardOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Create Farm
-            </button>
           </div>
-        )}
 
-        {farms.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {farms.map((farm) => (
+          {farms.length === 0 && !wizardOpen && (
+            <div className="rounded-2xl border-2 border-dashed border-ink-4/30 p-12 text-center">
+              <SquareStack className="h-10 w-10 text-ink-4 mx-auto mb-3" />
+              <p className="text-ink-2 font-medium">No farms yet</p>
+              <p className="text-sm text-ink-3 mt-1 mb-4">
+                Create your first farm to get started.
+              </p>
               <button
-                key={farm.id}
-                onClick={() => router.push(`/${farm.id}/dashboard`)}
-                className="text-left rounded-2xl bg-white dark:bg-slate-900 ring-1 ring-slate-200 dark:ring-slate-800 p-6 hover:shadow-lg hover:ring-brand-300 dark:hover:ring-brand-700 transition-all group"
+                onClick={() => setWizardOpen(true)}
+                className="inline-flex items-center gap-2 rounded-[11px] bg-gradient-to-b from-[#37905C] to-green px-4 py-2.5 text-sm font-semibold text-white shadow-[0_6px_16px_-4px_rgba(47,125,79,.5)] hover:brightness-105 transition"
               >
-                {/* Farm name + role */}
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <h2 className="text-base font-semibold text-slate-900 dark:text-white group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors leading-tight">
+                <Plus className="h-4 w-4" />
+                Create Farm
+              </button>
+            </div>
+          )}
+
+          {farms.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-[18px]">
+              {farms.map((farm) => (
+                <button
+                  key={farm.id}
+                  onClick={() => router.push(`/${farm.id}/dashboard`)}
+                  className="text-left rounded-2xl bg-surface border border-line p-[22px] hover:border-green hover:shadow-[0_12px_26px_-12px_rgba(47,125,79,.4)] transition-all group flex flex-col"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div
+                      className="flex h-12 w-12 items-center justify-center rounded-[13px] font-heading text-xl font-bold text-white"
+                      style={{ backgroundColor: avatarColor(farm.id) }}
+                    >
+                      {farm.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ${roleStyles[farm.userRole] ?? roleStyles.worker}`}>
+                      {farm.userRole.charAt(0).toUpperCase() + farm.userRole.slice(1)}
+                    </span>
+                  </div>
+
+                  <h2 className="font-heading text-lg font-bold text-ink leading-tight">
                     {farm.name}
                   </h2>
-                  <span className={`text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-md shrink-0 ${roleStyles[farm.userRole] ?? roleStyles.worker}`}>
-                    {farm.userRole}
-                  </span>
-                </div>
 
-                {/* Location */}
-                {farm.address && (
-                  <div className="flex items-center gap-1.5 mb-3 text-xs text-slate-500 dark:text-slate-400">
-                    <MapPin className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{farm.address}</span>
+                  <div className="mt-1 flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-ink-3">
+                    <Layers className="h-3 w-3 shrink-0" />
+                    <span>{farm.blockCount} {farm.blockCount === 1 ? 'BLOCK' : 'BLOCKS'}</span>
+                    {farm.total_area && <span>· {farm.total_area} {farm.area_unit?.toUpperCase()}</span>}
+                    {farm.address && (
+                      <span className="flex items-center gap-1 truncate">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        {farm.address}
+                      </span>
+                    )}
                   </div>
-                )}
-                {!farm.address && farm.gps_lat && farm.gps_lng && (
-                  <div className="flex items-center gap-1.5 mb-3 text-xs text-slate-500 dark:text-slate-400">
-                    <MapPin className="h-3.5 w-3.5 shrink-0" />
-                    <span>{farm.gps_lat.toFixed(4)}, {farm.gps_lng.toFixed(4)}</span>
-                  </div>
-                )}
 
-                {/* Stats */}
-                <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3 mt-auto">
-                  <div className="flex items-center gap-1">
-                    <Layers className="h-3.5 w-3.5" />
-                    <span>{farm.blockCount} {farm.blockCount === 1 ? 'block' : 'blocks'}</span>
+                  <div className="mt-4 flex items-center justify-between border-t border-line-soft pt-3.5">
+                    <span className="text-xs text-ink-3">Open in dashboard</span>
+                    <span className="flex items-center gap-1.5 text-[13px] font-semibold text-green">
+                      Open
+                      <ArrowRight className="h-[17px] w-[17px]" />
+                    </span>
                   </div>
-                  {farm.total_area && (
-                    <div className="text-slate-400">
-                      {farm.total_area} {farm.area_unit}
-                    </div>
-                  )}
+                </button>
+              ))}
+
+              {/* New Farm card */}
+              <button
+                onClick={() => setWizardOpen(true)}
+                className="rounded-2xl border-[1.5px] border-dashed border-ink-4/40 p-[22px] hover:border-green hover:text-green transition-all flex flex-col items-center justify-center gap-2.5 text-ink-3 group min-h-[180px]"
+              >
+                <div className="h-12 w-12 rounded-[13px] bg-green-soft flex items-center justify-center">
+                  <Plus className="h-6 w-6 text-green" />
                 </div>
+                <span className="text-sm font-semibold">
+                  Create a new farm
+                </span>
               </button>
-            ))}
-
-            {/* New Farm card */}
-            <button
-              onClick={() => setWizardOpen(true)}
-              className="rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-6 hover:border-brand-400 dark:hover:border-brand-600 hover:bg-brand-50/50 dark:hover:bg-brand-900/10 transition-all flex flex-col items-center justify-center gap-2 text-slate-500 dark:text-slate-400 group min-h-[140px]"
-            >
-              <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-brand-100 dark:group-hover:bg-brand-900/30 flex items-center justify-center transition-colors">
-                <Plus className="h-5 w-5 group-hover:text-brand-600 transition-colors" />
-              </div>
-              <span className="text-sm font-medium group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
-                New Farm
-              </span>
-            </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       <CreateFarmWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />

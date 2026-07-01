@@ -85,10 +85,10 @@ export default async function SettingsPage({
   return (
     <div className="max-w-5xl space-y-10">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink">
           {t('title')}
         </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-ink-2">
           {t('description')}
         </p>
       </div>

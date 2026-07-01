@@ -130,7 +130,7 @@ function PlantSearchInput({
 
   return (
     <div className="flex flex-col gap-1.5 relative" ref={wrapperRef}>
-      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
+      <label className="text-sm font-medium text-ink-2">{label}</label>
       <div className="relative">
         <input
           type="text"
@@ -139,28 +139,28 @@ function PlantSearchInput({
           onChange={handleInputChange}
           onFocus={() => { if (results.length > 0) setIsOpen(true); }}
           onKeyDown={handleKeyDown}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 pr-8 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="w-full rounded-lg border border-line bg-surface px-3 py-2 pr-8 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
           autoComplete="off"
         />
         {loading && (
-          <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 animate-spin" />
+          <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-4 animate-spin" />
         )}
       </div>
       {isOpen && results.length > 0 && (
-        <ul className="absolute z-10 top-[calc(100%+4px)] left-0 w-full max-h-52 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg p-1">
+        <ul className="absolute z-10 top-[calc(100%+4px)] left-0 w-full max-h-52 overflow-y-auto rounded-lg border border-line bg-surface shadow-lg p-1">
           {results.map((plant, i) => (
             <li
               key={plant.scientificName}
               className={`cursor-pointer rounded-md px-3 py-2 text-sm transition-colors ${
                 focusedIndex === i
-                  ? 'bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-brand-300'
-                  : 'text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-slate-700 hover:text-brand-700'
+                  ? 'bg-green-soft text-green'
+                  : 'text-ink-2 hover:bg-green-soft hover:text-green'
               }`}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => handleSelect(plant)}
             >
               <span className="font-medium">{plant.commonName}</span>
-              <span className="ml-1.5 text-xs text-slate-400 italic">{plant.scientificName}</span>
+              <span className="ml-1.5 text-xs text-ink-4 italic">{plant.scientificName}</span>
             </li>
           ))}
         </ul>
@@ -221,7 +221,7 @@ function AutocompleteInput({
 
   return (
     <div className="flex flex-col gap-1.5 relative" ref={wrapperRef}>
-      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
+      <label className="text-sm font-medium text-ink-2">{label}</label>
       <input
         type="text"
         placeholder={placeholder}
@@ -229,15 +229,15 @@ function AutocompleteInput({
         onChange={(e) => { onChange(e.target.value); setIsOpen(true); setFocusedIndex(-1); }}
         onFocus={() => setIsOpen(true)}
         onKeyDown={handleKeyDown}
-        className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+        className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
         autoComplete="off"
       />
       {isOpen && filtered.length > 0 && (
-        <ul className="absolute z-10 top-[calc(100%+4px)] left-0 w-full max-h-52 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg p-1">
+        <ul className="absolute z-10 top-[calc(100%+4px)] left-0 w-full max-h-52 overflow-y-auto rounded-lg border border-line bg-surface shadow-lg p-1">
           {filtered.map((opt, i) => (
             <li
               key={opt}
-              className={`cursor-pointer rounded-md px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-slate-700 hover:text-brand-700 dark:hover:text-brand-300 transition-colors ${focusedIndex === i ? 'bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-brand-300' : ''}`}
+              className={`cursor-pointer rounded-md px-3 py-2 text-sm text-ink-2 hover:bg-green-soft hover:text-green transition-colors ${focusedIndex === i ? 'bg-green-soft text-green' : ''}`}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => { onChange(opt); setIsOpen(false); }}
             >
@@ -328,15 +328,15 @@ export default function BlockFormModal({ open, onClose, onSave, initialData, ini
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 shadow-2xl flex flex-col max-h-screen">
+      <div className="w-full max-w-lg rounded-2xl bg-surface shadow-2xl flex flex-col max-h-screen">
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-line px-6 py-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            <h2 className="text-lg font-semibold text-ink">
               {isEdit ? 'Edit Block' : 'New Block'}
             </h2>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-sm text-ink-3 mt-0.5">
               {isEdit
                 ? 'Update block configuration details.'
                 : 'Enter block details once — the system will track progress from here.'}
@@ -344,7 +344,7 @@ export default function BlockFormModal({ open, onClose, onSave, initialData, ini
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 transition-colors"
+            className="rounded-lg p-1.5 text-ink-4 hover:bg-tile hover:text-ink-2 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -356,13 +356,13 @@ export default function BlockFormModal({ open, onClose, onSave, initialData, ini
 
             {/* Block Name */}
             <div className="flex flex-col gap-1.5 col-span-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Block Name</label>
+              <label className="text-sm font-medium text-ink-2">Block Name</label>
               <input
                 type="text"
                 placeholder="e.g. Block G"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
               />
             </div>
 
@@ -395,25 +395,25 @@ export default function BlockFormModal({ open, onClose, onSave, initialData, ini
                 options={varietySuggestions}
               />
               {varietyLoading && (
-                <Loader2 className="absolute right-2.5 bottom-2.5 h-4 w-4 text-slate-400 animate-spin" />
+                <Loader2 className="absolute right-2.5 bottom-2.5 h-4 w-4 text-ink-4 animate-spin" />
               )}
             </div>
 
             {/* Area */}
             <div className="flex flex-col gap-1.5 col-span-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Area</label>
+              <label className="text-sm font-medium text-ink-2">Area</label>
               <div className="flex gap-2">
                 <input
                   type="number"
                   placeholder="e.g. 40"
                   value={form.area}
                   onChange={e => setForm(f => ({ ...f, area: e.target.value }))}
-                  className="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
                 />
                 <select
                   value={form.areaUnit}
                   onChange={e => setForm(f => ({ ...f, areaUnit: e.target.value }))}
-                  className="w-1/3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-1/3 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-green"
                 >
                   <option value="Dunm">Dunm</option>
                   <option value="Acre">Acre</option>
@@ -424,13 +424,13 @@ export default function BlockFormModal({ open, onClose, onSave, initialData, ini
 
             {/* Planting Year */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Planting Year</label>
+              <label className="text-sm font-medium text-ink-2">Planting Year</label>
               <input
                 type="number"
                 placeholder="e.g. 2015"
                 value={form.plantingYear}
                 onChange={e => setForm(f => ({ ...f, plantingYear: e.target.value }))}
-                className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
               />
             </div>
 
@@ -445,51 +445,51 @@ export default function BlockFormModal({ open, onClose, onSave, initialData, ini
 
             {/* Tree Count */}
             <div className="flex flex-col gap-1.5 col-span-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Tree Count</label>
+              <label className="text-sm font-medium text-ink-2">Tree Count</label>
               <input
                 type="number"
                 placeholder="e.g. 500"
                 value={form.treeCount}
                 onChange={e => setForm(f => ({ ...f, treeCount: e.target.value }))}
-                className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
               />
             </div>
 
             {/* Row / Tree Spacing */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Row Spacing (m)</label>
+              <label className="text-sm font-medium text-ink-2">Row Spacing (m)</label>
               <input
                 type="number"
                 placeholder="e.g. 6"
                 value={form.rowSpacing}
                 onChange={e => setForm(f => ({ ...f, rowSpacing: e.target.value }))}
-                className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Tree Spacing (m)</label>
+              <label className="text-sm font-medium text-ink-2">Tree Spacing (m)</label>
               <input
                 type="number"
                 placeholder="e.g. 5"
                 value={form.treeSpacing}
                 onChange={e => setForm(f => ({ ...f, treeSpacing: e.target.value }))}
-                className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
               />
             </div>
 
             {/* Boundary status badge */}
             <div className="col-span-2 pt-1">
               {form.boundary ? (
-                <div className="flex items-center gap-2 rounded-lg border border-brand-200 dark:border-brand-800/50 bg-brand-50 dark:bg-brand-950/20 px-3 py-2">
-                  <span className="h-2 w-2 rounded-full bg-brand-500 shrink-0" />
-                  <span className="text-sm text-brand-700 dark:text-brand-300 font-medium">
+                <div className="flex items-center gap-2 rounded-lg border border-green bg-green-soft px-3 py-2">
+                  <span className="h-2 w-2 rounded-full bg-green shrink-0" />
+                  <span className="text-sm text-green font-medium">
                     Boundary captured ({JSON.parse(form.boundary).length} points)
                   </span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 px-3 py-2">
-                  <span className="h-2 w-2 rounded-full bg-slate-400 shrink-0" />
-                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-2 rounded-lg border border-line bg-tile px-3 py-2">
+                  <span className="h-2 w-2 rounded-full bg-ink-4 shrink-0" />
+                  <span className="text-sm text-ink-3">
                     No boundary drawn — draw on the map first to set block boundaries
                   </span>
                 </div>
@@ -500,22 +500,22 @@ export default function BlockFormModal({ open, onClose, onSave, initialData, ini
 
         {/* Validation error */}
         {error && (
-          <div className="mx-6 mb-0 rounded-lg border border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-950/20 px-4 py-2 text-sm text-red-700 dark:text-red-400">
+          <div className="mx-6 mb-0 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
             {error}
           </div>
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-700 px-6 py-4 mt-auto">
+        <div className="flex items-center justify-end gap-3 border-t border-line px-6 py-4 mt-auto">
           <button
             onClick={onClose}
-            className="rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink-2 hover:bg-tile transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+            className="rounded-lg bg-green px-4 py-2 text-sm font-medium text-white hover:bg-green transition-colors"
           >
             {isEdit ? 'Save Changes' : 'Create Block'}
           </button>

@@ -19,17 +19,17 @@ export const ACTIVITY_COLORS: Record<
   ActivityType,
   { bg: string; text: string; ring: string; dot: string }
 > = {
-  irrigation:    { bg: 'bg-blue-100',    text: 'text-blue-700',    ring: 'ring-blue-200',    dot: 'bg-blue-500' },
-  fertigation:   { bg: 'bg-green-100',   text: 'text-green-700',   ring: 'ring-green-200',   dot: 'bg-green-600' },
-  spraying:      { bg: 'bg-amber-100',   text: 'text-amber-700',   ring: 'ring-amber-200',   dot: 'bg-amber-500' },
-  pruning:       { bg: 'bg-purple-100',  text: 'text-purple-700',  ring: 'ring-purple-200',  dot: 'bg-purple-500' },
-  scouting:      { bg: 'bg-orange-100',  text: 'text-orange-700',  ring: 'ring-orange-200',  dot: 'bg-orange-500' },
-  pollinating:   { bg: 'bg-yellow-100',  text: 'text-yellow-700',  ring: 'ring-yellow-200',  dot: 'bg-yellow-500' },
-  tilling:       { bg: 'bg-stone-100',   text: 'text-stone-700',   ring: 'ring-stone-200',   dot: 'bg-stone-500' },
-  plowing:       { bg: 'bg-rose-100',    text: 'text-rose-700',    ring: 'ring-rose-200',    dot: 'bg-rose-500' },
-  weeding:       { bg: 'bg-lime-100',    text: 'text-lime-700',    ring: 'ring-lime-200',    dot: 'bg-lime-500' },
-  'weather-alert': { bg: 'bg-red-100',   text: 'text-red-700',     ring: 'ring-red-200',     dot: 'bg-red-500' },
-  other:         { bg: 'bg-slate-100',   text: 'text-slate-700',   ring: 'ring-slate-200',   dot: 'bg-slate-500' },
+  irrigation:      { bg: 'bg-blue-soft',   text: 'text-blue',   ring: 'ring-blue/20',   dot: 'bg-blue' },
+  fertigation:     { bg: 'bg-gold-soft',   text: 'text-gold',   ring: 'ring-gold/20',   dot: 'bg-gold' },
+  spraying:        { bg: 'bg-purple-soft', text: 'text-purple', ring: 'ring-purple/20', dot: 'bg-purple' },
+  pruning:         { bg: 'bg-teal-soft',   text: 'text-teal',   ring: 'ring-teal/20',   dot: 'bg-teal' },
+  scouting:        { bg: 'bg-green-soft',  text: 'text-green',  ring: 'ring-green/20',  dot: 'bg-green' },
+  pollinating:     { bg: 'bg-amber-soft',  text: 'text-amber',  ring: 'ring-amber/20',  dot: 'bg-amber' },
+  tilling:         { bg: 'bg-tile-2',      text: 'text-ink-2',  ring: 'ring-ink-4/20',  dot: 'bg-ink-3' },
+  plowing:         { bg: 'bg-tile-2',      text: 'text-ink-2',  ring: 'ring-ink-4/20',  dot: 'bg-ink-3' },
+  weeding:         { bg: 'bg-tile-2',      text: 'text-ink-2',  ring: 'ring-ink-4/20',  dot: 'bg-ink-3' },
+  'weather-alert': { bg: 'bg-red-soft',    text: 'text-red',    ring: 'ring-red/20',    dot: 'bg-red' },
+  other:           { bg: 'bg-tile-2',      text: 'text-ink-2',  ring: 'ring-ink-4/20',  dot: 'bg-ink-3' },
 };
 
 export const ACTIVITY_LABELS: Record<ActivityType, string> = {

@@ -105,9 +105,9 @@ function getBenchmark(key: string, v: number): Benchmark {
 function BenchmarkBadge({ status, label }: { status: BS; label: string }) {
   if (!label) return null;
   const cls: Record<BS, string> = {
-    green: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-    amber: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-    red:   'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+    green: 'bg-emerald-100 text-emerald-700',
+    amber: 'bg-amber-100 text-amber-700',
+    red:   'bg-red-100 text-red-700',
   };
   return (
     <span className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-tight ${cls[status]}`}>
@@ -126,7 +126,7 @@ function ParamInput({
   return (
     <div className="flex flex-col gap-1 min-w-0">
       <div className="flex items-center justify-between gap-1 min-h-[20px]">
-        <label className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-tight">{label}</label>
+        <label className="text-xs font-medium text-ink-2 leading-tight">{label}</label>
         {bench && <BenchmarkBadge status={bench.status} label={bench.label} />}
       </div>
       <div className="flex items-center gap-1.5 min-w-0">
@@ -136,9 +136,9 @@ function ParamInput({
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder="—"
-          className="min-w-0 flex-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-line focus:outline-none focus:ring-2 focus:ring-green"
         />
-        {unit && <span className="text-[10px] text-slate-400 shrink-0 whitespace-nowrap">{unit}</span>}
+        {unit && <span className="text-[10px] text-ink-4 shrink-0 whitespace-nowrap">{unit}</span>}
       </div>
     </div>
   );
@@ -147,7 +147,7 @@ function ParamInput({
 function SectionHeader({ title }: { title: string }) {
   return (
     <div className="col-span-full">
-      <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 pb-1.5">
+      <p className="text-xs font-bold uppercase tracking-widest text-ink-4 border-b border-tile pb-1.5">
         {title}
       </p>
     </div>
@@ -184,18 +184,18 @@ function hbench(key: string, v: number): HBS {
 
 function HChip({ label, value, unit, bk }: { label: string; value: number; unit: string; bk?: string }) {
   const s = bk ? hbench(bk, value) : null;
-  const bg = s === 'green' ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/40'
-           : s === 'amber' ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/40'
-           : s === 'red'   ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800/40'
-           : 'bg-slate-50 border-slate-200 dark:bg-slate-800/40 dark:border-slate-700';
+  const bg = s === 'green' ? 'bg-emerald-50 border-emerald-200'
+           : s === 'amber' ? 'bg-amber-50 border-amber-200'
+           : s === 'red'   ? 'bg-red-50 border-red-200'
+           : 'bg-tile border-line';
   const dot = s === 'green' ? 'bg-emerald-500' : s === 'amber' ? 'bg-amber-500' : s === 'red' ? 'bg-red-500' : '';
   return (
     <div className={`flex flex-col gap-0.5 rounded-lg border px-2.5 py-1.5 ${bg}`}>
-      <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-tight">{label}</span>
+      <span className="text-[10px] font-medium text-ink-3 leading-tight">{label}</span>
       <div className="flex items-center gap-1">
         {s && <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${dot}`} />}
-        <span className="text-xs font-bold text-slate-900 dark:text-white">{value}</span>
-        <span className="text-[10px] text-slate-400">{unit}</span>
+        <span className="text-xs font-bold text-ink">{value}</span>
+        <span className="text-[10px] text-ink-4">{unit}</span>
       </div>
     </div>
   );
@@ -221,18 +221,18 @@ function HistReadingCard({ r }: { r: HistReading }) {
   const isWater = r.test_type === 'water';
   const p = (r.parameters ?? {}) as Record<string, unknown>;
   const hdr = isWater
-    ? 'bg-sky-50 dark:bg-sky-950/20 border-sky-100 dark:border-sky-800/30'
-    : 'bg-slate-50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-800';
+    ? 'bg-sky-50 border-sky-100'
+    : 'bg-tile border-tile';
   return (
-    <div className="border-b border-slate-100 dark:border-slate-800 last:border-0 pb-4 mb-4 last:pb-0 last:mb-0 flex flex-col gap-2">
+    <div className="border-b border-tile last:border-0 pb-4 mb-4 last:pb-0 last:mb-0 flex flex-col gap-2">
       <div className={`flex items-center justify-between rounded-lg px-3 py-2 border ${hdr}`}>
         <div>
-          <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+          <span className="text-xs font-bold text-ink-2">
             {new Date(r.recorded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
-          {r.lab_reference && <span className="ml-2 text-xs text-slate-400">· {r.lab_reference}</span>}
+          {r.lab_reference && <span className="ml-2 text-xs text-ink-4">· {r.lab_reference}</span>}
         </div>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${isWater ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'}`}>
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${isWater ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-700'}`}>
           {isWater ? 'Water' : 'Soil'}
         </span>
       </div>
@@ -249,14 +249,14 @@ function HistReadingCard({ r }: { r: HistReading }) {
             return <HChip key={c.key} label={c.label} value={v} unit={c.unit} bk={c.bk} />;
           })}
           {typeof p.texture_class === 'string' && p.texture_class && (
-            <div className="col-span-2 flex flex-col gap-0.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 px-2.5 py-1.5">
-              <span className="text-[10px] font-medium text-slate-500">Texture</span>
-              <span className="text-xs font-bold text-slate-900 dark:text-white">{p.texture_class}</span>
+            <div className="col-span-2 flex flex-col gap-0.5 rounded-lg border border-line bg-tile px-2.5 py-1.5">
+              <span className="text-[10px] font-medium text-ink-3">Texture</span>
+              <span className="text-xs font-bold text-ink">{p.texture_class}</span>
             </div>
           )}
         </div>
       )}
-      {r.notes && <p className="px-1 text-xs text-slate-500 italic">{r.notes}</p>}
+      {r.notes && <p className="px-1 text-xs text-ink-3 italic">{r.notes}</p>}
     </div>
   );
 }
@@ -499,21 +499,21 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
 
   if (!open) return null;
 
-  const inputCls = 'rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 w-full';
+  const inputCls = 'rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green w-full';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 shadow-2xl flex flex-col max-h-[92vh]">
+      <div className="w-full max-w-2xl rounded-2xl bg-surface shadow-2xl flex flex-col max-h-[92vh]">
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-6 py-4 shrink-0">
+        <div className="flex items-center justify-between border-b border-line px-6 py-4 shrink-0">
           <div className="flex items-center gap-3">
-            <FlaskConical className="h-5 w-5 text-brand-600 dark:text-brand-400 shrink-0" />
+            <FlaskConical className="h-5 w-5 text-green shrink-0" />
             <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-ink flex items-center gap-2">
                 Lab Test Results
                 {view === 'form' && existingId && (
-                  <span className="rounded bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider animate-pulse">
+                  <span className="rounded bg-green-soft text-green px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider animate-pulse">
                     Updating Saved
                   </span>
                 )}
@@ -521,20 +521,20 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
               <div className="flex gap-1 mt-1.5">
                 <button
                   onClick={() => setView('form')}
-                  className={`rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${view === 'form' ? 'bg-brand-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                  className={`rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${view === 'form' ? 'bg-green text-white' : 'bg-tile text-ink-3 hover:bg-line'}`}
                 >
                   Log New
                 </button>
                 <button
                   onClick={switchToHistory}
-                  className={`rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${view === 'history' ? 'bg-brand-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                  className={`rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${view === 'history' ? 'bg-green text-white' : 'bg-tile text-ink-3 hover:bg-line'}`}
                 >
                   History
                 </button>
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 transition-colors">
+          <button onClick={onClose} className="rounded-lg p-1.5 text-ink-4 hover:bg-tile hover:text-ink-2 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -543,11 +543,11 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
         {view === 'history' && (
           <div className="overflow-y-auto px-6 py-4 flex-1">
             {histLoading ? (
-              <div className="flex items-center justify-center py-12 text-sm text-slate-400">
+              <div className="flex items-center justify-center py-12 text-sm text-ink-4">
                 <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading…
               </div>
             ) : histReadings.length === 0 ? (
-              <div className="py-12 text-center text-sm text-slate-400">
+              <div className="py-12 text-center text-sm text-ink-4">
                 No lab results saved yet. Switch to &ldquo;Log New&rdquo; to add one.
               </div>
             ) : (
@@ -561,8 +561,8 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
         {/* Form body */}
         {view === 'form' && (
           loadingLatest ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-24 text-slate-400 dark:text-slate-500 gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-brand-600 dark:text-brand-400" />
+            <div className="flex-1 flex flex-col items-center justify-center py-24 text-ink-4 gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-green" />
               <span className="text-sm font-medium">Loading latest soil test readings…</span>
             </div>
           ) : (
@@ -572,18 +572,18 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <SectionHeader title="Sample Information" />
                 <div className="col-span-3 flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Block / Scope</label>
+                  <label className="text-sm font-medium text-ink-2">Block / Scope</label>
                   <select value={blockId} onChange={e => setBlockId(e.target.value)} className={inputCls}>
                     <option value="__farm__">🌾 Whole Farm (no specific block)</option>
                     {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Test Date</label>
+                  <label className="text-sm font-medium text-ink-2">Test Date</label>
                   <input type="date" value={recordedAt} onChange={e => setRecordedAt(e.target.value)} className={inputCls} />
                 </div>
                 <div className="col-span-2 flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Lab Reference</label>
+                  <label className="text-sm font-medium text-ink-2">Lab Reference</label>
                   <input type="text" placeholder="e.g. SA250023" value={labReference} onChange={e => setLabReference(e.target.value)} className={inputCls} />
                 </div>
               </div>
@@ -626,11 +626,11 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
                 <ParamInput label="Clay" value={soil.clay} onChange={setSoilField('clay')} unit="%" />
                 <ParamInput label="Silt" value={soil.silt} onChange={setSoilField('silt')} unit="%" />
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Texture Class</label>
+                  <label className="text-xs font-medium text-ink-2">Texture Class</label>
                   <select
                     value={soil.textureClass}
                     onChange={e => setSoilField('textureClass')(e.target.value)}
-                    className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-green"
                   >
                     <option value="">— Select —</option>
                     <option value="Loam">Loam</option>
@@ -661,9 +661,9 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
                   onChange={e => setNotes(e.target.value)}
                   className={`${inputCls} resize-none`}
                 />
-                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 px-4 py-3 text-sm text-slate-500 hover:border-brand-400 hover:text-brand-600 dark:hover:border-brand-500 dark:hover:text-brand-400 transition-colors">
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-line px-4 py-3 text-sm text-ink-3 hover:border-green hover:text-green transition-colors">
                   {extracting
-                    ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-brand-500" />
+                    ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-green" />
                     : <Paperclip className="h-4 w-4 shrink-0" />}
                   <span className="truncate">
                     {extracting
@@ -678,19 +678,19 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
                   />
                 </label>
                 {existingFileUrl && !file && (
-                  <div className="flex items-center gap-1.5 text-xs text-brand-600 dark:text-brand-400">
+                  <div className="flex items-center gap-1.5 text-xs text-green">
                     <Paperclip className="h-3 w-3" />
                     <span>An analysis report is currently saved for this test. Uploading a new one will replace it.</span>
                   </div>
                 )}
                 {extractMsg && (
-                  <div className="flex items-center gap-2 rounded-lg border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+                  <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
                     <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
                     {extractMsg}
                   </div>
                 )}
                 {extractedCount !== null && (
-                  <div className="flex items-center gap-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400">
+                  <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
                     {extractedCount > 0
                       ? `${extractedCount} field${extractedCount === 1 ? '' : 's'} auto-filled from document — review and adjust as needed.`
@@ -705,21 +705,21 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
 
         {/* Error (form only) */}
         {view === 'form' && error && (
-          <div className="mx-6 rounded-lg border border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-950/20 px-4 py-2 text-sm text-red-700 dark:text-red-400">
+          <div className="mx-6 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
             {error}
           </div>
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-700 px-6 py-4 shrink-0">
-          <button onClick={onClose} className="rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+        <div className="flex items-center justify-end gap-3 border-t border-line px-6 py-4 shrink-0">
+          <button onClick={onClose} className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink-2 hover:bg-tile transition-colors">
             {view === 'history' ? 'Close' : 'Cancel'}
           </button>
           {view === 'form' && (
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors disabled:opacity-60"
+              className="flex items-center gap-2 rounded-lg bg-green px-4 py-2 text-sm font-medium text-white hover:bg-green transition-colors disabled:opacity-60"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               Save Test Result

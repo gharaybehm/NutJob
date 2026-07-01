@@ -7,10 +7,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useEffect, useTransition } from "react";
 import { setLocale } from "@/app/(dashboard)/settings/actions";
+import FarmSwitcher from "@/app/components/farms/FarmSwitcher";
+import type { FarmWithMeta } from "@/utils/supabase/farm-types";
 
 interface TopNavProps {
   farmId: string;
   alertCount?: number;
+  farms?: FarmWithMeta[];
 }
 
 const LOCALE_OPTIONS = [
@@ -19,7 +22,7 @@ const LOCALE_OPTIONS = [
   { value: 'tr', label: 'Türkçe',   flag: '🇹🇷' },
 ];
 
-export default function TopNav({ farmId, alertCount = 0 }: TopNavProps) {
+export default function TopNav({ farmId, alertCount = 0, farms = [] }: TopNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations('nav');
@@ -65,47 +68,48 @@ export default function TopNav({ farmId, alertCount = 0 }: TopNavProps) {
   const isHome = pageSlug === 'dashboard';
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-6 dark:bg-[#0F1923] dark:border-[#1B4332]">
+    <header className="relative z-30 flex h-16 items-center justify-between border-b border-line bg-paper-2 px-4 gap-3.5 md:px-5">
       {/* Mobile header */}
       <div className="md:hidden flex flex-1 items-center gap-2">
         {isHome ? (
-          <Image src="/icon.png" alt="RootLoot" width={30} height={23} className="object-contain" unoptimized />
+          <Image src="/logo-dark-transparent.png" alt="RootLoot" width={30} height={23} className="object-contain" unoptimized />
         ) : (
           <>
             <button
               onClick={() => router.back()}
-              className="h-11 w-11 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 -ms-2"
+              className="h-11 w-11 flex items-center justify-center rounded-full text-ink-3 hover:bg-tile transition-colors shrink-0 -ms-2"
             >
               <ArrowLeft className="h-5 w-5 rtl:rotate-180" />
               <span className="sr-only">{t("goBack")}</span>
             </button>
-            <span className="text-base font-semibold text-slate-800 dark:text-white truncate">
+            <span className="text-base font-semibold text-ink truncate">
               {pageTitle}
             </span>
           </>
         )}
       </div>
 
-      {/* Desktop: search bar */}
-      <div className="hidden md:flex flex-1 items-center gap-4">
-        <div className="w-full max-w-md relative">
+      {/* Desktop: farm switcher + search */}
+      <div className="hidden md:flex flex-1 items-center gap-3.5">
+        <FarmSwitcher farmId={farmId} farms={farms} />
+        <div className="w-[300px] shrink-0 relative">
           <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3">
-            <Search className="h-4 w-4 text-slate-400" />
+            <Search className="h-4 w-4 text-ink-3" />
           </div>
           <input
             type="search"
             name="search"
             id="search"
-            className="block w-full rounded-md border-0 py-1.5 ps-10 pe-3 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:text-white dark:ring-slate-700 dark:placeholder:text-slate-500"
+            className="block w-full rounded-[11px] border border-line bg-tile-2 py-2.5 ps-9 pe-3 text-sm text-ink placeholder:text-ink-4 focus:outline-none focus:ring-2 focus:ring-green/30"
             placeholder={tTop("searchPlaceholder")}
           />
         </div>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         {/* Mobile: search icon on home only */}
         {isHome && (
-          <button className="md:hidden h-11 w-11 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+          <button className="md:hidden h-11 w-11 flex items-center justify-center rounded-full text-ink-3 hover:bg-tile transition-colors">
             <span className="sr-only">{tTop("search")}</span>
             <Search className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -116,25 +120,23 @@ export default function TopNav({ farmId, alertCount = 0 }: TopNavProps) {
           <button
             onClick={() => setLangOpen(v => !v)}
             aria-label={tTop("selectLanguage")}
-            className={`relative h-11 w-11 flex items-center justify-center rounded-full transition-colors ${
-              langOpen
-                ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'
-                : 'text-slate-400 hover:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300'
+            className={`relative h-10 w-10 flex items-center justify-center rounded-[11px] border border-line transition-colors ${
+              langOpen ? 'bg-tile text-ink' : 'bg-tile-2 text-ink-2 hover:bg-tile'
             }`}
           >
             <Globe className="h-5 w-5" aria-hidden="true" />
           </button>
 
           {langOpen && (
-            <div className="absolute end-0 top-full mt-1 w-40 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg overflow-hidden z-50">
+            <div className="absolute end-0 top-full mt-2 w-40 rounded-xl border border-line bg-surface shadow-[0_22px_50px_-12px_rgba(20,37,27,.4)] overflow-hidden z-50">
               {LOCALE_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
                   onClick={() => handleLocaleSelect(opt.value)}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-start ${
                     locale === opt.value
-                      ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 font-medium'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                      ? 'bg-green-soft text-green font-medium'
+                      : 'text-ink-2 hover:bg-tile'
                   }`}
                 >
                   <span className="text-base leading-none">{opt.flag}</span>
@@ -148,12 +150,10 @@ export default function TopNav({ farmId, alertCount = 0 }: TopNavProps) {
         {/* Notification bell */}
         <Link
           href={`/${farmId}/dashboard`}
-          className="relative h-11 w-11 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors"
+          className="relative h-10 w-10 flex items-center justify-center rounded-[11px] border border-line bg-tile-2 text-ink-2 hover:bg-tile transition-colors"
         >
           {alertCount > 0 && (
-            <span className="absolute top-1.5 end-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-900">
-              {alertCount > 99 ? '99+' : alertCount}
-            </span>
+            <span className="absolute top-2 end-2.5 h-[7px] w-[7px] rounded-full bg-red ring-2 ring-paper-2" />
           )}
           <span className="sr-only">{tTop("viewNotifications")}</span>
           <Bell className="h-5 w-5" aria-hidden="true" />

@@ -38,40 +38,40 @@ export default function CalendarHeader({
       <div className="flex items-center gap-2">
         <button
           onClick={onToday}
-          className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 active:scale-95 transition-all dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+          className="rounded-[11px] border border-line bg-surface px-3 py-1.5 text-sm font-semibold text-ink hover:border-ink-4 transition-all"
         >
           {t('today')}
         </button>
-        <div className="flex items-center rounded-md border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="flex items-center rounded-[11px] border border-line overflow-hidden">
           <button
             onClick={onPrev}
-            className="flex h-11 w-11 md:h-8 md:w-8 items-center justify-center bg-white hover:bg-slate-50 text-slate-600 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300"
+            className="flex h-11 w-11 md:h-8 md:w-8 items-center justify-center bg-surface hover:bg-tile text-ink-2 transition-colors"
             aria-label={t('previous')}
           >
             <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
           </button>
           <button
             onClick={onNext}
-            className="flex h-11 w-11 md:h-8 md:w-8 items-center justify-center bg-white hover:bg-slate-50 text-slate-600 transition-colors border-s border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700"
+            className="flex h-11 w-11 md:h-8 md:w-8 items-center justify-center bg-surface hover:bg-tile text-ink-2 transition-colors border-s border-line"
             aria-label={t('next')}
           >
             <ChevronRight className="h-4 w-4 rtl:rotate-180" />
           </button>
         </div>
-        <h1 className="text-lg font-semibold text-slate-900 dark:text-white">{label}</h1>
+        <h1 className="font-heading text-lg font-bold text-ink">{label}</h1>
       </div>
 
       {/* Right: view toggle + add */}
       <div className="flex items-center gap-3">
-        <div className="flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-700 dark:bg-slate-800">
+        <div className="flex rounded-[9px] border border-line bg-tile-2 p-[3px]">
           {VIEWS.map((v) => (
             <button
               key={v.key}
               onClick={() => onViewChange(v.key)}
-              className={`rounded-md px-3 py-1 text-sm font-medium transition-all ${
+              className={`rounded-[7px] px-3.5 py-1.5 text-sm font-semibold transition-all ${
                 view === v.key
-                  ? 'bg-white shadow-sm text-slate-900 dark:bg-slate-700 dark:text-white'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                  ? 'bg-surface shadow-sm text-ink'
+                  : 'text-ink-3 hover:text-ink-2'
               }`}
             >
               {v.label}
@@ -83,7 +83,7 @@ export default function CalendarHeader({
           <button
             id="add-event-btn"
             onClick={onAddEvent}
-            className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 active:scale-95 transition-all"
+            className="flex items-center gap-2 rounded-[11px] bg-gradient-to-b from-[#37905C] to-green px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_16px_-4px_rgba(47,125,79,.5)] hover:brightness-105 transition-all"
           >
             <Plus className="h-4 w-4" />
             {t('addEvent')}

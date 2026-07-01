@@ -1,10 +1,10 @@
 import type { DataSource } from './types';
 
 const sourceConfig: Record<DataSource, { label: string; classes: string }> = {
-  sensor:   { label: 'Sensor',   classes: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
-  manual:   { label: 'Manual',   classes: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' },
-  computed: { label: 'Computed', classes: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300' },
-  forecast: { label: 'Forecast', classes: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300' },
+  sensor:   { label: 'Sensor',   classes: 'bg-blue-soft text-blue' },
+  manual:   { label: 'Manual',   classes: 'bg-purple-soft text-purple' },
+  computed: { label: 'Computed', classes: 'bg-teal-soft text-teal' },
+  forecast: { label: 'Forecast', classes: 'bg-gold-soft text-gold' },
 };
 
 interface SourceBadgeProps {
@@ -20,7 +20,7 @@ export default function SourceBadge({ source, updatedAt }: SourceBadgeProps) {
         {cfg.label}
       </span>
       {updatedAt && (
-        <span className="text-xs text-slate-400 dark:text-slate-500">
+        <span className="text-xs text-ink-4">
           {updatedAt.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
         </span>
       )}

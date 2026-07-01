@@ -16,14 +16,14 @@ function KPISkeleton() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {[0, 1, 2, 3].map(i => (
-        <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />
+        <div key={i} className="h-28 animate-pulse rounded-2xl bg-tile" />
       ))}
     </div>
   );
 }
 
 function CardSkeleton({ height }: { height: string }) {
-  return <div className={`${height} animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800`} />;
+  return <div className={`${height} animate-pulse rounded-2xl bg-tile`} />;
 }
 
 async function getBlockCount(farmId: string): Promise<number> {
@@ -38,16 +38,16 @@ async function getBlockCount(farmId: string): Promise<number> {
 const STEP_ICONS = [Layers, FlaskConical, CalendarDays, Cpu];
 const STEP_HREFS = ["blocks", "blocks", "calendar", "settings"];
 const STEP_COLORS = [
-  "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400",
-  "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
-  "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400",
-  "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400",
+  "bg-green-soft text-green",
+  "bg-blue-soft text-blue",
+  "bg-teal-soft text-teal",
+  "bg-amber-soft text-amber",
 ];
 const STEP_BORDERS = [
-  "border-brand-200 dark:border-brand-800 hover:border-brand-400",
-  "border-blue-200 dark:border-blue-800 hover:border-blue-400",
-  "border-emerald-200 dark:border-emerald-800 hover:border-emerald-400",
-  "border-amber-200 dark:border-amber-800 hover:border-amber-400",
+  "border-line hover:border-green",
+  "border-line hover:border-blue",
+  "border-line hover:border-teal",
+  "border-line hover:border-amber",
 ];
 
 async function FarmSetup({ farmId }: { farmId: string }) {
@@ -57,10 +57,10 @@ async function FarmSetup({ farmId }: { farmId: string }) {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink">
           {t('welcomeTitle')}
         </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-ink-2">
           {t('welcomeSubtitle')}
         </p>
       </div>
@@ -72,19 +72,19 @@ async function FarmSetup({ farmId }: { farmId: string }) {
             <Link
               key={key}
               href={`/${farmId}/${STEP_HREFS[i]}`}
-              className={`flex items-start gap-4 rounded-xl border bg-white dark:bg-slate-900 p-5 transition-all hover:shadow-md ${STEP_BORDERS[i]}`}
+              className={`flex items-start gap-4 rounded-2xl border bg-surface p-5 transition-all ${STEP_BORDERS[i]}`}
             >
               <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${STEP_COLORS[i]}`}>
                 <Icon className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  <p className="text-sm font-semibold text-ink">
                     {t(`steps.${key}.title`)}
                   </p>
-                  <ArrowRight className="h-4 w-4 text-slate-400 shrink-0 rtl:rotate-180" />
+                  <ArrowRight className="h-4 w-4 text-ink-3 shrink-0 rtl:rotate-180" />
                 </div>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                <p className="mt-1 text-xs text-ink-2 leading-relaxed">
                   {t(`steps.${key}.desc`)}
                 </p>
               </div>
@@ -93,8 +93,8 @@ async function FarmSetup({ farmId }: { farmId: string }) {
         })}
       </div>
 
-      <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-6 text-center">
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+      <div className="rounded-2xl border border-dashed border-line bg-tile p-6 text-center">
+        <p className="text-sm text-ink-2">
           {t('emptyHint')}
         </p>
       </div>
@@ -116,10 +116,10 @@ export default async function Dashboard({ params }: { params: Promise<{ farmId: 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink">
           {t('title')}
         </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-ink-2">
           {t('subtitle')}
         </p>
       </div>

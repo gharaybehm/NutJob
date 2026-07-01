@@ -12,10 +12,10 @@ const BlockSatelliteMapClient = dynamic(
     ssr: false,
     loading: () => (
       <div
-        className="flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 animate-pulse"
+        className="flex items-center justify-center rounded-xl bg-tile border border-line animate-pulse"
         style={{ height: '480px' }}
       >
-        <span className="text-sm text-slate-400">Loading map…</span>
+        <span className="text-sm text-ink-3">Loading map…</span>
       </div>
     ),
   },

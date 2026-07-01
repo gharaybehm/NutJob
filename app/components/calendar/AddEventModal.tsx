@@ -61,8 +61,8 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
   const [pickedConsumableId, setPickedConsumableId] = useState('');
   const [pickedQty, setPickedQty]         = useState('');
 
-  const fieldCls = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500';
-  const labelCls = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400';
+  const fieldCls = 'w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:border-green focus:outline-none focus:ring-2 focus:ring-green/20';
+  const labelCls = 'mb-1 block font-mono text-[10px] font-semibold uppercase tracking-wide text-ink-3';
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -124,11 +124,11 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t('title')}</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 transition-colors">
+      <div className="absolute inset-0 bg-ink/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-surface shadow-2xl border border-line">
+        <div className="flex items-center justify-between border-b border-line-soft px-6 py-4">
+          <h2 className="font-heading text-lg font-semibold text-ink">{t('title')}</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-ink-3 hover:bg-tile transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -169,8 +169,8 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
           </div>
 
           {type === 'irrigation' && (
-            <div className="rounded-xl bg-blue-50 p-4 ring-1 ring-blue-100 dark:bg-blue-900/20 dark:ring-blue-800 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">{t('irrigationDetails')}</p>
+            <div className="rounded-xl bg-blue-soft p-4 border border-blue/15 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue">{t('irrigationDetails')}</p>
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className={labelCls}>{t('durationHrs')}</label>
@@ -189,8 +189,8 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
           )}
 
           {type === 'fertigation' && (
-            <div className="rounded-xl bg-green-50 p-4 ring-1 ring-green-100 dark:bg-green-900/20 dark:ring-green-800 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-green-600 dark:text-green-400">{t('fertigationDetails')}</p>
+            <div className="rounded-xl bg-gold-soft p-4 border border-gold/15 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gold">{t('fertigationDetails')}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>{t('fertilizerType')}</label>
@@ -242,8 +242,8 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
           )}
 
           {type === 'spraying' && (
-            <div className="rounded-xl bg-amber-50 p-4 ring-1 ring-amber-100 dark:bg-amber-900/20 dark:ring-amber-800 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">{t('sprayingDetails')}</p>
+            <div className="rounded-xl bg-purple-soft p-4 border border-purple/15 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-purple">{t('sprayingDetails')}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>{t('pesticideProduct')}</label>
@@ -295,8 +295,8 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
           )}
 
           {type === 'pruning' && (
-            <div className="rounded-xl bg-purple-50 p-4 ring-1 ring-purple-100 dark:bg-purple-900/20 dark:ring-purple-800 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-purple-600 dark:text-purple-400">{t('pruningDetails')}</p>
+            <div className="rounded-xl bg-teal-soft p-4 border border-teal/15 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-teal">{t('pruningDetails')}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>{t('pruningType')}</label>
@@ -318,19 +318,19 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
           )}
 
           {consumables.length > 0 && type !== 'fertigation' && type !== 'spraying' && (
-            <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+            <div className="rounded-xl bg-tile p-4 border border-line space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-2">
                 Planned Materials
               </p>
               {materials.length > 0 && (
                 <ul className="space-y-1.5">
                   {materials.map((m, i) => (
                     <li key={m.consumableId} className="flex items-center justify-between gap-2 text-sm">
-                      <span className="truncate text-slate-700 dark:text-slate-300">{m.consumableName}</span>
-                      <span className="shrink-0 text-slate-500">{m.plannedQuantity} {m.unit}</span>
+                      <span className="truncate text-ink-2">{m.consumableName}</span>
+                      <span className="shrink-0 text-ink-3">{m.plannedQuantity} {m.unit}</span>
                       <button type="button"
                         onClick={() => setMaterials((prev) => prev.filter((_, j) => j !== i))}
-                        className="shrink-0 text-xs text-red-400 hover:text-red-600 transition-colors">
+                        className="shrink-0 text-xs text-red/70 hover:text-red transition-colors">
                         Remove
                       </button>
                     </li>
@@ -368,7 +368,7 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
                     setPickedConsumableId('');
                     setPickedQty('');
                   }}
-                  className="shrink-0 rounded-lg bg-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 transition-colors whitespace-nowrap">
+                  className="shrink-0 rounded-lg bg-tile-2 px-3 py-2 text-sm font-medium text-ink-2 hover:bg-line transition-colors whitespace-nowrap">
                   + Add
                 </button>
               </div>
@@ -383,11 +383,11 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
 
           <div className="flex justify-end gap-3 pt-1">
             <button type="button" onClick={onClose}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors">
+              className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink hover:border-ink-4 transition-colors">
               {t('cancel')}
             </button>
             <button type="submit" id="save-event-btn"
-              className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 active:scale-95 transition-all">
+              className="rounded-lg bg-green px-5 py-2 text-sm font-medium text-white shadow-sm hover:brightness-105 transition-all">
               {t('save')}
             </button>
           </div>

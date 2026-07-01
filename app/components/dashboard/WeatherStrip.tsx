@@ -19,11 +19,11 @@ export default async function WeatherStrip({ farmId }: { farmId: string }) {
 
   if (!coords) {
     return (
-      <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+      <div className="rounded-2xl border border-line bg-surface p-4">
         <div className="flex items-center justify-between mb-4 px-2">
-          <h2 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">{t('title')}</h2>
+          <h2 className="font-heading text-base font-semibold leading-6 text-ink">{t('title')}</h2>
         </div>
-        <div className="text-sm text-slate-500 px-2">{t('failedToLoad')}</div>
+        <div className="text-sm text-ink-3 px-2">{t('failedToLoad')}</div>
       </div>
     );
   }
@@ -53,36 +53,36 @@ export default async function WeatherStrip({ farmId }: { farmId: string }) {
 
   if (forecast.length === 0) {
     return (
-      <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+      <div className="rounded-2xl border border-line bg-surface p-4">
         <div className="flex items-center justify-between mb-4 px-2">
-          <h2 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">{t('title')}</h2>
-          <span className="text-sm text-slate-500">{coordLabel}</span>
+          <h2 className="font-heading text-base font-semibold leading-6 text-ink">{t('title')}</h2>
+          <span className="text-sm text-ink-3">{coordLabel}</span>
         </div>
-        <div className="text-sm text-slate-500 px-2">{t('failedToLoad')}</div>
+        <div className="text-sm text-ink-3 px-2">{t('failedToLoad')}</div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+    <div className="rounded-2xl border border-line bg-surface p-4">
       <div className="flex items-center justify-between mb-4 px-2">
-        <h2 className="text-base font-semibold leading-6 text-slate-900 dark:text-white">{t('title')}</h2>
-        <span className="text-sm text-slate-500">{coordLabel}</span>
+        <h2 className="font-heading text-base font-semibold leading-6 text-ink">{t('title')}</h2>
+        <span className="text-sm text-ink-3">{coordLabel}</span>
       </div>
       <div className="flex w-full overflow-x-auto gap-4 pb-2">
         {forecast.map((day) => {
           const Icon = day.icon;
           return (
-            <div key={day.rawDate} className="flex min-w-[80px] flex-col items-center justify-center rounded-lg p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-              <span className="text-sm font-medium text-slate-900 dark:text-white">{day.day}</span>
-              <span className="text-xs text-slate-500 mb-2">{day.date}</span>
-              <Icon className={`h-8 w-8 mb-2 ${day.rain > 50 ? 'text-blue-500' : day.rain > 0 ? 'text-slate-400' : 'text-amber-400'}`} />
-              <div className="flex gap-2 text-sm font-medium">
-                <span className="text-slate-900 dark:text-white" dir="ltr">{formatTemp(day.tempH, locale)}</span>
-                <span className="text-slate-400" dir="ltr">{formatTemp(day.tempL, locale)}</span>
+            <div key={day.rawDate} className="flex min-w-[80px] flex-col items-center justify-center rounded-xl p-3 hover:bg-tile transition-colors">
+              <span className="font-mono text-[10px] tracking-wide text-ink-3">{day.day.toUpperCase()}</span>
+              <span className="text-xs text-ink-4 mb-2">{day.date}</span>
+              <Icon className={`h-7 w-7 mb-2 ${day.rain > 50 ? 'text-blue' : day.rain > 0 ? 'text-ink-3' : 'text-amber'}`} />
+              <div className="flex gap-2 text-sm font-semibold font-heading">
+                <span className="text-ink" dir="ltr">{formatTemp(day.tempH, locale)}</span>
+                <span className="text-ink-4" dir="ltr">{formatTemp(day.tempL, locale)}</span>
               </div>
               {day.rain > 0 && (
-                <span className="text-xs text-blue-500 font-medium mt-1" dir="ltr">{formatPercent(day.rain, locale)}</span>
+                <span className="font-mono text-[9.5px] text-blue font-medium mt-1" dir="ltr">{formatPercent(day.rain, locale)}</span>
               )}
             </div>
           );
