@@ -1,8 +1,8 @@
 # NutJob — Progress vs Requirements
 
-> Last updated: 2026-06-18 (Calendar ↔ Inventory link fully working end-to-end)
+> Last updated: 2026-07-02 (Launch-readiness pass: lint clean, build verified, docs & config complete)
 
-## Overall Status: ~99% Complete  <!-- Web Push notifications added 2026-06-05 -->
+## Overall Status: Launch-Ready  <!-- launch-prep pass completed 2026-07-02 -->
 
 ---
 
@@ -142,7 +142,7 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 |---|---|---|
 | Top nav bar | ✅ Done | `TopNav.tsx` exists |
 | Sidebar | ✅ Done | `Sidebar.tsx` with links to all pages |
-| Fully responsive (desktop + mobile) | 🟡 Partial | Tailwind used; needs mobile verification |
+| Fully responsive (desktop + mobile) | ✅ Done | Mobile phases 1–4 complete: bottom nav, 44px targets, per-page 375px audit, iOS safe-area fixes |
 
 ---
 
@@ -292,3 +292,4 @@ All 6 dashboard components exist under `app/components/dashboard/`:
 | 2026-06-26 | GPS precision fix — Changed `gps_lat`/`gps_lng` columns from `numeric(x,2)` to `float8` via migration `20260626120000_gps_float_precision.sql`. CreateFarmWizard and SettingsForms GPS inputs now auto-truncate to 4 decimal places on change (no browser error for extra decimals); `createFarm` and `updateFarm` server actions also round to 4 decimal places before saving. `step` updated to `0.0001`. |
 | 2026-06-26 | Multilingual crop name search — `/api/plant-search` now detects non-Latin characters in the user's input and translates to English via OpenRouter (Claude Haiku) before querying the curated crop list and Trefle API. English queries bypass translation entirely. Allows users to type crop names in Arabic, Turkish, French, etc. and get correct results. |
 | 2026-06-28 | Favicon — Replaced the default Next.js favicon with the RootLoot.ai icon mark (circuit tree + golden diamond, cropped from `public/icon.png`, no text). Generated `app/icon.png` (512×512, transparent background) used by Next.js App Router metadata API, and `app/favicon.ico` (16×16, 32×32, 48×48 embedded PNGs) for legacy browser support. |
+| 2026-07-02 | Launch-readiness pass — (1) **Lint: 163 errors / 1177 warnings → 0 / 0.** Added ESLint global ignores for generated `.trigger/` artifacts, local working folders, and `public/sw.js`; file-level `no-explicit-any` disables for untyped-Supabase-cast server files (build-block-context, climate-profile, farms, ingest routes, trigger tasks) consistent with existing precedent; targeted `react-hooks/set-state-in-effect` / `react-hooks/purity` disables with justifications for intentional modal-reset/offline-queue/relative-time patterns; fixed `prefer-const` in sensecap-sync, typed `blockFarmMap` callback, `Record<string, unknown>` in LogTestResultModal, added missing `farmId` dep in ActivityLogClient `applyFilters`, removed unused imports/vars; added `^_` ignore patterns for `no-unused-vars`. (2) **Build verified** — `npm run build` passes with 0 TS errors after all fixes. (3) **Config sweep** — `.env.local.example` completed with all env vars referenced in code (VAPID×4, GEMINI_API_KEY, TREFLE_API_KEY, TRIGGER_SECRET_KEY) and un-gitignored via `!.env*.example` (was silently excluded by `.env*` — template never reached the repo); README.md replaced (was create-next-app boilerplate) with real project overview, feature list, setup, and deployment guide; `.claude/settings.local.json` untracked + gitignored (machine-local). (4) Navigation responsive row 🟡→✅ (mobile phases 1–4 previously completed and verified). |

@@ -169,6 +169,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
     : null;
   const formatShort = (d: Date) =>
     d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  // eslint-disable-next-line react-hooks/purity -- coarse 48h expiry check; per-render evaluation is intentional
   const isExpiringSoon = latestExpiry && (latestExpiry.getTime() - Date.now()) < 2 * 24 * 60 * 60 * 1000;
 
   return (

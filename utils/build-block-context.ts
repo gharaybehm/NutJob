@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- untyped Supabase rows shaped into prompt text */
 // Shared AI Agronomist context builder.
 //
 // Structures farm data into three freshness tiers so the AI can reason about
@@ -76,7 +77,6 @@ export async function buildAllBlockContexts(
   farmId?: string | null
 ): Promise<BlockContextResult> {
   const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
 
   // ── fetch all data in parallel ──────────────────────────────────────────────
   const staleDailyThreshold = new Date(today.getTime() - 25 * 60 * 60 * 1000); // 25h ago

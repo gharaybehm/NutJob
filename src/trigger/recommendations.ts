@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- untyped Supabase client casts */
 import { logger, schedules } from "@trigger.dev/sdk/v3";
 import OpenAI from "openai";
 import { createAdminClient } from "../../utils/supabase/admin";

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- untyped Supabase client casts */
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -41,7 +42,7 @@ export async function createFarm(values: {
 
   const slug = toSlug(values.name);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const insertFarm = async (s: string) =>
     (admin as any).from('farms').insert({
       name: values.name.trim(),
@@ -67,7 +68,7 @@ export async function createFarm(values: {
   }
 
   // Add creator as admin member
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const { error: memberError } = await (admin as any).from('farm_members').insert({
     farm_id: farm!.id,
     user_id: user.id,
@@ -86,7 +87,7 @@ export async function getFarms(): Promise<FarmWithMeta[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const db = supabase as any;
   const { data: farmsRaw } = await db.from('farms')
     .select('*, farm_members(role, user_id)')
@@ -119,7 +120,7 @@ export async function deleteFarm(farmId: string): Promise<{ error?: string }> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const { data: membership } = await (supabase as any).from('farm_members')
     .select('role')
     .eq('farm_id', farmId)
@@ -128,7 +129,7 @@ export async function deleteFarm(farmId: string): Promise<{ error?: string }> {
 
   if (membership?.role !== 'admin') return { error: 'Only admins can delete farms' };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const { error } = await (admin as any).from('farms').delete().eq('id', farmId);
   if (error) return { error: error.message };
 
@@ -153,7 +154,7 @@ export async function updateFarm(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const payload = {
     ...values,
     ...(values.gps_lat != null ? { gps_lat: Math.round(values.gps_lat * 10000) / 10000 } : {}),

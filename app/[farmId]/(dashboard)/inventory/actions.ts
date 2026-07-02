@@ -315,7 +315,7 @@ export async function getRecentCalendarEvents(farmId?: string) {
 
   // Scope to this farm's blocks if farmId is provided
   if (farmId) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const { data: farmBlocks } = await (supabase.from('blocks') as any)
       .select('id')
       .eq('farm_id', farmId);

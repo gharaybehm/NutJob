@@ -269,6 +269,7 @@ export default function SoilWaterTab({ data, blockId, sensorCount = 0, refreshKe
 
   useEffect(() => {
     if (!blockId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag for async fetch triggered by prop change
     setHistoryLoading(true);
     getLabReadings(blockId).then(result => {
       setHistory((result.data ?? []) as ManualReading[]);

@@ -19,8 +19,6 @@ import {
   type ActivityLogEntry,
   type ActivityDetails,
   type IrrigationDetails,
-  type FertigationDetails,
-  type SprayingDetails,
   type ScoutingDetails,
   type PruningDetails,
 } from "@/app/[farmId]/(dashboard)/activity/actions";

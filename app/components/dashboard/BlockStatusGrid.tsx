@@ -17,8 +17,8 @@ interface BlockStatusItem {
 async function getBlocks(farmId: string): Promise<BlockStatusItem[]> {
   const supabase = await createClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [{ data: dbBlocks }, { data: soilLatest }, { data: activeAlerts }] = await Promise.all([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase.from("blocks") as any)
       .select("id, name, variety, area, area_unit")
       .eq("farm_id", farmId),

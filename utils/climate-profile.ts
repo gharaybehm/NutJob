@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- untyped Supabase client casts */
 // Fetches 3-year monthly climate normals from the Open-Meteo archive API
 // and caches the result in farms.climate_profile for 180 days.
 //

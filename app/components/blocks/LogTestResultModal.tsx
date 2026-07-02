@@ -301,6 +301,7 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset form state when modal opens
       setBlockId(defaultBlockId ?? '');
       setFile(null);
       setError(null);
@@ -332,7 +333,7 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
           setPh(r.ph != null ? String(r.ph) : '');
           setSoilEc(r.soil_ec != null ? String(r.soil_ec) : '');
           
-          const p = (r.parameters ?? {}) as Record<string, any>;
+          const p = (r.parameters ?? {}) as Record<string, unknown>;
           setWaterEc(p.water_ec_us_cm != null ? String(p.water_ec_us_cm) : '');
           setSoilMoisture(r.soil_moisture != null ? String(r.soil_moisture) : '');
           setRootZoneTemp(r.root_zone_temp != null ? String(r.root_zone_temp) : '');

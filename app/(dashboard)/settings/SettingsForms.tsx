@@ -538,6 +538,7 @@ function PushNotificationToggle({ farmId }: { farmId: string }) {
 
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- browser capability check must run post-mount
       setStatus('unsupported'); return
     }
     if (Notification.permission === 'denied') {

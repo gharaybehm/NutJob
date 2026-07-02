@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- untyped Supabase client casts */
 // Shared sensor authentication helper for ingest routes.
 // Underscore prefix prevents Next.js from treating this as a route handler.
 

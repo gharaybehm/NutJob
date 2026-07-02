@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch device online/battery status in one batched call (max 50 per SenseCAP API)
     const deviceEuis: string[] = sensors.map((s: { device_id: string }) => s.device_id);
-    let statusMap: Record<string, { online: boolean; last_seen: string | null }> = {};
+    const statusMap: Record<string, { online: boolean; last_seen: string | null }> = {};
 
     try {
       const statuses = await client.fetchDeviceStatus(deviceEuis);

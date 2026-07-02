@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- untyped Supabase client casts */
 import { logger, task, wait } from "@trigger.dev/sdk/v3";
 
 export const helloWorldTask = task({

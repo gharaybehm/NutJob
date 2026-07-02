@@ -158,7 +158,7 @@ export default function CalendarPage({
   initialEvents = [],
   consumables = [],
   userRole = "worker",
-  farmId,
+  farmId: _farmId,
 }: {
   initialEvents?: CalendarEvent[];
   consumables?: ConsumableSummary[];

@@ -69,6 +69,7 @@ export default async function ActivityFeed({ farmId }: { farmId: string }) {
   const count = activities.length;
 
   function relativeTime(dateStr: string) {
+    // eslint-disable-next-line react-hooks/purity -- async server component, rendered once per request
     const diffMs = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diffMs / 60_000);
     const hrs = Math.floor(mins / 60);

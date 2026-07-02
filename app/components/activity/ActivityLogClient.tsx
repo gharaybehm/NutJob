@@ -157,6 +157,7 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
     const queued = readQueue();
     if (queued.length === 0) return;
     const ids = new Set(queued.map((e) => e.id));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate offline queue from localStorage post-mount
     setPendingIds(ids);
     const fakeEntries: ActivityLogEntry[] = queued.map((q) => ({
       id: q.id, title: q.title, activity_type: q.activity_type,
@@ -189,6 +190,7 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- kick off offline-queue sync on mount when online
     if (navigator.onLine) syncQueue();
     window.addEventListener("online", syncQueue);
     return () => window.removeEventListener("online", syncQueue);
@@ -200,7 +202,7 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
       setEntries(result.entries);
       setTotal(result.total);
     });
-  }, []);
+  }, [farmId]);
 
   const handleSearch = (v: string) => { setSearch(v); applyFilters(v, typeFilter, blockFilter); };
   const handleType   = (v: ActivityType) => { setTypeFilter(v); applyFilters(search, v, blockFilter); };
