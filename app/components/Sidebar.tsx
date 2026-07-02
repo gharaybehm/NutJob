@@ -94,8 +94,8 @@ export default function Sidebar({
 
   return (
     <div className="hidden h-full w-[238px] shrink-0 flex-col bg-gradient-to-b from-sidebar-from to-sidebar-to px-4 py-[22px] md:flex">
-      <div className="mb-4 flex items-center gap-3 px-2 pb-2">
-        <Image src="/logo-dark-transparent.png" alt="RootLoot" width={550} height={175} className="h-[130px] w-auto object-contain mix-blend-screen brightness-125" unoptimized />
+      <div className="mb-3 px-2">
+        <Image src="/logo-dark-transparent.png" alt="RootLoot" width={400} height={128} className="h-[80px] w-auto object-contain mix-blend-screen brightness-125" unoptimized />
       </div>
 
       <div className="px-2.5 pb-2 font-mono text-[9px] tracking-[1.5px] text-sidebar-text-muted">
