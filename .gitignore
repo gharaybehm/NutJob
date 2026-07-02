@@ -41,3 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 .trigger
+
+# local working folders
+/design_handoff_rootloot_portal/
+/scratch/
