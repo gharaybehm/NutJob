@@ -17,7 +17,12 @@ export async function GET(request: NextRequest) {
   // Auth: same CRON_SECRET pattern as /api/cron/weather
   const secret = request.nextUrl.searchParams.get("secret");
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && secret !== cronSecret) {
+  // Fail closed: a missing CRON_SECRET must not leave the endpoint open in production
+  if (!cronSecret) {
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 503 });
+    }
+  } else if (secret !== cronSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

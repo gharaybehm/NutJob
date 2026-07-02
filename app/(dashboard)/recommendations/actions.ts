@@ -321,7 +321,8 @@ export async function generateAIRecommendations(): Promise<{ count: number; mode
 
     // Fire push notifications per farm (non-blocking)
     const { data: blocks } = await admin.from("blocks").select("id, farm_id");
-    const blockFarmMap = new Map((blocks ?? []).map((b: { id: string; farm_id: string }) => [b.id, b.farm_id]));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- generated DB types predate blocks.farm_id migration
+    const blockFarmMap = new Map((blocks ?? []).map((b: any) => [b.id as string, b.farm_id as string]));
     const farmIds = [...new Set(toInsert.map((r) => blockFarmMap.get(r.block_id)).filter(Boolean) as string[])];
     if (farmIds.length > 0) {
       import("@/utils/push").then(({ sendPushToFarm }) => {
