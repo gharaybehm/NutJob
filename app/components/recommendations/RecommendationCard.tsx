@@ -92,11 +92,9 @@ export default function RecommendationCard({
       </div>
 
       {status === "pending" ? (
-        <div className="flex items-center justify-between px-[18px] py-3.5 border-t border-line-soft">
-          {confidencePct !== null ? (
-            <ConfidenceBar value={confidencePct} />
-          ) : <span />}
-          <div className="flex items-center gap-1.5">
+        <div className="px-[18px] pt-3 pb-3.5 border-t border-line-soft space-y-2.5">
+          {confidencePct !== null && <ConfidenceBar value={confidencePct} />}
+          <div className="flex items-center justify-end gap-1.5">
             <button
               onClick={() => onSkip(id)}
               disabled={isProcessing}
