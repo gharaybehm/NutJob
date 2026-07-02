@@ -34,7 +34,7 @@ export default async function LoginPage({
         />
 
         <div className="relative z-10">
-          <Image src="/logo-dark-transparent.png" alt={t('logoAlt')} width={220} height={70} className="h-[52px] w-auto object-contain mix-blend-screen brightness-125" unoptimized />
+          <Image src="/logo-dark-transparent.png" alt={t('logoAlt')} width={660} height={210} className="h-[156px] w-auto object-contain mix-blend-screen brightness-125" unoptimized />
         </div>
 
         <div className="relative z-10 max-w-lg">
