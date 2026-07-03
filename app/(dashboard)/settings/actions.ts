@@ -72,49 +72,54 @@ export async function updatePassword(formData: FormData) {
   return { success: 'Password updated successfully' }
 }
 
-export async function updateUserRole(userId: string, role: 'admin' | 'supervisor' | 'worker') {
+export async function updateUserRole(farmId: string, userId: string, role: 'admin' | 'supervisor' | 'worker') {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated' }
 
-  // Check if current user is an admin
-  const { data: curProfile } = await supabase
-    .from('user_profiles')
+  // Check if current user is an admin on this farm (per-farm role is authoritative)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: curMembership } = await (supabase as any)
+    .from('farm_members')
     .select('role')
-    .eq('id', user.id)
+    .eq('farm_id', farmId)
+    .eq('user_id', user.id)
     .single()
 
-  if (curProfile?.role !== 'admin') {
+  if (curMembership?.role !== 'admin') {
     return { error: 'Only admins can change user roles' }
   }
 
   const adminClient = createAdminClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (adminClient.from('user_profiles') as any)
-    .update({ role, updated_at: new Date().toISOString() })
-    .eq('id', userId)
+  const { error } = await (adminClient as any).from('farm_members')
+    .update({ role })
+    .eq('farm_id', farmId)
+    .eq('user_id', userId)
 
   if (error) {
     return { error: error.message }
   }
 
-  revalidatePath('/settings')
+  revalidatePath(`/${farmId}/settings`)
   return { success: 'User role updated successfully' }
 }
 
-export async function createWorker(formData: FormData) {
+export async function createWorker(farmId: string, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated' }
 
-  // Check if current user is admin or supervisor
-  const { data: curProfile } = await supabase
-    .from('user_profiles')
+  // Check if current user is admin or supervisor on this farm (per-farm role is authoritative)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: curMembership } = await (supabase as any)
+    .from('farm_members')
     .select('role')
-    .eq('id', user.id)
+    .eq('farm_id', farmId)
+    .eq('user_id', user.id)
     .single()
 
-  if (curProfile?.role !== 'admin' && curProfile?.role !== 'supervisor') {
+  if (curMembership?.role !== 'admin' && curMembership?.role !== 'supervisor') {
     return { error: 'Only admins and supervisors can create new workers' }
   }
 
@@ -160,7 +165,23 @@ export async function createWorker(formData: FormData) {
     return { error: profileError.message }
   }
 
-  revalidatePath('/settings')
+  // 3. Scope the new user to this farm — without this row they'd never appear
+  // in this farm's Team tab or be able to access it at all
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: memberError } = await (adminClient as any).from('farm_members')
+    .insert({
+      farm_id: farmId,
+      user_id: newUser.user.id,
+      role: role,
+    })
+
+  if (memberError) {
+    // Attempt rollback of auth user + profile
+    await adminClient.auth.admin.deleteUser(newUser.user.id)
+    return { error: memberError.message }
+  }
+
+  revalidatePath(`/${farmId}/settings`)
   return { success: `Successfully created new ${role}` }
 }
 

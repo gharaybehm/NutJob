@@ -55,15 +55,22 @@ export default async function SettingsPage({
     .select('user_id, role')
     .eq('farm_id', farmId);
 
-  const memberIds = (farmMemberRows as { user_id: string; role: string }[]).map(m => m.user_id);
+  const memberRoleById = new Map(
+    (farmMemberRows as { user_id: string; role: 'admin' | 'supervisor' | 'worker' }[]).map(m => [m.user_id, m.role])
+  );
+  const memberIds = Array.from(memberRoleById.keys());
 
-  const { data: allUsers = [] } = memberIds.length > 0
+  const { data: profilesForMembers = [] } = memberIds.length > 0
     ? await supabase
         .from('user_profiles')
-        .select('id, full_name, phone, role, created_at')
+        .select('id, full_name, phone, created_at')
         .in('id', memberIds)
         .order('created_at', { ascending: false })
     : { data: [] };
+
+  // Role shown/edited here is the per-farm role (farm_members), not the global profile role
+  const allUsers = (profilesForMembers as { id: string; full_name: string | null; phone: string | null; created_at: string }[])
+    .map(p => ({ ...p, role: memberRoleById.get(p.id) ?? 'worker' }));
 
   // Fetch blocks scoped to this farm
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -106,6 +113,7 @@ export default async function SettingsPage({
 
       <SettingsForms
         initialProfile={profileData}
+        currentUserId={user.id}
         userRole={effectiveRole || 'worker'}
         allUsers={allUsers as { id: string; full_name: string | null; phone: string | null; role: 'admin' | 'supervisor' | 'worker'; created_at: string }[]}
         blocks={blocks as { id: string; name: string; crop_type: string; variety: string; area: number; area_unit: string; field_capacity: number | null; wilting_point: number | null; notes: string | null }[]}

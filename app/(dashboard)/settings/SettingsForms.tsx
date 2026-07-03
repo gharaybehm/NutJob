@@ -70,6 +70,7 @@ interface Block {
 
 interface SettingsFormsProps {
   initialProfile: { email: string; full_name: string; phone: string }
+  currentUserId: string
   userRole: 'admin' | 'supervisor' | 'worker'
   allUsers?: {
     id: string
@@ -250,12 +251,14 @@ function AccountTab({ initialProfile }: { initialProfile: { email: string; full_
 
 function TeamTab({
   userRole,
-  initialProfile,
+  currentUserId,
   allUsers,
+  farmId,
 }: {
   userRole: 'admin' | 'supervisor' | 'worker'
-  initialProfile: { email: string; full_name: string; phone: string }
+  currentUserId: string
   allUsers: { id: string; full_name: string | null; phone: string | null; role: 'admin' | 'supervisor' | 'worker'; created_at: string }[]
+  farmId: string
 }) {
   const [teamStatus, setTeamStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [isTeamPending, setIsTeamPending] = useState(false)
@@ -266,7 +269,7 @@ function TeamTab({
     setIsRolePending(prev => ({ ...prev, [userId]: true }))
     setRoleUpdateStatus(prev => { const next = { ...prev }; delete next[userId]; return next })
     try {
-      const res = await updateUserRole(userId, newRole)
+      const res = await updateUserRole(farmId, userId, newRole)
       if (res.error) setRoleUpdateStatus(prev => ({ ...prev, [userId]: { type: 'error', message: res.error } }))
       else if (res.success) setRoleUpdateStatus(prev => ({ ...prev, [userId]: { type: 'success', message: res.success } }))
     } catch { setRoleUpdateStatus(prev => ({ ...prev, [userId]: { type: 'error', message: 'Failed to update' } })) }
@@ -276,7 +279,7 @@ function TeamTab({
   async function onNewWorkerSubmit(formData: FormData) {
     setIsTeamPending(true); setTeamStatus(null)
     try {
-      const res = await createWorker(formData)
+      const res = await createWorker(farmId, formData)
       if (res.error) setTeamStatus({ type: 'error', message: res.error })
       else if (res.success) {
         setTeamStatus({ type: 'success', message: res.success })
@@ -313,7 +316,7 @@ function TeamTab({
               </thead>
               <tbody className="divide-y divide-tile">
                 {allUsers.map((u) => {
-                  const isSelf = u.full_name === initialProfile.full_name && u.phone === initialProfile.phone
+                  const isSelf = u.id === currentUserId
                   return (
                     <tr key={u.id} className="hover:bg-tile/50">
                       <td className="px-4 py-3 whitespace-nowrap">
@@ -1472,6 +1475,7 @@ function LanguageTab() {
 
 export default function SettingsForms({
   initialProfile,
+  currentUserId,
   userRole = 'worker',
   allUsers = [],
   blocks = [],
@@ -1519,7 +1523,7 @@ export default function SettingsForms({
 
       {/* Tab content */}
       {activeTab === 'profile'  && <AccountTab initialProfile={initialProfile} />}
-      {activeTab === 'team'     && <TeamTab userRole={userRole} initialProfile={initialProfile} allUsers={allUsers} />}
+      {activeTab === 'team'     && <TeamTab userRole={userRole} currentUserId={currentUserId} allUsers={allUsers} farmId={farmId ?? ''} />}
       {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} />}
       {activeTab === 'alerts'   && <NotificationAlertsTab farmId={farmId ?? ''} />}
       {activeTab === 'sensors'  && <SensorConnectionsTab initialSensors={sensors} blocks={blocks} farmId={farmId ?? ''} initialSensecapApiId={initialSensecapApiId} initialSensecapAccessKey={initialSensecapAccessKey} />}
