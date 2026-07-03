@@ -39,7 +39,7 @@ export async function signUp(formData: FormData) {
       data: {
         full_name: fullName,
       },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback`,
+      emailRedirectTo: `${(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '')}/auth/callback`,
     }
   })
 
@@ -75,7 +75,7 @@ export async function signUp(formData: FormData) {
 
 export async function signInWithGoogle() {
   const supabase = await createClient()
-  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback`
+  const redirectTo = `${(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, '')}/auth/callback`
   
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
