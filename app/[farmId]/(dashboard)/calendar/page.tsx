@@ -20,6 +20,17 @@ export default async function CalendarRoute({ params }: { params: Promise<{ farm
     .eq('id', user.id)
     .single();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: membership } = await (supabase as any)
+    .from('farm_members')
+    .select('role')
+    .eq('farm_id', farmId)
+    .eq('user_id', user.id)
+    .single();
+
+  // Per-farm role takes precedence over the global profile role, matching layout.tsx
+  const effectiveRole = (membership?.role as 'admin' | 'supervisor' | 'worker' | undefined) ?? profile?.role;
+
   // Fetch block IDs for this farm to scope calendar events
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: farmBlocks } = await (supabase.from('blocks') as any)
@@ -102,5 +113,5 @@ export default async function CalendarRoute({ params }: { params: Promise<{ farm
     materials: materialsMap.get(row.id) ?? [],
   }));
 
-  return <CalendarPage initialEvents={initialEvents} consumables={consumables} userRole={profile?.role || 'worker'} farmId={farmId} />;
+  return <CalendarPage initialEvents={initialEvents} consumables={consumables} userRole={effectiveRole || 'worker'} farmId={farmId} />;
 }

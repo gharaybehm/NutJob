@@ -5,12 +5,13 @@ import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { Asset, Consumable, MaintenanceEntry, UsageEntry, AssetCategory, AssetStatus, ConsumableCategory, MaintenanceType } from '@/app/components/inventory/types';
 
-export async function getAssets(): Promise<Asset[]> {
+export async function getAssets(farmId: string): Promise<Asset[]> {
   const supabase = await createClient();
 
   const { data: assetsData, error: assetsError } = await (supabase as any)
     .from('assets')
     .select('*')
+    .eq('farm_id', farmId)
     .order('created_at', { ascending: false });
 
   if (assetsError) {
@@ -45,10 +46,14 @@ export async function getAssets(): Promise<Asset[]> {
     ];
   }
 
-  const { data: maintData } = await (supabase as any)
-    .from('asset_maintenance_log')
-    .select('*')
-    .order('maintenance_date', { ascending: false });
+  const assetIds = (assetsData || []).map((a: any) => a.id);
+  const { data: maintData } = assetIds.length > 0
+    ? await (supabase as any)
+        .from('asset_maintenance_log')
+        .select('*')
+        .in('asset_id', assetIds)
+        .order('maintenance_date', { ascending: false })
+    : { data: [] };
 
   return (assetsData || []).map((asset: any) => {
     const logs = (maintData || [])
@@ -75,13 +80,14 @@ export async function getAssets(): Promise<Asset[]> {
   });
 }
 
-export async function createAsset(data: Omit<Asset, 'id' | 'maintenanceLog'>, farmId?: string): Promise<{ id: string }> {
+export async function createAsset(data: Omit<Asset, 'id' | 'maintenanceLog'>, farmId: string): Promise<{ id: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: created, error } = await (supabase as any)
     .from('assets')
     .insert({
+      farm_id: farmId,
       name: data.name,
       category: data.category,
       status: data.status,
@@ -94,15 +100,15 @@ export async function createAsset(data: Omit<Asset, 'id' | 'maintenanceLog'>, fa
 
   if (error) {
     console.warn('[Inventory] Failed to insert asset to DB, returning mock ID', error);
-    if (farmId) revalidatePath(`/${farmId}/inventory`);
+    revalidatePath(`/${farmId}/inventory`);
     return { id: `mock-asset-${Date.now()}` };
   }
 
-  if (farmId) revalidatePath(`/${farmId}/inventory`);
+  revalidatePath(`/${farmId}/inventory`);
   return { id: created.id };
 }
 
-export async function logMaintenance(assetId: string, data: Omit<MaintenanceEntry, 'id' | 'assetId'>, farmId?: string) {
+export async function logMaintenance(assetId: string, data: Omit<MaintenanceEntry, 'id' | 'assetId'>, farmId: string) {
   const supabase = await createClient();
 
   const { error } = await (supabase as any)
@@ -120,15 +126,16 @@ export async function logMaintenance(assetId: string, data: Omit<MaintenanceEntr
     console.warn('[Inventory] Failed to insert maintenance log to DB', error);
   }
 
-  if (farmId) revalidatePath(`/${farmId}/inventory`);
+  revalidatePath(`/${farmId}/inventory`);
 }
 
-export async function getConsumables(): Promise<Consumable[]> {
+export async function getConsumables(farmId: string): Promise<Consumable[]> {
   const supabase = await createClient();
 
   const { data: consumablesData, error: consError } = await (supabase as any)
     .from('consumables')
     .select('*')
+    .eq('farm_id', farmId)
     .order('name', { ascending: true });
 
   if (consError) {
@@ -165,10 +172,14 @@ export async function getConsumables(): Promise<Consumable[]> {
     ];
   }
 
-  const { data: usageData } = await (supabase as any)
-    .from('consumable_usage_log')
-    .select('*')
-    .order('usage_date', { ascending: false });
+  const consumableIds = (consumablesData || []).map((c: any) => c.id);
+  const { data: usageData } = consumableIds.length > 0
+    ? await (supabase as any)
+        .from('consumable_usage_log')
+        .select('*')
+        .in('consumable_id', consumableIds)
+        .order('usage_date', { ascending: false })
+    : { data: [] };
 
   const { data: calendarData } = await supabase
     .from('calendar_events')
@@ -204,13 +215,14 @@ export async function getConsumables(): Promise<Consumable[]> {
   });
 }
 
-export async function createConsumable(data: Omit<Consumable, 'id' | 'usageLog' | 'currentBalance'>, farmId?: string): Promise<{ id: string }> {
+export async function createConsumable(data: Omit<Consumable, 'id' | 'usageLog' | 'currentBalance'>, farmId: string): Promise<{ id: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: created, error } = await (supabase as any)
     .from('consumables')
     .insert({
+      farm_id: farmId,
       name: data.name,
       category: data.category,
       unit: data.unit,
@@ -224,11 +236,11 @@ export async function createConsumable(data: Omit<Consumable, 'id' | 'usageLog' 
 
   if (error) {
     console.warn('[Inventory] Failed to insert consumable to DB, returning mock ID', error);
-    if (farmId) revalidatePath(`/${farmId}/inventory`);
+    revalidatePath(`/${farmId}/inventory`);
     return { id: `mock-cons-${Date.now()}` };
   }
 
-  if (farmId) revalidatePath(`/${farmId}/inventory`);
+  revalidatePath(`/${farmId}/inventory`);
   return { id: created.id };
 }
 
@@ -236,7 +248,7 @@ export async function logUsage(
   consumableId: string,
   data: Omit<UsageEntry, 'id' | 'consumableId' | 'calendarEventTitle' | 'loggedBy'>,
   newBalance: number,
-  farmId?: string,
+  farmId: string,
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -266,13 +278,13 @@ export async function logUsage(
     console.warn('[Inventory] Failed to update consumable balance in DB', updateError);
   }
 
-  if (farmId) revalidatePath(`/${farmId}/inventory`);
+  revalidatePath(`/${farmId}/inventory`);
 }
 
 export async function addStock(
   consumableId: string,
   quantity: number,
-  farmId?: string,
+  farmId: string,
 ) {
   const supabase = await createClient();
 
@@ -297,8 +309,7 @@ export async function addStock(
     console.warn('[Inventory] Failed to add stock:', error);
   }
 
-  if (farmId) revalidatePath(`/${farmId}/inventory`);
-  revalidatePath('/inventory');
+  revalidatePath(`/${farmId}/inventory`);
 }
 
 export async function getRecentCalendarEvents(farmId?: string) {

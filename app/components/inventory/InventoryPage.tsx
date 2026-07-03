@@ -12,7 +12,7 @@ const AddConsumableModal = dynamic(() => import('./AddConsumableModal'), { ssr: 
 const AddStockModal = dynamic(() => import('./AddStockModal'), { ssr: false });
 const LogMaintenanceModal = dynamic(() => import('./LogMaintenanceModal'), { ssr: false });
 const LogUsageModal = dynamic(() => import('./LogUsageModal'), { ssr: false });
-import { createAsset, createConsumable, logMaintenance, logUsage, addStock } from '@/app/(dashboard)/inventory/actions';
+import { createAsset, createConsumable, logMaintenance, logUsage, addStock } from '@/app/[farmId]/(dashboard)/inventory/actions';
 
 export default function InventoryPage({
   initialAssets,
@@ -20,14 +20,14 @@ export default function InventoryPage({
   recentCalendarEvents,
   userRole,
   blocks,
-  farmId: _farmId,
+  farmId,
 }: {
   initialAssets: Asset[];
   initialConsumables: Consumable[];
   recentCalendarEvents: { id: string; title: string; date: Date; type: string }[];
   userRole: 'admin' | 'supervisor' | 'worker';
   blocks: string[];
-  farmId?: string;
+  farmId: string;
 }) {
   const t = useTranslations('inventory');
   const [activeTab, setActiveTab] = useState<'assets' | 'consumables'>('assets');
@@ -67,7 +67,7 @@ export default function InventoryPage({
     setAssets(prev => [tempAsset, ...prev]);
     
     startTransition(async () => {
-      const { id } = await createAsset(data);
+      const { id } = await createAsset(data, farmId);
       setAssets(prev => prev.map(a => a.id === tempAsset.id ? { ...a, id } : a));
     });
   };
@@ -83,7 +83,7 @@ export default function InventoryPage({
     setConsumables(prev => [...prev, tempCons].sort((a,b) => a.name.localeCompare(b.name)));
     
     startTransition(async () => {
-      const { id } = await createConsumable(data);
+      const { id } = await createConsumable(data, farmId);
       setConsumables(prev => prev.map(c => c.id === tempCons.id ? { ...c, id } : c));
     });
   };
@@ -105,7 +105,7 @@ export default function InventoryPage({
     ));
     
     startTransition(async () => {
-      await logMaintenance(maintAsset.id, data);
+      await logMaintenance(maintAsset.id, data, farmId);
     });
   };
 
@@ -116,7 +116,7 @@ export default function InventoryPage({
         : c
     ));
     startTransition(async () => {
-      await addStock(consumable.id, quantity);
+      await addStock(consumable.id, quantity, farmId);
     });
   };
 
@@ -140,7 +140,7 @@ export default function InventoryPage({
     ));
     
     startTransition(async () => {
-      await logUsage(usageConsumable.id, data, newBalance);
+      await logUsage(usageConsumable.id, data, newBalance, farmId);
     });
   };
 

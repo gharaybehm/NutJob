@@ -25,6 +25,17 @@ export default async function InventoryRoute({
     .eq('id', user.id)
     .single();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: membership } = await (supabase as any)
+    .from('farm_members')
+    .select('role')
+    .eq('farm_id', farmId)
+    .eq('user_id', user.id)
+    .single();
+
+  // Per-farm role takes precedence over the global profile role, matching layout.tsx
+  const effectiveRole = (membership?.role as 'admin' | 'supervisor' | 'worker' | undefined) ?? profile?.role;
+
   // Fetch block names scoped to this farm
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: blocksData } = await (supabase.from('blocks') as any)
@@ -35,8 +46,8 @@ export default async function InventoryRoute({
   const blockNames = (blocksData || []).map((b: { name: string }) => b.name);
 
   const [assets, consumables, recentEvents] = await Promise.all([
-    getAssets(),
-    getConsumables(),
+    getAssets(farmId),
+    getConsumables(farmId),
     getRecentCalendarEvents(farmId)
   ]);
 
@@ -45,7 +56,7 @@ export default async function InventoryRoute({
       initialAssets={assets}
       initialConsumables={consumables}
       recentCalendarEvents={recentEvents}
-      userRole={profile?.role || 'worker'}
+      userRole={effectiveRole || 'worker'}
       blocks={blockNames}
       farmId={farmId}
     />
