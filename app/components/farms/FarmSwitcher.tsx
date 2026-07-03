@@ -108,7 +108,7 @@ export default function FarmSwitcher({
           })}
           <div className="my-1.5 h-px bg-line-soft" />
           <Link
-            href="/farms"
+            href="/farms?new=1"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2.5 rounded-[10px] p-2 transition hover:bg-green-soft"
           >

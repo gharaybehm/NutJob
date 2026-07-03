@@ -27,7 +27,18 @@ export default async function SettingsPage({
     .eq('id', user.id)
     .single()
 
-  if (profile?.role === 'worker') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: membership } = await (supabase as any)
+    .from('farm_members')
+    .select('role')
+    .eq('farm_id', farmId)
+    .eq('user_id', user.id)
+    .single()
+
+  // Per-farm role takes precedence over the global profile role, matching layout.tsx
+  const effectiveRole = (membership?.role as 'admin' | 'supervisor' | 'worker' | undefined) ?? profile?.role
+
+  if (effectiveRole === 'worker') {
     redirect(`/${farmId}/dashboard?error=Unauthorized`)
   }
 
@@ -95,7 +106,7 @@ export default async function SettingsPage({
 
       <SettingsForms
         initialProfile={profileData}
-        userRole={profile?.role || 'worker'}
+        userRole={effectiveRole || 'worker'}
         allUsers={allUsers as { id: string; full_name: string | null; phone: string | null; role: 'admin' | 'supervisor' | 'worker'; created_at: string }[]}
         blocks={blocks as { id: string; name: string; crop_type: string; variety: string; area: number; area_unit: string; field_capacity: number | null; wilting_point: number | null; notes: string | null }[]}
         farmId={farmId}

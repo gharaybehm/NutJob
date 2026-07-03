@@ -49,7 +49,8 @@ import {
   X,
 } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
-import { updateFarm } from '@/app/actions/farms'
+import { useRouter } from 'next/navigation'
+import { updateFarm, deleteFarm } from '@/app/actions/farms'
 import type { SensorWithBlock, SensorFormValues, SensorType } from '@/types/sensors'
 import { SENSOR_TYPE_LABELS } from '@/types/sensors'
 
@@ -1206,6 +1207,24 @@ function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initia
   const [farmSaving, setFarmSaving] = useState(false)
   const [farmStatus, setFarmStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
+  const router = useRouter()
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  async function handleDeleteFarm() {
+    if (!farmId || deleteConfirmText.trim() !== initialName.trim()) return
+    setDeleting(true)
+    setDeleteError(null)
+    const result = await deleteFarm(farmId)
+    if (result.error) {
+      setDeleting(false)
+      setDeleteError(result.error)
+      return
+    }
+    router.push('/farms')
+  }
+
   async function handleFarmSave() {
     if (!farmId || !farmName.trim()) return
     setFarmSaving(true)
@@ -1279,6 +1298,36 @@ function WeatherAPITab({ farmId, farmName: initialName = '', farmAddress: initia
           >
             {farmSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save Farm Profile
+          </button>
+        </div>
+      </SectionCard>
+      <SectionCard title="Danger Zone" icon={Trash2}
+        description="Permanently delete this farm, including all blocks, sensors, and history. This cannot be undone.">
+        <div className="space-y-3 max-w-lg">
+          {deleteError && (
+            <div className="rounded-lg border border-red/30 bg-red/10 px-3 py-2 text-sm text-red">
+              {deleteError}
+            </div>
+          )}
+          <div>
+            <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
+              Type <span className="font-mono text-ink-2">{initialName}</span> to confirm deletion
+            </label>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={e => setDeleteConfirmText(e.target.value)}
+              placeholder={initialName}
+              className="w-full px-3 py-2.5 rounded-lg border border-red/30 bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-red transition"
+            />
+          </div>
+          <button
+            onClick={handleDeleteFarm}
+            disabled={deleting || deleteConfirmText.trim() !== initialName.trim()}
+            className="flex items-center gap-2 rounded-xl bg-red px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            Delete This Farm
           </button>
         </div>
       </SectionCard>

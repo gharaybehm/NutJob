@@ -11,6 +11,7 @@ import SignOutButton from '@/app/components/auth/SignOutButton';
 interface Props {
   farms: FarmWithMeta[];
   userName?: string;
+  openWizard?: boolean;
 }
 
 const roleStyles: Record<string, string> = {
@@ -27,9 +28,9 @@ function avatarColor(id: string) {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
-export default function FarmPicker({ farms, userName }: Props) {
+export default function FarmPicker({ farms, userName, openWizard }: Props) {
   const router = useRouter();
-  const [wizardOpen, setWizardOpen] = useState(farms.length === 0);
+  const [wizardOpen, setWizardOpen] = useState(farms.length === 0 || !!openWizard);
 
   return (
     <div className="min-h-screen bg-paper flex flex-col">
