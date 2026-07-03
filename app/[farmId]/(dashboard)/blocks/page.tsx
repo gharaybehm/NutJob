@@ -69,6 +69,16 @@ export default async function BlocksRoute({ params }: { params: Promise<{ farmId
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
 
+  const { data: membership } = await db
+    .from('farm_members')
+    .select('role')
+    .eq('farm_id', farmId)
+    .eq('user_id', user.id)
+    .single();
+
+  // Per-farm role takes precedence over the global profile role, matching layout.tsx
+  const effectiveRole = (membership?.role as 'admin' | 'supervisor' | 'worker' | undefined) ?? profile?.role;
+
   const { data, error } = await db
     .from('blocks')
     .select('id, name, crop_type, variety, area, area_unit, planting_year, rootstock, tree_count, row_spacing, tree_spacing, map_col, map_row, map_col_span, map_row_span, boundary')
@@ -198,7 +208,7 @@ export default async function BlocksRoute({ params }: { params: Promise<{ farmId
     <BlocksPage
       initialBlocks={initialBlocks}
       initialProfiles={initialProfiles}
-      userRole={profile?.role || 'worker'}
+      userRole={effectiveRole || 'worker'}
       farmId={farmId}
       farmCenter={farmCenter}
     />

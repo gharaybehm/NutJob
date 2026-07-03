@@ -419,16 +419,20 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
             <div>
               <p className="text-base font-semibold text-ink">No blocks yet</p>
               <p className="mt-1 text-sm text-ink-2">
-                Click <span className="font-medium">New Block</span> to outline your first block on the satellite map.
+                {userRole !== "worker"
+                  ? <>Click <span className="font-medium">New Block</span> to outline your first block on the satellite map.</>
+                  : "Ask a farm admin or supervisor to add the first block."}
               </p>
             </div>
-            <button
-              onClick={openNewBlock}
-              className="flex items-center gap-2 rounded-[11px] bg-gradient-to-b from-[#37905C] to-green px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_16px_-4px_rgba(47,125,79,.5)] hover:brightness-105 transition-all"
-            >
-              <Plus className="h-4 w-4" />
-              New Block
-            </button>
+            {userRole !== "worker" && (
+              <button
+                onClick={openNewBlock}
+                className="flex items-center gap-2 rounded-[11px] bg-gradient-to-b from-[#37905C] to-green px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_16px_-4px_rgba(47,125,79,.5)] hover:brightness-105 transition-all"
+              >
+                <Plus className="h-4 w-4" />
+                New Block
+              </button>
+            )}
           </div>
         ) : selectedProfile ? (
           <BlockDetailPanel
