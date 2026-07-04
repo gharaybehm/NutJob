@@ -358,6 +358,7 @@ function TeamTab({
           <InputField id="full_name_new" label="Full Name" name="full_name" placeholder="e.g. Ahmet Yılmaz" />
           <InputField id="email_new" label="Email Address" name="email" type="email" placeholder="worker@farm.com" />
           <InputField id="password_new" label="Temporary Password" name="password" type="password" placeholder="Minimum 6 characters" />
+          <p className="-mt-3 text-xs text-ink-3">If this email already has an account elsewhere, they&apos;ll be added to this farm directly — password and name above will be ignored.</p>
           <div>
             <label htmlFor="role_new" className="block text-sm font-medium leading-6 text-ink">Assigned Role</label>
             <div className="mt-2">

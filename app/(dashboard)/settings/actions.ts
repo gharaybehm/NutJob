@@ -105,6 +105,28 @@ export async function updateUserRole(farmId: string, userId: string, role: 'admi
   return { success: 'User role updated successfully' }
 }
 
+// Supabase's admin listUsers() has no email filter, so finding an existing
+// auth user by email means paginating and matching client-side.
+async function findAuthUserByEmail(
+  adminClient: ReturnType<typeof createAdminClient>,
+  email: string
+): Promise<{ id: string; email: string } | null> {
+  const PER_PAGE = 1000
+  const MAX_PAGES = 20
+  const target = email.trim().toLowerCase()
+
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage: PER_PAGE })
+    if (error) throw new Error(`Failed to look up existing users: ${error.message}`)
+
+    const match = data.users.find(u => u.email?.toLowerCase() === target)
+    if (match) return { id: match.id, email: match.email! }
+    if (data.users.length < PER_PAGE) return null
+  }
+
+  throw new Error('Too many users to search — user lookup limit exceeded')
+}
+
 export async function createWorker(farmId: string, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -128,15 +150,53 @@ export async function createWorker(farmId: string, formData: FormData) {
   const fullName = formData.get('full_name') as string
   const role = formData.get('role') as 'supervisor' | 'worker'
 
-  if (!email || !password || !fullName || !role) {
+  if (!email || !fullName || !role) {
     return { error: 'All fields are required' }
   }
 
-  if (password.length < 6) {
-    return { error: 'Password must be at least 6 characters' }
+  const adminClient = createAdminClient()
+
+  let existingUserId: string | null = null
+  try {
+    const existing = await findAuthUserByEmail(adminClient, email)
+    existingUserId = existing?.id ?? null
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to look up existing users' }
   }
 
-  const adminClient = createAdminClient()
+  // Existing account: just scope them to this farm, don't touch their global profile
+  if (existingUserId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existingMembership } = await (adminClient as any)
+      .from('farm_members')
+      .select('user_id')
+      .eq('farm_id', farmId)
+      .eq('user_id', existingUserId)
+      .maybeSingle()
+
+    if (existingMembership) {
+      return { error: 'This user is already a team member of this farm.' }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: memberError } = await (adminClient as any).from('farm_members')
+      .insert({
+        farm_id: farmId,
+        user_id: existingUserId,
+        role: role,
+      })
+
+    if (memberError) {
+      return { error: memberError.message }
+    }
+
+    revalidatePath(`/${farmId}/settings`)
+    return { success: `Added existing user to this farm as ${role}` }
+  }
+
+  if (!password || password.length < 6) {
+    return { error: 'Password must be at least 6 characters' }
+  }
 
   // 1. Create auth user in Supabase Auth
   const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
