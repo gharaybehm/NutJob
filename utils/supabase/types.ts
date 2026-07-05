@@ -553,6 +553,7 @@ export type Database = {
           confidence: number | null
           created_at: string
           expires_at: string | null
+          farm_id: string
           id: string
           llm_model: string | null
           llm_prompt_hash: string | null
@@ -570,6 +571,7 @@ export type Database = {
           confidence?: number | null
           created_at?: string
           expires_at?: string | null
+          farm_id: string
           id?: string
           llm_model?: string | null
           llm_prompt_hash?: string | null
@@ -587,6 +589,7 @@ export type Database = {
           confidence?: number | null
           created_at?: string
           expires_at?: string | null
+          farm_id?: string
           id?: string
           llm_model?: string | null
           llm_prompt_hash?: string | null
@@ -608,6 +611,13 @@ export type Database = {
             columns: ["block_id"]
             isOneToOne: false
             referencedRelation: "blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recommendations_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
             referencedColumns: ["id"]
           },
         ]

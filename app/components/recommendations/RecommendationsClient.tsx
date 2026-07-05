@@ -9,7 +9,7 @@ import {
   editRecommendation,
   generateAIRecommendations,
   generateMockRecommendations,
-} from "@/app/(dashboard)/recommendations/actions";
+} from "@/app/[farmId]/(dashboard)/recommendations/actions";
 import {
   Sparkles,
   Filter,
@@ -41,7 +41,7 @@ interface Recommendation {
 
 interface Props {
   initialRecommendations: Recommendation[];
-  farmId?: string;
+  farmId: string;
 }
 
 interface EditTarget {
@@ -51,7 +51,7 @@ interface EditTarget {
   blockName?: string;
 }
 
-export default function RecommendationsClient({ initialRecommendations, farmId: _farmId }: Props) {
+export default function RecommendationsClient({ initialRecommendations, farmId }: Props) {
   const router = useRouter();
   const t = useTranslations('recommendations');
   const [isPending, startTransition] = useTransition();
@@ -94,7 +94,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
       await editRecommendation(editTarget.id, {
         title: editTitle.trim() || editTarget.title,
         manager_note: editNote.trim() || undefined,
-      });
+      }, farmId);
       startTransition(() => { router.refresh(); });
       closeEdit();
     } catch (error) {
@@ -108,7 +108,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
   const handleStatusUpdate = async (id: string, newStatus: Status) => {
     setProcessingIds((prev) => new Set(prev).add(id));
     try {
-      await updateRecommendationStatus(id, newStatus);
+      await updateRecommendationStatus(id, newStatus, farmId);
       startTransition(() => { router.refresh(); });
     } catch (error) {
       console.error("Failed to update status:", error);
@@ -123,7 +123,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
   const handleGenerateAI = async () => {
     setProcessingIds((prev) => new Set(prev).add("ai-generate"));
     try {
-      const result = await generateAIRecommendations();
+      const result = await generateAIRecommendations(farmId);
       if ("error" in result) {
         alert(`AI generation failed: ${result.error}`);
         return;
@@ -143,7 +143,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId: 
   const handleGenerateMock = async () => {
     setProcessingIds((prev) => new Set(prev).add("generate"));
     try {
-      await generateMockRecommendations();
+      await generateMockRecommendations(farmId);
       startTransition(() => { router.refresh(); });
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);

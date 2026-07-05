@@ -27,12 +27,23 @@ export default async function RecommendationsPage({
     .eq("id", user.id)
     .single();
 
-  if (profile?.role === "worker") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: membership } = await (supabase as any)
+    .from("farm_members")
+    .select("role")
+    .eq("farm_id", farmId)
+    .eq("user_id", user.id)
+    .single();
+
+  // Per-farm role takes precedence over the global profile role, matching settings/page.tsx
+  const effectiveRole = (membership?.role as 'admin' | 'supervisor' | 'worker' | undefined) ?? profile?.role;
+
+  if (effectiveRole === "worker") {
     redirect(`/${farmId}/dashboard?error=Unauthorized`);
   }
 
   const [recommendations, t] = await Promise.all([
-    getRecommendations(),
+    getRecommendations(farmId),
     getTranslations('recommendations'),
   ]);
 
