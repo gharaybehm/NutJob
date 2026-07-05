@@ -6,6 +6,7 @@ import {
   updateProfile,
   updatePassword,
   updateUserRole,
+  removeMember,
   createWorker,
   updateBlockConfig,
   setLocale,
@@ -249,21 +250,32 @@ function AccountTab({ initialProfile }: { initialProfile: { email: string; full_
 
 // ── Tab 2: Team Management ────────────────────────────────────────────────────
 
+function buildInviteMessage(farmName: string, email: string, password: string) {
+  const url = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  return `You've been added to the ${farmName} team on NutJob. Log in at ${url} with:\nEmail: ${email}\nTemporary password: ${password}\nPlease log in and change your password.`
+}
+
 function TeamTab({
   userRole,
   currentUserId,
   allUsers,
   farmId,
+  farmName,
 }: {
   userRole: 'admin' | 'supervisor' | 'worker'
   currentUserId: string
   allUsers: { id: string; full_name: string | null; phone: string | null; role: 'admin' | 'supervisor' | 'worker'; created_at: string }[]
   farmId: string
+  farmName?: string
 }) {
+  const router = useRouter()
   const [teamStatus, setTeamStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [isTeamPending, setIsTeamPending] = useState(false)
   const [roleUpdateStatus, setRoleUpdateStatus] = useState<Record<string, { type: 'success' | 'error'; message: string }>>({})
   const [isRolePending, setIsRolePending] = useState<Record<string, boolean>>({})
+  const [newInvite, setNewInvite] = useState<{ email: string; password: string } | null>(null)
+  const [removeConfirm, setRemoveConfirm] = useState<string | null>(null)
+  const [isRemovePending, setIsRemovePending] = useState<Record<string, boolean>>({})
 
   async function handleRoleChange(userId: string, newRole: 'admin' | 'supervisor' | 'worker') {
     setIsRolePending(prev => ({ ...prev, [userId]: true }))
@@ -276,14 +288,36 @@ function TeamTab({
     setIsRolePending(prev => ({ ...prev, [userId]: false }))
   }
 
+  async function handleRemoveMember(userId: string) {
+    setIsRemovePending(prev => ({ ...prev, [userId]: true }))
+    setRoleUpdateStatus(prev => { const next = { ...prev }; delete next[userId]; return next })
+    try {
+      const res = await removeMember(farmId, userId)
+      if (res.error) {
+        setRoleUpdateStatus(prev => ({ ...prev, [userId]: { type: 'error', message: res.error } }))
+        setRemoveConfirm(null)
+      } else if (res.success) {
+        router.refresh()
+      }
+    } catch {
+      setRoleUpdateStatus(prev => ({ ...prev, [userId]: { type: 'error', message: 'Failed to remove' } }))
+      setRemoveConfirm(null)
+    }
+    setIsRemovePending(prev => ({ ...prev, [userId]: false }))
+  }
+
   async function onNewWorkerSubmit(formData: FormData) {
-    setIsTeamPending(true); setTeamStatus(null)
+    setIsTeamPending(true); setTeamStatus(null); setNewInvite(null)
     try {
       const res = await createWorker(farmId, formData)
       if (res.error) setTeamStatus({ type: 'error', message: res.error })
       else if (res.success) {
         setTeamStatus({ type: 'success', message: res.success })
+        if (res.isNewUser) {
+          setNewInvite({ email: formData.get('email') as string, password: formData.get('password') as string })
+        }
         ;(document.getElementById('new-worker-form') as HTMLFormElement)?.reset()
+        router.refresh()
       }
     } catch { setTeamStatus({ type: 'error', message: 'Something went wrong' }) }
     setIsTeamPending(false)
@@ -340,6 +374,26 @@ function TeamTab({
                         <td className="px-4 py-3 whitespace-nowrap text-right text-xs">
                           {roleUpdateStatus[u.id] && <span className={roleUpdateStatus[u.id].type === 'success' ? 'text-green font-medium' : 'text-red'}>{roleUpdateStatus[u.id].message}</span>}
                           {isRolePending[u.id] && <Loader2 className="inline h-4 w-4 animate-spin text-green" />}
+                          {!isSelf && (
+                            removeConfirm === u.id ? (
+                              <span className="ml-2 inline-flex items-center gap-2">
+                                <span className="text-ink-3">Confirm remove?</span>
+                                <button type="button" onClick={() => handleRemoveMember(u.id)} disabled={isRemovePending[u.id]}
+                                  className="font-semibold text-red hover:brightness-110 disabled:opacity-50">
+                                  {isRemovePending[u.id] ? <Loader2 className="inline h-3.5 w-3.5 animate-spin" /> : 'Remove'}
+                                </button>
+                                <button type="button" onClick={() => setRemoveConfirm(null)} disabled={isRemovePending[u.id]}
+                                  className="text-ink-3 hover:text-ink-2 disabled:opacity-50">
+                                  Cancel
+                                </button>
+                              </span>
+                            ) : (
+                              <button type="button" onClick={() => setRemoveConfirm(u.id)}
+                                className="ml-2 text-red hover:brightness-110">
+                                Remove
+                              </button>
+                            )
+                          )}
                         </td>
                       )}
                     </tr>
@@ -355,6 +409,24 @@ function TeamTab({
         description={userRole === 'admin' ? 'Create a new Supervisor or Worker. They can log in immediately with these credentials.' : 'Create a new Worker account.'}>
         <form id="new-worker-form" action={onNewWorkerSubmit} className="space-y-5 max-w-xl">
           <StatusBanner status={teamStatus} />
+          {newInvite && (
+            <div className="rounded-xl border border-line bg-tile/50 p-4 space-y-3">
+              <p className="text-sm font-semibold text-ink">Share these credentials with the new team member</p>
+              <div className="space-y-1 text-sm text-ink-2">
+                <p><span className="text-ink-4">Farm:</span> {farmName || '—'}</p>
+                <p><span className="text-ink-4">Email:</span> {newInvite.email}</p>
+                <p><span className="text-ink-4">Temporary password:</span> {newInvite.password}</p>
+                <p><span className="text-ink-4">Login URL:</span> {process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setNewInvite(null)} className="text-xs text-ink-3 hover:text-ink-2">Dismiss</button>
+                <span className="ml-auto flex items-center gap-1 text-xs font-medium text-ink-2">
+                  Copy invite message
+                  <CopyButton text={buildInviteMessage(farmName || 'your farm', newInvite.email, newInvite.password)} />
+                </span>
+              </div>
+            </div>
+          )}
           <InputField id="full_name_new" label="Full Name" name="full_name" placeholder="e.g. Ahmet Yılmaz" />
           <InputField id="email_new" label="Email Address" name="email" type="email" placeholder="worker@farm.com" />
           <InputField id="password_new" label="Temporary Password" name="password" type="password" placeholder="Minimum 6 characters" />
@@ -1524,7 +1596,7 @@ export default function SettingsForms({
 
       {/* Tab content */}
       {activeTab === 'profile'  && <AccountTab initialProfile={initialProfile} />}
-      {activeTab === 'team'     && <TeamTab userRole={userRole} currentUserId={currentUserId} allUsers={allUsers} farmId={farmId ?? ''} />}
+      {activeTab === 'team'     && <TeamTab userRole={userRole} currentUserId={currentUserId} allUsers={allUsers} farmId={farmId ?? ''} farmName={farmName} />}
       {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} />}
       {activeTab === 'alerts'   && <NotificationAlertsTab farmId={farmId ?? ''} />}
       {activeTab === 'sensors'  && <SensorConnectionsTab initialSensors={sensors} blocks={blocks} farmId={farmId ?? ''} initialSensecapApiId={initialSensecapApiId} initialSensecapAccessKey={initialSensecapAccessKey} />}

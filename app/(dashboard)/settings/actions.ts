@@ -105,6 +105,65 @@ export async function updateUserRole(farmId: string, userId: string, role: 'admi
   return { success: 'User role updated successfully' }
 }
 
+export async function removeMember(farmId: string, userId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  if (userId === user.id) {
+    return { error: 'You cannot remove yourself from the farm' }
+  }
+
+  // Check if current user is an admin on this farm (per-farm role is authoritative)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: curMembership } = await (supabase as any)
+    .from('farm_members')
+    .select('role')
+    .eq('farm_id', farmId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (curMembership?.role !== 'admin') {
+    return { error: 'Only admins can remove team members' }
+  }
+
+  const adminClient = createAdminClient()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: targetMembership } = await (adminClient as any)
+    .from('farm_members')
+    .select('role')
+    .eq('farm_id', farmId)
+    .eq('user_id', userId)
+    .single()
+
+  if (targetMembership?.role === 'admin') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count } = await (adminClient as any)
+      .from('farm_members')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('farm_id', farmId)
+      .eq('role', 'admin')
+
+    if ((count ?? 0) <= 1) {
+      return { error: 'Cannot remove the only admin of this farm' }
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (adminClient as any).from('farm_members')
+    .delete()
+    .eq('farm_id', farmId)
+    .eq('user_id', userId)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath(`/${farmId}/settings`)
+  return { success: 'Member removed from this farm' }
+}
+
 // Supabase's admin listUsers() has no email filter, so finding an existing
 // auth user by email means paginating and matching client-side.
 async function findAuthUserByEmail(
@@ -191,7 +250,7 @@ export async function createWorker(farmId: string, formData: FormData) {
     }
 
     revalidatePath(`/${farmId}/settings`)
-    return { success: `Added existing user to this farm as ${role}` }
+    return { success: `Added existing user to this farm as ${role}`, isNewUser: false }
   }
 
   if (!password || password.length < 6) {
@@ -242,7 +301,7 @@ export async function createWorker(farmId: string, formData: FormData) {
   }
 
   revalidatePath(`/${farmId}/settings`)
-  return { success: `Successfully created new ${role}` }
+  return { success: `Successfully created new ${role}`, isNewUser: true }
 }
 
 // ─── Sensor actions ───────────────────────────────────────────────────────────
