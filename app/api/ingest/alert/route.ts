@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
   if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 })
 
-  // Fire push notification for warning/critical alerts (non-blocking)
+  // Fire push notification + email for warning/critical alerts (non-blocking)
   if (severity === 'warning' || severity === 'critical') {
     const { data: block } = await (admin as any)
       .from('blocks')
@@ -58,9 +58,41 @@ export async function POST(request: Request) {
           tag: `alert-${body.block_id}-${body.domain}`,
         }).catch((e: unknown) => console.error('[Push] Alert push failed:', e))
       })
+
+      notifyAdminsByEmail(admin, block.farm_id, {
+        severity: severity as 'warning' | 'critical',
+        message: body.message,
+        blockName: block.name,
+      }).catch((e: unknown) => console.error('[Email] Alert email failed:', e))
     }
   }
 
   await updateSensorHeartbeat(sensor.id)
   return NextResponse.json({ ok: true })
+}
+
+async function notifyAdminsByEmail(
+  admin: ReturnType<typeof createAdminClient>,
+  farmId: string,
+  opts: { severity: 'warning' | 'critical'; message: string; blockName: string }
+) {
+  const { data: members } = await (admin as any)
+    .from('farm_members')
+    .select('user_id')
+    .eq('farm_id', farmId)
+    .in('role', ['admin', 'supervisor'])
+
+  if (!members || members.length === 0) return
+
+  const emails = (
+    await Promise.all(
+      members.map(async (m: { user_id: string }) => {
+        const { data } = await admin.auth.admin.getUserById(m.user_id)
+        return data.user?.email
+      })
+    )
+  ).filter((e): e is string => Boolean(e))
+
+  const { sendAlertEmail } = await import('@/utils/email')
+  await sendAlertEmail(emails, { ...opts, farmId })
 }

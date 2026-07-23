@@ -312,7 +312,7 @@ function TeamTab({
       const res = await createWorker(farmId, formData)
       if (res.error) setTeamStatus({ type: 'error', message: res.error })
       else if (res.success) {
-        setTeamStatus({ type: 'success', message: res.success })
+        setTeamStatus({ type: res.warning ? 'error' : 'success', message: res.warning || res.success })
         if (res.isNewUser) {
           setNewInvite({ email: formData.get('email') as string, password: formData.get('password') as string })
         }

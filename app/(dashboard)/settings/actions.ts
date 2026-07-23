@@ -7,6 +7,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { routing, LOCALE_COOKIE, type Locale } from '@/i18n/routing'
 import type { SensorFormValues, Sensor } from '@/types/sensors'
 import { createSensecapClient } from '@/utils/sensecap-client'
+import { sendInviteEmail } from '@/utils/email'
 
 export async function setLocale(locale: string) {
   if (!routing.locales.includes(locale as Locale)) {
@@ -300,8 +301,27 @@ export async function createWorker(farmId: string, formData: FormData) {
     return { error: memberError.message }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: farm } = await (adminClient as any)
+    .from('farms')
+    .select('name')
+    .eq('id', farmId)
+    .single()
+
+  let emailWarning: string | undefined
+  try {
+    await sendInviteEmail(email, {
+      farmName: farm?.name || 'your farm',
+      email,
+      password,
+      appUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+    })
+  } catch (err) {
+    emailWarning = `Account created, but the invite email failed to send: ${err instanceof Error ? err.message : 'unknown error'}. Use "Copy invite message" to share the login details instead.`
+  }
+
   revalidatePath(`/${farmId}/settings`)
-  return { success: `Successfully created new ${role}`, isNewUser: true }
+  return { success: `Successfully created new ${role}`, isNewUser: true, warning: emailWarning }
 }
 
 // ─── Sensor actions ───────────────────────────────────────────────────────────
