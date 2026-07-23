@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef } from 'react';
+import { useState, useTransition, useRef, useCallback } from 'react';
 import { Plus, FlaskConical, Map, Check, X as XIcon, Pencil } from 'lucide-react';
 import type { Block, BlockProfile, LatLng } from './types';
 import { BLOCK_PROFILES, makeDefaultProfile } from './mockData';
@@ -69,6 +69,34 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
   const mapHandleRef = useRef<MapHandle | null>(null);
 
   const selectedProfile = profiles[selectedId];
+
+  // ─── Swipe navigation between blocks (mobile) ──────────────────────────────
+  const handleNextBlock = useCallback(() => {
+    if (blocks.length < 2) return;
+    const index = blocks.findIndex(b => b.id === selectedId);
+    const next = (index + 1 + blocks.length) % blocks.length;
+    setSelectedId(blocks[next].id);
+  }, [blocks, selectedId]);
+
+  const handlePrevBlock = useCallback(() => {
+    if (blocks.length < 2) return;
+    const index = blocks.findIndex(b => b.id === selectedId);
+    const prev = (index - 1 + blocks.length) % blocks.length;
+    setSelectedId(blocks[prev].id);
+  }, [blocks, selectedId]);
+
+  const swipeTouchX = useRef<number | null>(null);
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    swipeTouchX.current = e.touches[0].clientX;
+  }, []);
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (swipeTouchX.current === null) return;
+    const delta = e.changedTouches[0].clientX - swipeTouchX.current;
+    swipeTouchX.current = null;
+    if (Math.abs(delta) < 50) return;
+    if (delta < 0) handleNextBlock();
+    else handlePrevBlock();
+  }, [handleNextBlock, handlePrevBlock]);
 
   // ─── Block form handlers ────────────────────────────────────────────────────
 
@@ -413,6 +441,10 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
         </div>
 
         {/* Block detail panel */}
+        <div
+          onTouchStart={blocks.length > 1 ? handleTouchStart : undefined}
+          onTouchEnd={blocks.length > 1 ? handleTouchEnd : undefined}
+        >
         {blocks.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-line py-24 text-center">
             <div className="text-4xl">🌱</div>
@@ -446,6 +478,7 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
             Select a block to view its profile
           </div>
         )}
+        </div>
       </div>
 
       <BlockFormModal
