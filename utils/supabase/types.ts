@@ -559,6 +559,7 @@ export type Database = {
           llm_prompt_hash: string | null
           manager_note: string | null
           rationale: string
+          sources: Json | null
           status: Database["public"]["Enums"]["recommendation_status"]
           title: string
         }
@@ -577,6 +578,7 @@ export type Database = {
           llm_prompt_hash?: string | null
           manager_note?: string | null
           rationale: string
+          sources?: Json | null
           status?: Database["public"]["Enums"]["recommendation_status"]
           title: string
         }
@@ -595,6 +597,7 @@ export type Database = {
           llm_prompt_hash?: string | null
           manager_note?: string | null
           rationale?: string
+          sources?: Json | null
           status?: Database["public"]["Enums"]["recommendation_status"]
           title?: string
         }
@@ -621,6 +624,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      knowledge_base_chunks: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          crop_type: string | null
+          embedding: string
+          id: string
+          page_number: number | null
+          source_section: string | null
+          source_title: string
+          source_url: string | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          crop_type?: string | null
+          embedding: string
+          id?: string
+          page_number?: number | null
+          source_section?: string | null
+          source_title: string
+          source_url?: string | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          crop_type?: string | null
+          embedding?: string
+          id?: string
+          page_number?: number | null
+          source_section?: string | null
+          source_title?: string
+          source_url?: string | null
+        }
+        Relationships: []
       }
       scouting_reports: {
         Row: {
@@ -985,7 +1027,24 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      match_knowledge_base: {
+        Args: {
+          filter_category?: string | null
+          filter_crop_type?: string | null
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          crop_type: string | null
+          id: string
+          page_number: number | null
+          similarity: number
+          source_section: string | null
+          source_title: string
+          source_url: string | null
+        }[]
+      }
     }
     Enums: {
       activity_type:

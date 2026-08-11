@@ -8,7 +8,8 @@ import {
   Lightbulb,
   Check,
   X,
-  Edit2
+  Edit2,
+  BookOpen
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { CATEGORY_STYLES, type Category } from "@/app/components/ui/CategoryChip";
@@ -19,6 +20,11 @@ type CardCategory = Category | "other";
 
 const FALLBACK_STYLE = { bg: "bg-tile-2", text: "text-ink-2", dot: "bg-ink-3", label: "Other" };
 
+interface RecommendationSource {
+  title: string;
+  section: string | null;
+}
+
 interface RecommendationCardProps {
   id: string;
   category: CardCategory;
@@ -28,6 +34,7 @@ interface RecommendationCardProps {
   status: Status;
   blockName?: string;
   managerNote?: string | null;
+  sources?: RecommendationSource[] | null;
   onAccept: (id: string) => void;
   onSkip: (id: string) => void;
   onEdit: (id: string) => void;
@@ -51,6 +58,7 @@ export default function RecommendationCard({
   status,
   blockName,
   managerNote,
+  sources,
   onAccept,
   onSkip,
   onEdit,
@@ -89,6 +97,17 @@ export default function RecommendationCard({
         <h3 className="font-heading text-[14.5px] font-semibold text-ink mb-1">{title}</h3>
 
         <p className="text-[12.5px] text-ink-2 line-clamp-3 leading-relaxed">{rationale}</p>
+
+        {sources && sources.length > 0 && (
+          <p className="mt-1.5 text-[10.5px] text-ink-4 flex items-center gap-1">
+            <BookOpen className="h-3 w-3 shrink-0" />
+            <span className="truncate">
+              {sources[0].title}
+              {sources[0].section ? ` — ${sources[0].section}` : ""}
+              {sources.length > 1 ? ` +${sources.length - 1} more` : ""}
+            </span>
+          </p>
+        )}
       </div>
 
       {status === "pending" ? (

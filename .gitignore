@@ -47,5 +47,8 @@ next-env.d.ts
 # local working folders
 /design_handoff_rootloot_portal/
 /scratch/
+
+# manually-downloaded RAG source PDFs (large, not for version control)
+/knowledge-base-source/
 # Claude Code local settings (machine-specific)
 .claude/settings.local.json

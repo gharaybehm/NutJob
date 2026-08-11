@@ -267,6 +267,7 @@
     "editTitle": "Edit Recommendation",
     "actionTitle": "Action title",
     "aiRationale": "AI rationale",
+    "aiSources": "Sources",
     "managerNote": "Your note",
     "managerNoteOptional": "(optional)",
     "managerNotePlaceholder": "Add context, adjustments, or reasons for the change…",

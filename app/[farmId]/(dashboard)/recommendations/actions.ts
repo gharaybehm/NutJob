@@ -1,23 +1,11 @@
 "use server";
 
-import OpenAI from "openai";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 import { localeToLanguageName } from "@/utils/format";
-import { AI_SYSTEM_PROMPT, buildAllBlockContexts } from "@/utils/build-block-context";
-
-const openrouter = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY ?? "",
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "https://rootloot.ai",
-    "X-Title": "RootLoot Farm Management",
-  },
-});
-
-const OPENROUTER_MODEL = "google/gemini-2.5-flash";
+import { generateFarmRecommendations } from "@/utils/generate-recommendations";
 
 type RecommendationCategory = "irrigate" | "fertilize" | "spray" | "scout" | "prune" | "other";
 type ActivityType = "irrigation" | "fertigation" | "spraying" | "pruning" | "scouting" | "other";
@@ -247,89 +235,31 @@ export async function generateAIRecommendations(
 
     if (!process.env.OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured");
 
-    const today = new Date().toISOString().split("T")[0];
-    const { blockContexts, blockIds } = await buildAllBlockContexts(admin, farmId);
-
-    if (blockIds.length === 0) throw new Error("No blocks found for this farm");
-
     const languageInstruction = locale !== "en"
       ? `\n\nIMPORTANT: Write ALL title and rationale text in ${languageName}. The JSON keys must remain in English.`
       : "";
 
-    const response = await openrouter.chat.completions.create({
-      model: OPENROUTER_MODEL,
-      messages: [
-        { role: "system", content: AI_SYSTEM_PROMPT + languageInstruction },
-        {
-          role: "user",
-          content: `Today: ${today}\n\nFarm data:\n\n${blockContexts}\n\nGenerate prioritised recommendations.`,
-        },
-      ],
-      response_format: { type: "json_object" },
+    const { count, model } = await generateFarmRecommendations(admin, farmId, {
+      systemPromptSuffix: languageInstruction,
     });
 
-    const raw = response.choices[0].message.content ?? "[]";
-
-    let parsed: unknown;
-    try {
-      let clean = raw.trim();
-      if (clean.startsWith("```")) {
-        clean = clean.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
-      }
-      parsed = JSON.parse(clean);
-      if (!Array.isArray(parsed) && typeof parsed === "object" && parsed !== null) {
-        const firstArray = Object.values(parsed as Record<string, unknown>).find(Array.isArray);
-        if (firstArray) parsed = firstArray;
-      }
-      if (!Array.isArray(parsed)) throw new Error("Parsed output is not an array");
-    } catch (e) {
-      throw new Error(`AI returned unparseable output: ${e instanceof Error ? e.message : String(e)}`);
-    }
-
-    const validCategories = new Set(["irrigate", "fertilize", "spray", "scout", "prune", "other"]);
-    const validBlockIds = new Set(blockIds);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
-    const toInsert = (parsed as Record<string, unknown>[])
-      .filter(
-        (r) =>
-          typeof r.block_id === "string" && validBlockIds.has(r.block_id) &&
-          typeof r.category === "string" && validCategories.has(r.category) &&
-          typeof r.title === "string" && r.title.length > 0 &&
-          typeof r.rationale === "string" && r.rationale.length > 0
-      )
-      .map((r) => ({
-        farm_id: farmId,
-        block_id: r.block_id as string,
-        category: r.category as RecommendationCategory,
-        title: (r.title as string).slice(0, 200),
-        rationale: r.rationale as string,
-        confidence: Math.min(1, Math.max(0, (Number(r.confidence) || 75) / 100)),
-        status: "pending" as const,
-        llm_model: OPENROUTER_MODEL,
-        expires_at: expiresAt,
-      }));
-
-    if (toInsert.length === 0) {
+    if (count === 0) {
       revalidatePath(`/${farmId}/recommendations`);
-      return { count: 0, model: OPENROUTER_MODEL };
+      return { count: 0, model };
     }
-
-    const { error: insertError } = await admin.from("recommendations").insert(toInsert);
-    if (insertError) throw new Error(`Insert error: ${insertError.message}`);
 
     // Fire a push notification for this farm (non-blocking)
     import("@/utils/push").then(({ sendPushToFarm }) => {
       sendPushToFarm(farmId, {
         title: "New AI Recommendations",
-        body: `${toInsert.length} new recommendation${toInsert.length !== 1 ? "s" : ""} generated for your farm.`,
+        body: `${count} new recommendation${count !== 1 ? "s" : ""} generated for your farm.`,
         url: `/${farmId}/recommendations`,
         tag: "ai-recommendations",
       }).catch((e: unknown) => console.error("[Push] Recommendation push failed:", e));
     });
 
     revalidatePath(`/${farmId}/recommendations`);
-    return { count: toInsert.length, model: OPENROUTER_MODEL };
+    return { count, model };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }

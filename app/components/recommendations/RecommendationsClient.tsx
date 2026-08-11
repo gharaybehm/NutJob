@@ -25,6 +25,11 @@ import {
 type Category = "irrigate" | "fertilize" | "spray" | "scout" | "prune" | "other";
 type Status = "pending" | "accepted" | "edited" | "skipped";
 
+interface RecommendationSource {
+  title: string;
+  section: string | null;
+}
+
 interface Recommendation {
   id: string;
   category: Category;
@@ -37,6 +42,7 @@ interface Recommendation {
   blocks?: { name: string } | null;
   created_at: string;
   expires_at: string | null;
+  sources?: RecommendationSource[] | null;
 }
 
 interface Props {
@@ -49,6 +55,7 @@ interface EditTarget {
   title: string;
   rationale: string;
   blockName?: string;
+  sources?: RecommendationSource[] | null;
 }
 
 export default function RecommendationsClient({ initialRecommendations, farmId }: Props) {
@@ -80,7 +87,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId }
   ];
 
   const openEdit = (rec: Recommendation) => {
-    setEditTarget({ id: rec.id, title: rec.title, rationale: rec.rationale, blockName: rec.blocks?.name });
+    setEditTarget({ id: rec.id, title: rec.title, rationale: rec.rationale, blockName: rec.blocks?.name, sources: rec.sources });
     setEditTitle(rec.title);
     setEditNote("");
   };
@@ -265,6 +272,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId }
               status={rec.status}
               blockName={rec.blocks?.name}
               managerNote={rec.manager_note}
+              sources={rec.sources}
               onAccept={(id) => handleStatusUpdate(id, "accepted")}
               onSkip={(id) => handleStatusUpdate(id, "skipped")}
               onEdit={() => openEdit(rec)}
@@ -340,6 +348,21 @@ export default function RecommendationsClient({ initialRecommendations, farmId }
                   {editTarget.rationale}
                 </p>
               </div>
+              {editTarget.sources && editTarget.sources.length > 0 && (
+                <div>
+                  <label className="block font-mono text-[10px] text-ink-3 tracking-wide mb-1.5">
+                    {t('aiSources').toUpperCase()}
+                  </label>
+                  <ul className="text-sm text-ink-2 bg-tile rounded-lg px-3 py-2.5 leading-relaxed list-disc list-inside space-y-1">
+                    {editTarget.sources.map((s, i) => (
+                      <li key={i}>
+                        {s.title}
+                        {s.section ? ` — ${s.section}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div>
                 <label className="block font-mono text-[10px] text-ink-3 tracking-wide mb-1.5">
                   {t('managerNote').toUpperCase()} <span className="font-normal normal-case">{t('managerNoteOptional')}</span>
