@@ -22,10 +22,19 @@ The feedback loop closes when the manager logs what was actually done, writing b
 |--------------------|-------------------------------------|
 | Frontend           | Next.js (App Router) + TypeScript   |
 | Styling            | Tailwind CSS v4                     |
-| Backend            | Netlify with Next.js App Router     |
-| Database & Auth    | Supabase                            |
-| AI / LLM           | Netlify AI Gateway                  |
+| Hosting            | Hostinger VPS via Coolify (Docker)  |
+| Database & Auth    | Supabase (self-hosted on the VPS)   |
+| AI / LLM           | OpenRouter                          |
 | Package Manager    | npm                                 |
+
+> Hosting and database are mid-migration from Netlify + Supabase Cloud to the
+> VPS documented in `INFRA.md`. Until cutover completes, Netlify remains the
+> live production deployment and the rollback path.
+>
+> Note the AI row: earlier versions of this file claimed Netlify AI Gateway.
+> No code has ever read it — every LLM call goes directly to OpenRouter
+> (`utils/generate-recommendations.ts`, `app/api/extract-soil-test/route.ts`,
+> `src/trigger/extract.ts`, `scripts/ingest-knowledge-base.ts`).
 
 ## Project Structure
 

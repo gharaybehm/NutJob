@@ -1,0 +1,42 @@
+# Build artefacts and deps — rebuilt inside the image
+node_modules
+.next
+out
+build
+*.tsbuildinfo
+
+# VCS and tooling
+.git
+.gitignore
+.github
+.claude
+.agents
+.trigger
+.vscode
+
+# Secrets — never copy these into a layer. Runtime config comes from Coolify.
+.env
+.env.*
+!.env*.example
+
+# Local working folders and large assets not needed at build time
+scratch
+design_handoff_rootloot_portal
+knowledge-base-source
+*.zip
+design.png
+
+# Docs
+*.md
+!README.md
+
+# Netlify — replaced by Coolify; kept in the repo as rollback until cutover
+netlify
+netlify.toml
+
+# Misc
+.DS_Store
+npm-debug.log*
+coverage
+playwright-report
+test-results
