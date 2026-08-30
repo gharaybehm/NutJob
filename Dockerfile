@@ -2,21 +2,31 @@
 #
 # Production image for the rootloot / NutJob Next.js app.
 #
-# Node 20 matches the NODE_VERSION that was pinned in netlify.toml — the only
-# record of the intended runtime version anywhere in the repo. Next 16 needs
-# Node 20.9+, which node:20-alpine satisfies.
+# Node 24 (npm 11), matching the dev machine that produces package-lock.json.
+#
+# This started as node:20-alpine, to match the NODE_VERSION pinned in
+# netlify.toml. That failed: node:20 ships npm 10, and package-lock.json is
+# written by npm 11. The two disagree about a real peer conflict —
+# @swc/helpers is pinned to 0.5.15 by one dependency while another declares a
+# >=0.5.17 peer. npm 11 accepts the resulting tree; npm 10 resolves the peer to
+# 0.5.23, finds it absent from the lock, and aborts `npm ci` with EUSAGE.
+#
+# Pinning the image to the same npm major as the lock's author removes that
+# whole class of failure, and matching dev to prod is worth more here than
+# matching a Netlify setting we are in the process of abandoning. If the dev
+# machine's Node major changes, change it here too.
 #
 # Relies on `output: 'standalone'` in next.config.ts.
 
 # ---- deps -------------------------------------------------------------------
-FROM node:20-alpine AS deps
+FROM node:24-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
 # ---- builder ----------------------------------------------------------------
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -55,7 +65,7 @@ ENV NODE_OPTIONS=--max-old-space-size=3072
 RUN npm run build
 
 # ---- runner -----------------------------------------------------------------
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
