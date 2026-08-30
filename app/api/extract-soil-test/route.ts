@@ -1,17 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { tasks, runs } from "@trigger.dev/sdk/v3";
 import { createClient } from '@/utils/supabase/server';
-import OpenAI from 'openai';
+import { openrouter } from "@/utils/openrouter";
 
-// Initialize OpenAI SDK configured for OpenRouter
-const openrouter = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY || "",
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "https://rootloot.ai",
-    "X-Title": "RootLoot Farm Management",
-  },
-});
 
 const systemPrompt = `You are an expert soil scientist and agronomist. Your task is to extract soil and water test result parameters from the provided lab analysis report (which may be in Turkish, English, or another language, and can be text or an image/scan).
 

@@ -10,12 +10,24 @@ export interface PushPayload {
   tag?: string
 }
 
-// Configured once at module load — this file is server-only.
-webPush.setVapidDetails(
-  process.env.VAPID_SUBJECT!,
-  process.env.VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
+// Configured on first send rather than at module load.
+//
+// This ran at module load and broke the container build: Next's "collect page
+// data" step imports the routes that use this file (/api/push/subscribe,
+// /api/push/unsubscribe, /api/ingest/alert), and the VAPID_* variables are
+// runtime-only — VAPID_PRIVATE_KEY in particular must never be a build-time
+// value, since that would bake it into an image layer. With the `!` assertions
+// the undefined values reached web-push and it threw during the build.
+let vapidReady = false
+
+function ensureVapid(): boolean {
+  if (vapidReady) return true
+  const { VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } = process.env
+  if (!VAPID_SUBJECT || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return false
+  webPush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+  vapidReady = true
+  return true
+}
 
 type PushSubRow = {
   id: string
@@ -25,7 +37,9 @@ type PushSubRow = {
 }
 
 export async function sendPushToFarm(farmId: string, payload: PushPayload): Promise<void> {
-  if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return
+  // Also configures VAPID on first call; returns false when keys are unset, in
+  // which case push is simply disabled (same no-op behaviour as before).
+  if (!ensureVapid()) return
 
   const admin = createAdminClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -22,8 +22,8 @@
 import { readdirSync, readFileSync } from "fs";
 import { join } from "path";
 import { config } from "dotenv";
-import OpenAI from "openai";
 import { createAdminClient } from "../utils/supabase/admin";
+import { openrouter } from "../utils/openrouter";
 
 // Next.js loads .env.local automatically; this standalone script does not.
 config({ path: join(process.cwd(), ".env.local") });
@@ -38,14 +38,6 @@ const CHUNK_CHARS = 3200; // ~800 tokens
 const CHUNK_OVERLAP = 600; // ~150 tokens
 const SOURCE_DIR = join(process.cwd(), "knowledge-base-source");
 
-const openrouter = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY || "",
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "https://rootloot.ai",
-    "X-Title": "RootLoot Farm Management",
-  },
-});
 
 interface Chunk {
   sourceTitle: string;

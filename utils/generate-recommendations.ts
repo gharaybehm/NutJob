@@ -6,17 +6,11 @@
 // generation logic — including grounding recommendations in the
 // crop-appropriate knowledge base — lives in one place.
 
-import OpenAI from "openai";
 import { AI_SYSTEM_PROMPT, buildAllBlockContexts } from "@/utils/build-block-context";
+import { openrouter } from "@/utils/openrouter";
+// re-exported for existing callers
+export { openrouter };
 
-export const openrouter = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY || "",
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "https://rootloot.ai",
-    "X-Title": "RootLoot Farm Management",
-  },
-});
 
 export const OPENROUTER_MODEL = "google/gemini-2.5-flash";
 export const EMBEDDING_MODEL = "text-embedding-3-small";

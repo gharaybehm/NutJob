@@ -1,15 +1,6 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
-import OpenAI from "openai";
+import { openrouter } from "@/utils/openrouter";
 
-// Initialize OpenAI SDK configured for OpenRouter
-const openrouter = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY || "",
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "https://rootloot.ai",
-    "X-Title": "RootLoot Farm Management",
-  },
-});
 
 interface ExtractSoilTestPayload {
   text?: string;
