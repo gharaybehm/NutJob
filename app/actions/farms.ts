@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import type { FarmWithMeta } from '@/utils/supabase/farm-types';
+import { getOrCreateOrganizationForUser } from '@/app/actions/organizations';
 
 function toSlug(name: string): string {
   return (
@@ -31,13 +32,21 @@ export async function createFarm(values: {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { error: 'Not authenticated' };
 
-  // Enforce 3-farm maximum
-  const { count } = await (supabase as any)
-    .from('farm_members')
+  // Enforce org seat limit (replaces the old flat 3-farm cap — see
+  // supabase/migrations/20260817100000_create_organizations.sql)
+  const { organization, error: orgError } = await getOrCreateOrganizationForUser();
+  if (orgError || !organization) return { error: orgError ?? 'Could not resolve organization' };
+
+  if (!['trialing', 'active'].includes(organization.subscription_status)) {
+    return { error: 'Your organization subscription is not active. Update billing to create more farms.' };
+  }
+
+  const { count: orgFarmCount } = await (admin as any)
+    .from('farms')
     .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id);
-  if ((count ?? 0) >= 3) {
-    return { error: 'You have reached the maximum of 3 farms.' };
+    .eq('organization_id', organization.id);
+  if ((orgFarmCount ?? 0) >= organization.farm_seats) {
+    return { error: `You have reached your plan's limit of ${organization.farm_seats} farm${organization.farm_seats === 1 ? '' : 's'}.` };
   }
 
   const slug = toSlug(values.name);
@@ -48,6 +57,7 @@ export async function createFarm(values: {
       name: values.name.trim(),
       slug: s,
       created_by: user.id,
+      organization_id: organization.id,
       address: values.address?.trim() || null,
       gps_lat: values.gps_lat != null ? Math.round(values.gps_lat * 10000) / 10000 : null,
       gps_lng: values.gps_lng != null ? Math.round(values.gps_lng * 10000) / 10000 : null,

@@ -75,7 +75,12 @@ export default async function DashboardLayout({
   }
 
   // Per-farm role takes precedence for UI gating
-  const effectiveRole = (membership.role as "admin" | "supervisor" | "worker") ?? profile.role;
+  // profile.role can be 'super_admin' (a platform-level role that never
+  // grants per-farm access), but membership.role above is always populated
+  // when this line runs (redirect() above throws otherwise), so the
+  // fallback is unreachable in practice — cast narrows it for the farm-role
+  // components below (Sidebar/TopNav/BottomNav), which never expect it.
+  const effectiveRole = (membership.role as "admin" | "supervisor" | "worker") ?? (profile.role as "admin" | "supervisor" | "worker");
 
   // Count unresolved alerts for the bell badge
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

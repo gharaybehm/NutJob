@@ -1087,7 +1087,9 @@ export type Database = {
         | "prune"
         | "other"
       recommendation_status: "pending" | "accepted" | "edited" | "skipped"
-      user_role: "admin" | "supervisor" | "worker"
+      // NOTE: 'super_admin' added by supabase/migrations/20260817000000_add_super_admin_role.sql
+      // — reconcile with `supabase gen types` next time it's regenerated from a live project.
+      user_role: "admin" | "supervisor" | "worker" | "super_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1259,7 +1261,7 @@ export const Constants = {
         "other",
       ],
       recommendation_status: ["pending", "accepted", "edited", "skipped"],
-      user_role: ["admin", "supervisor", "worker"],
+      user_role: ["admin", "supervisor", "worker", "super_admin"],
     },
   },
 } as const

@@ -77,7 +77,7 @@ export default async function BlocksRoute({ params }: { params: Promise<{ farmId
     .single();
 
   // Per-farm role takes precedence over the global profile role, matching layout.tsx
-  const effectiveRole = (membership?.role as 'admin' | 'supervisor' | 'worker' | undefined) ?? profile?.role;
+  const effectiveRole = (membership?.role as 'admin' | 'supervisor' | 'worker' | undefined) ?? (profile?.role as 'admin' | 'supervisor' | 'worker' | undefined);
 
   const { data, error } = await db
     .from('blocks')

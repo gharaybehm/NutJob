@@ -36,7 +36,7 @@ export default async function RecommendationsPage({
     .single();
 
   // Per-farm role takes precedence over the global profile role, matching settings/page.tsx
-  const effectiveRole = (membership?.role as 'admin' | 'supervisor' | 'worker' | undefined) ?? profile?.role;
+  const effectiveRole = (membership?.role as 'admin' | 'supervisor' | 'worker' | undefined) ?? (profile?.role as 'admin' | 'supervisor' | 'worker' | undefined);
 
   if (effectiveRole === "worker") {
     redirect(`/${farmId}/dashboard?error=Unauthorized`);

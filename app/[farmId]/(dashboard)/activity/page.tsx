@@ -43,7 +43,7 @@ export default async function ActivityLogPage({
         initialEntries={entries}
         initialTotal={total}
         blocks={blocks}
-        userRole={profile?.role ?? "worker"}
+        userRole={(profile?.role as "admin" | "supervisor" | "worker" | undefined) ?? "worker"}
         farmId={farmId}
         locale={locale}
       />

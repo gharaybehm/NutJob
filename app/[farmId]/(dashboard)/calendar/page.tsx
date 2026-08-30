@@ -29,7 +29,7 @@ export default async function CalendarRoute({ params }: { params: Promise<{ farm
     .single();
 
   // Per-farm role takes precedence over the global profile role, matching layout.tsx
-  const effectiveRole = (membership?.role as 'admin' | 'supervisor' | 'worker' | undefined) ?? profile?.role;
+  const effectiveRole = (membership?.role as 'admin' | 'supervisor' | 'worker' | undefined) ?? (profile?.role as 'admin' | 'supervisor' | 'worker' | undefined);
 
   // Fetch block IDs for this farm to scope calendar events
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
