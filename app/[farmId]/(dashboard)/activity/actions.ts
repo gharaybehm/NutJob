@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { requireFarmRole } from "@/utils/supabase/farm-access";
 import { revalidatePath } from "next/cache";
 
 export type IrrigationDetails  = { source: "manual"; activity: "irrigation";  duration_hours?: number; volume_per_tree_l?: number; method?: "Drip" | "Sprinkler" | "Flood" | "Surface" };
@@ -35,16 +36,6 @@ export async function getActivityLog(params?: {
 }): Promise<{ entries: ActivityLogEntry[]; total: number }> {
   const supabase = await createClient();
 
-  let farmBlockIds: string[] | null = null;
-
-  if (params?.farmId) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: farmBlocks } = await (supabase.from("blocks") as any)
-      .select("id")
-      .eq("farm_id", params.farmId);
-    farmBlockIds = (farmBlocks ?? []).map((b: { id: string }) => b.id);
-  }
-
   let query = supabase
     .from("activity_log")
     .select("id, title, activity_type, block_id, description, performed_at, performed_by, created_at, details, blocks(name)", {
@@ -52,10 +43,13 @@ export async function getActivityLog(params?: {
     })
     .order("performed_at", { ascending: false });
 
-  if (farmBlockIds !== null && farmBlockIds.length > 0) {
-    query = query.or(`block_id.in.(${farmBlockIds.join(",")}),block_id.is.null`);
-  } else if (farmBlockIds !== null && farmBlockIds.length === 0) {
-    query = query.is("block_id", null);
+  // activity_log carries farm_id since 20260909000000_tenant_isolation.sql.
+  // The previous approach matched the farm's block ids OR `block_id IS NULL`,
+  // and farm-wide entries carry no farm identity — so every other tenant's
+  // farm-wide activity matched that filter and rendered in this feed.
+  if (params?.farmId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    query = (query as any).eq("farm_id", params.farmId);
   }
 
   if (params?.search) {
@@ -103,7 +97,7 @@ export async function logActivity(
     performed_at: string;
     details?: ActivityDetails;
   },
-  farmId?: string,
+  farmId: string,
 ): Promise<{ id: string }> {
   const supabase = await createClient();
   const admin = createAdminClient();
@@ -111,9 +105,16 @@ export async function logActivity(
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) throw new Error("Unauthorised");
 
-  const { data, error } = await admin
-    .from("activity_log")
+  // This writes through the service-role client to reach the side-write tables,
+  // which means RLS is bypassed and membership has to be checked here. Every
+  // farm member may log their own work, so 'worker' is the floor.
+  const gate = await requireFarmRole(farmId, "worker");
+  if (!gate.ok) throw new Error(gate.error);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- farm_id predates the generated types
+  const { data, error } = await (admin.from("activity_log") as any)
     .insert({
+      farm_id: farmId,
       title: params.title,
       activity_type: params.activity_type,
       block_id: params.block_id,
@@ -179,7 +180,6 @@ export async function logActivity(
     }
   }
 
-  if (farmId) revalidatePath(`/${farmId}/activity`);
-  else revalidatePath("/activity");
+  revalidatePath(`/${farmId}/activity`);
   return { id: data.id };
 }

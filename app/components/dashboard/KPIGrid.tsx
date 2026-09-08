@@ -29,12 +29,12 @@ async function getKPIData(farmId: string) {
       .select("*", { count: "exact", head: true })
       .in("block_id", blockFilter)
       .eq("resolved", false),
-    supabase
-      .from("calendar_events")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase.from("calendar_events") as any)
       .select("start_date")
       .eq("type", "irrigation")
+      .eq("farm_id", farmId)
       .gte("start_date", new Date().toISOString())
-      .or(`block_id.in.(${blockFilter.join(",")}),block_id.is.null`)
       .order("start_date", { ascending: true })
       .limit(1),
   ]);

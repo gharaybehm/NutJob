@@ -111,7 +111,8 @@ interface Props {
   initialTotal: number;
   blocks: Block[];
   userRole?: "admin" | "supervisor" | "worker";
-  farmId?: string;
+  /** Required: every activity_log row is scoped to a farm and writes are gated on it. */
+  farmId: string;
   locale: string;
 }
 
@@ -178,7 +179,7 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
     let synced = 0;
     for (const item of queued) {
       try {
-        const result = await logActivity({ title: item.title, activity_type: item.activity_type, block_id: item.block_id, description: item.description, performed_at: item.performed_at, details: item.details });
+        const result = await logActivity({ title: item.title, activity_type: item.activity_type, block_id: item.block_id, description: item.description, performed_at: item.performed_at, details: item.details }, farmId);
         setEntries((prev) => prev.map((e) => e.id === item.id ? { ...e, id: result.id } : e));
         setPendingIds((prev) => { const next = new Set(prev); next.delete(item.id); return next; });
         removeFromQueue(item.id);
@@ -187,7 +188,7 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
     }
     setSyncing(false);
     if (synced > 0) { setSyncedCount(synced); setTimeout(() => setSyncedCount(0), 3000); }
-  }, []);
+  }, [farmId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- kick off offline-queue sync on mount when online
@@ -368,6 +369,7 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
       {showLogModal && (
         <LogActivityModal
           blocks={blocks}
+          farmId={farmId}
           onClose={() => setShowLogModal(false)}
           onSaved={handleSaved}
           onSavedOffline={handleSavedOffline}

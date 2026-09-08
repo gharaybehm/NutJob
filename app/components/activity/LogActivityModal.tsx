@@ -44,6 +44,7 @@ interface Block {
 
 interface Props {
   blocks: Block[];
+  farmId: string;
   onClose: () => void;
   onSaved: (entry: ActivityLogEntry) => void;
   onSavedOffline: (entry: ActivityLogEntry, queued: QueuedActivity) => void;
@@ -73,7 +74,7 @@ function toLocalISOString(d: Date): string {
 const inputCls = "w-full px-3 py-2 rounded-lg border border-line bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-green/30 placeholder:text-ink-4 transition";
 const labelSmCls = "block text-xs text-ink-3 mb-1";
 
-export default function LogActivityModal({ blocks, onClose, onSaved, onSavedOffline }: Props) {
+export default function LogActivityModal({ blocks, farmId, onClose, onSaved, onSavedOffline }: Props) {
   const [activityType, setActivityType] = useState<ActivityType>("irrigation");
   const [blockId, setBlockId] = useState<string>("");
   const [title, setTitle] = useState("");
@@ -216,7 +217,7 @@ export default function LogActivityModal({ blocks, onClose, onSaved, onSavedOffl
 
     // ── Online path ───────────────────────────────────────────────────────────
     try {
-      const result = await logActivity(payload);
+      const result = await logActivity(payload, farmId);
       onSaved({
         id: result.id,
         ...payload,

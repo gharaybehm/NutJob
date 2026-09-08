@@ -31,26 +31,15 @@ export default async function CalendarRoute({ params }: { params: Promise<{ farm
   // Per-farm role takes precedence over the global profile role, matching layout.tsx
   const effectiveRole = (membership?.role as 'admin' | 'supervisor' | 'worker' | undefined) ?? (profile?.role as 'admin' | 'supervisor' | 'worker' | undefined);
 
-  // Fetch block IDs for this farm to scope calendar events
+  // Events are scoped by farm_id directly since
+  // 20260909000000_tenant_isolation.sql. The previous filter matched this
+  // farm's blocks OR `block_id IS NULL`, and a farm-wide event carries no farm
+  // identity — so other tenants' farm-wide events rendered in this calendar.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: farmBlocks } = await (supabase.from('blocks') as any)
-    .select('id')
-    .eq('farm_id', farmId);
-  const blockIds: string[] = (farmBlocks ?? []).map((b: { id: string }) => b.id);
-
-  // Fetch events for this farm's blocks (or farm-wide events with no block)
-  let eventsQuery = supabase
-    .from('calendar_events')
+  const { data, error } = await (supabase.from('calendar_events') as any)
     .select('*')
+    .eq('farm_id', farmId)
     .order('start_date', { ascending: true });
-
-  if (blockIds.length > 0) {
-    eventsQuery = eventsQuery.or(`block_id.in.(${blockIds.join(',')}),block_id.is.null`);
-  } else {
-    eventsQuery = eventsQuery.is('block_id', null);
-  }
-
-  const { data, error } = await eventsQuery;
 
   if (error) {
     console.error('[Calendar] Failed to fetch events:', error.message);
@@ -73,7 +62,7 @@ export default async function CalendarRoute({ params }: { params: Promise<{ farm
     }));
 
   // Fetch planned materials for all events and join with consumable details
-  const eventIds: string[] = (data ?? []).map((row) => row.id);
+  const eventIds: string[] = (data ?? []).map((row: { id: string }) => row.id);
   const materialsMap = new Map<string, MaterialLine[]>();
 
   if (eventIds.length > 0) {
@@ -100,7 +89,8 @@ export default async function CalendarRoute({ params }: { params: Promise<{ farm
     }
   }
 
-  const initialEvents: CalendarEvent[] = (data ?? []).map((row) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const initialEvents: CalendarEvent[] = (data ?? []).map((row: any) => ({
     id: row.id,
     title: row.title,
     type: row.type as ActivityType,

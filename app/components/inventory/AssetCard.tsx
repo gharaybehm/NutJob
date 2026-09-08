@@ -107,10 +107,13 @@ export default function AssetCard({
                     <span className="text-[10px] uppercase tracking-wider text-ink-3 font-semibold px-1.5 bg-tile rounded">{log.type}</span>
                   </div>
                   <p className="text-xs text-ink-2">{log.description}</p>
-                  {(log.cost || log.performedBy) && (
-                    <div className="flex gap-2 mt-1 text-[10px] text-ink-3">
+                  {(log.cost || log.performedBy || log.loggedByName) && (
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[10px] text-ink-3">
                       {log.cost && <span>Cost: ${log.cost}</span>}
-                      {log.performedBy && <span>By: {log.performedBy}</span>}
+                      {/* Free text — who did the work, possibly a contractor. */}
+                      {log.performedBy && <span>Work by: {log.performedBy}</span>}
+                      {/* The account answerable for the entry itself. */}
+                      {log.loggedByName && <span>Recorded by: {log.loggedByName}</span>}
                     </div>
                   )}
                 </div>

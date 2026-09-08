@@ -21,7 +21,7 @@ export default async function InventoryRoute({
 
   const { data: profile } = await supabase
     .from('user_profiles')
-    .select('role')
+    .select('role, full_name')
     .eq('id', user.id)
     .single();
 
@@ -57,6 +57,7 @@ export default async function InventoryRoute({
       initialConsumables={consumables}
       recentCalendarEvents={recentEvents}
       userRole={effectiveRole || 'worker'}
+      currentUserName={profile?.full_name?.trim() || user.email || 'You'}
       blocks={blockNames}
       farmId={farmId}
     />

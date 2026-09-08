@@ -135,9 +135,13 @@ export async function GET(request: NextRequest) {
         .select("id")
         .eq("farm_id", farm.id);
 
-      // Insert farm-level snapshot (block_id = null, tied to farm via forecast_json.farm_id)
+      // Farm-level snapshot: block_id = null, scoped by the farm_id column
+      // added in 20260909000000_tenant_isolation.sql. It used to be recorded
+      // only inside forecast_json, which no RLS policy could read, so
+      // farm-wide weather was visible to every tenant.
       const snapshot = {
         block_id: null,
+        farm_id: farm.id,
         temp_c: Math.round(current.temperature_2m * 10) / 10,
         humidity_pct: Math.round(current.relative_humidity_2m),
         rainfall_mm: Math.round(current.precipitation * 10) / 10,
@@ -155,8 +159,8 @@ export async function GET(request: NextRequest) {
         recorded_at: now,
       };
 
-      const { error: insertError } = await admin
-        .from("weather_snapshots")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- farm_id predates the generated types
+      const { error: insertError } = await (admin.from("weather_snapshots") as any)
         .insert(snapshot);
 
       if (insertError) {
@@ -174,8 +178,8 @@ export async function GET(request: NextRequest) {
           forecast_json: { ...snapshot.forecast_json, block_id: blockId },
         }));
 
-        const { error: blockInsertError } = await admin
-          .from("weather_snapshots")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- farm_id predates the generated types
+        const { error: blockInsertError } = await (admin.from("weather_snapshots") as any)
           .insert(blockSnapshots);
 
         if (blockInsertError) {

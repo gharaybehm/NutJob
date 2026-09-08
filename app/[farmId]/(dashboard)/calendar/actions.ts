@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
+import { requireFarmRole } from '@/utils/supabase/farm-access';
 import { revalidatePath } from 'next/cache';
 import { Database } from '@/utils/supabase/types';
 
@@ -15,11 +16,19 @@ export async function createEvent(
   farmId: string,
   materials: PlannedMaterialInput[] = [],
 ): Promise<{ id: string }> {
+  // Scheduling work for other people is a supervisor duty; RLS enforces the
+  // same rule, this just fails with a readable message.
+  const gate = await requireFarmRole(farmId, 'supervisor');
+  if (!gate.ok) throw new Error(gate.error);
+
   const supabase = await createClient();
 
   const { data: created, error } = await supabase
     .from('calendar_events')
-    .insert(data)
+    // farm_id is what scopes the event. Without it the row is farm-wide and,
+    // before 20260909000000_tenant_isolation.sql, showed up for every tenant.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- farm_id predates the generated types
+    .insert({ ...data, farm_id: farmId } as any)
     .select('id')
     .single();
 
@@ -55,6 +64,11 @@ export async function logEventCompletion(
   farmId: string,
   materialActuals: MaterialActualInput[] = [],
 ) {
+  // Any member may close out work assigned to them, so 'worker' is the floor.
+  const gate = await requireFarmRole(farmId, 'worker');
+  if (!gate.ok) throw new Error(gate.error);
+  const actor = gate.actor;
+
   const supabase = await createClient();
   const admin = createAdminClient();
 
@@ -63,13 +77,20 @@ export async function logEventCompletion(
     return;
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = { id: actor.userId };
 
-  const { data: existing } = await supabase
-    .from('calendar_events')
-    .select('title, type, block_id, details')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- farm_id predates the generated types
+  const { data: existing } = await (supabase.from('calendar_events') as any)
+    .select('title, type, block_id, details, farm_id')
     .eq('id', eventId)
     .single();
+
+  // The activity_log write below goes through the service-role client, which
+  // ignores RLS — so confirm the event really belongs to this farm rather than
+  // trusting the farmId the client sent.
+  if (existing && existing.farm_id && existing.farm_id !== farmId) {
+    throw new Error('That event belongs to another farm.');
+  }
 
   const mergedDetails = {
     ...(existing?.details as Record<string, unknown> ?? {}),
@@ -98,13 +119,15 @@ export async function logEventCompletion(
       ? (existing.type as ActivityType)
       : 'other';
 
-    const { error: logError } = await admin.from('activity_log').insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- farm_id predates the generated types
+    const { error: logError } = await (admin.from('activity_log') as any).insert({
+      farm_id: farmId,
       title: existing.title,
       activity_type: activityType,
       block_id: existing.block_id ?? null,
       description: notes || null,
       performed_at: actualEnd.toISOString(),
-      performed_by: user?.id ?? null,
+      performed_by: user.id,
       calendar_event_id: eventId,
     });
 
@@ -135,9 +158,11 @@ export async function logEventCompletion(
           consumable_id: mat.consumableId,
           usage_date: usageDate,
           quantity: mat.actualQuantity,
+          entry_type: 'usage',
+          balance_after: liveBalance - mat.actualQuantity,
           calendar_event_id: eventId,
           notes: 'Auto-deducted on task completion',
-          logged_by: user?.id ?? null,
+          logged_by: user.id,
         });
       if (usageError) {
         console.error('[Calendar] Failed to log consumable usage:', usageError.message);

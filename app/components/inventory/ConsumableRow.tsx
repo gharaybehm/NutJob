@@ -112,19 +112,36 @@ export default function ConsumableRow({
                 <thead>
                   <tr className="text-xs text-ink-3 border-b border-line">
                     <th className="font-medium pb-2 w-24">Date</th>
-                    <th className="font-medium pb-2 text-right pr-4">Quantity</th>
+                    <th className="font-medium pb-2 text-right pr-4">Change</th>
+                    <th className="font-medium pb-2 text-right pr-4 hidden lg:table-cell">Balance</th>
+                    <th className="font-medium pb-2">Recorded by</th>
                     <th className="font-medium pb-2">Block</th>
                     <th className="font-medium pb-2 hidden sm:table-cell">Calendar Event</th>
                     <th className="font-medium pb-2 hidden md:table-cell">Notes</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-tile">
-                  {sortedLogs.map(log => (
+                  {sortedLogs.map(log => {
+                    // Restocks and corrections add stock; usage removes it. The
+                    // ledger holds all three, so the sign is per-entry now.
+                    const isAddition = log.entryType === 'restock';
+                    return (
                     <tr key={log.id} className="text-ink-2">
-                      <td className="py-2.5 whitespace-nowrap">{log.date.toLocaleDateString('en-GB')}</td>
-                      <td className="py-2.5 text-right pr-4 font-medium text-red">
-                        -{log.quantity} <span className="text-xs font-normal opacity-70">{consumable.unit}</span>
+                      <td className="py-2.5 whitespace-nowrap">
+                        {log.date.toLocaleDateString('en-GB')}
+                        {log.entryType !== 'usage' && (
+                          <span className="ml-1.5 text-[10px] uppercase tracking-wider text-ink-3 font-semibold px-1.5 bg-surface rounded">
+                            {log.entryType}
+                          </span>
+                        )}
                       </td>
+                      <td className={`py-2.5 text-right pr-4 font-medium ${isAddition ? 'text-green' : 'text-red'}`}>
+                        {isAddition ? '+' : '-'}{log.quantity} <span className="text-xs font-normal opacity-70">{consumable.unit}</span>
+                      </td>
+                      <td className="py-2.5 text-right pr-4 hidden lg:table-cell tabular-nums">
+                        {log.balanceAfter === undefined ? '-' : log.balanceAfter}
+                      </td>
+                      <td className="py-2.5 whitespace-nowrap">{log.loggedByName || '-'}</td>
                       <td className="py-2.5">{log.block || '-'}</td>
                       <td className="py-2.5 hidden sm:table-cell">
                         {log.calendarEventId ? (
@@ -138,7 +155,8 @@ export default function ConsumableRow({
                         {log.notes || '-'}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             )}

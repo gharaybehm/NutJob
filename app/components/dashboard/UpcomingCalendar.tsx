@@ -13,27 +13,18 @@ interface CalendarEventItem {
 async function getUpcomingEvents(farmId: string): Promise<CalendarEventItem[]> {
   const supabase = await createClient();
 
+  // Scoped on farm_id since 20260909000000_tenant_isolation.sql; the previous
+  // `block_id IS NULL` branch matched every other tenant's farm-wide events.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: farmBlocks } = await (supabase.from("blocks") as any)
-    .select("id")
-    .eq("farm_id", farmId);
-  const blockIds: string[] = (farmBlocks ?? []).map((b: { id: string }) => b.id);
-
-  let query = supabase
-    .from("calendar_events")
+  const { data } = await (supabase.from("calendar_events") as any)
     .select("id, title, start_date, type")
+    .eq("farm_id", farmId)
     .gte("start_date", new Date().toISOString())
     .order("start_date", { ascending: true })
     .limit(5);
 
-  if (blockIds.length > 0) {
-    query = query.or(`block_id.in.(${blockIds.join(",")}),block_id.is.null`);
-  } else {
-    query = query.is("block_id", null);
-  }
-
-  const { data } = await query;
-  return (data ?? []).map(e => ({ id: e.id, title: e.title, startDate: e.start_date, type: e.type }));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as any[]).map(e => ({ id: e.id, title: e.title, startDate: e.start_date, type: e.type }));
 }
 
 function getEventIcon(type: string) {

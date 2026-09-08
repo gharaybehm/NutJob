@@ -1,6 +1,6 @@
 import { getActivityLog, getBlocks } from "./actions";
 import ActivityLogClient from "@/app/components/activity/ActivityLogClient";
-import { createClient } from "@/utils/supabase/server";
+import { getFarmActor } from "@/utils/supabase/farm-access";
 import { getTranslations, getLocale } from "next-intl/server";
 
 export const metadata = {
@@ -14,19 +14,17 @@ export default async function ActivityLogPage({
   params: Promise<{ farmId: string }>;
 }) {
   const { farmId } = await params;
-  const supabase = await createClient();
 
-  const [{ entries, total }, blocks, { data: { user } }, t, locale] = await Promise.all([
+  // The role is the per-farm one, not the platform-wide user_profiles.role.
+  // This page used the global role, so an admin on one farm got admin controls
+  // on every farm they belonged to — including ones where they are a worker.
+  const [{ entries, total }, blocks, actor, t, locale] = await Promise.all([
     getActivityLog({ limit: 50, farmId }),
     getBlocks(farmId),
-    supabase.auth.getUser(),
+    getFarmActor(farmId),
     getTranslations('activity'),
     getLocale(),
   ]);
-
-  const { data: profile } = user
-    ? await supabase.from("user_profiles").select("role").eq("id", user.id).single()
-    : { data: null };
 
   return (
     <div className="space-y-8">
@@ -43,7 +41,7 @@ export default async function ActivityLogPage({
         initialEntries={entries}
         initialTotal={total}
         blocks={blocks}
-        userRole={(profile?.role as "admin" | "supervisor" | "worker" | undefined) ?? "worker"}
+        userRole={actor?.role ?? "worker"}
         farmId={farmId}
         locale={locale}
       />

@@ -10,7 +10,7 @@ import dynamic from 'next/dynamic';
 const AddEventModal = dynamic(() => import('./AddEventModal'), { ssr: false });
 const LogCompletionModal = dynamic(() => import('./LogCompletionModal'), { ssr: false });
 import { CalendarEvent, PlannedMaterial, MaterialLine, ACTIVITY_COLORS, ACTIVITY_LABELS } from './types';
-import { createEvent, logEventCompletion } from '@/app/(dashboard)/calendar/actions';
+import { createEvent, logEventCompletion } from '@/app/[farmId]/(dashboard)/calendar/actions';
 
 type ConsumableSummary = { id: string; name: string; unit: string; currentBalance: number; category: string };
 type MaterialActual = { consumableId: string; actualQuantity: number; currentBalance: number };
@@ -158,12 +158,13 @@ export default function CalendarPage({
   initialEvents = [],
   consumables = [],
   userRole = "worker",
-  farmId: _farmId,
+  farmId,
 }: {
   initialEvents?: CalendarEvent[];
   consumables?: ConsumableSummary[];
   userRole?: "admin" | "supervisor" | "worker";
-  farmId?: string;
+  /** Required: writes are scoped and role-gated on the farm. */
+  farmId: string;
 }) {
   const locale = useLocale();
   const t = useTranslations('calendar.page');
@@ -231,7 +232,7 @@ export default function CalendarPage({
           block: event.block ?? null,
           notes: event.notes ?? null,
           details: event.details ?? null,
-        }, materials);
+        }, farmId, materials);
         setEvents((prev) =>
           prev.map((e) => (e.id === event.id ? { ...e, id: realId } : e))
         );
@@ -240,7 +241,7 @@ export default function CalendarPage({
         setEvents((prev) => prev.filter((e) => e.id !== event.id));
       }
     });
-  }, [consumables]);
+  }, [consumables, farmId]);
 
   const handleLogCompletion = useCallback((eventId: string, actualStart: Date, actualEnd: Date, notes: string, materialActuals: MaterialActual[]) => {
     setEvents((prev) =>
@@ -252,12 +253,12 @@ export default function CalendarPage({
     );
     startTransition(async () => {
       try {
-        await logEventCompletion(eventId, actualStart, actualEnd, notes, materialActuals);
+        await logEventCompletion(eventId, actualStart, actualEnd, notes, farmId, materialActuals);
       } catch (err) {
         console.error('[Calendar] Failed to log completion:', err);
       }
     });
-  }, []);
+  }, [farmId]);
 
   return (
     <div className="flex flex-col gap-4">

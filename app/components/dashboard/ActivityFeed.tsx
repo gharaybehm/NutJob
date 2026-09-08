@@ -1,6 +1,7 @@
 import { CheckCircle2, FlaskConical, Tractor, Droplets, Sprout, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
+import { getFarmMemberNames } from "@/utils/supabase/farm-access";
 import { getTranslations } from "next-intl/server";
 
 interface ActivityItem {
@@ -15,29 +16,26 @@ interface ActivityItem {
 async function getActivities(farmId: string): Promise<ActivityItem[]> {
   const supabase = await createClient();
 
+  // Scoped on farm_id since 20260909000000_tenant_isolation.sql. The old
+  // filter also matched `block_id IS NULL`, which pulled in other tenants'
+  // farm-wide entries.
+  const [{ data }, names] = await Promise.all([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase.from("activity_log") as any)
+      .select("id, title, activity_type, performed_at, performed_by, blocks(name)")
+      .eq("farm_id", farmId)
+      .order("performed_at", { ascending: false })
+      .limit(5),
+    getFarmMemberNames(farmId),
+  ]);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: farmBlocks } = await (supabase.from("blocks") as any)
-    .select("id")
-    .eq("farm_id", farmId);
-  const blockIds: string[] = (farmBlocks ?? []).map((b: { id: string }) => b.id);
-
-  let query = supabase
-    .from("activity_log")
-    .select("id, title, activity_type, performed_at, performed_by, blocks(name)")
-    .order("performed_at", { ascending: false })
-    .limit(5);
-
-  if (blockIds.length > 0) {
-    query = query.or(`block_id.in.(${blockIds.join(",")}),block_id.is.null`);
-  }
-
-  const { data } = await query;
-
-  return (data ?? []).map(act => ({
+  return ((data ?? []) as any[]).map(act => ({
     id: act.id,
     action: act.title,
     blockName: (act.blocks as { name: string } | null)?.name ?? null,
-    user: act.performed_by || "System",
+    // performed_by is a uuid; this used to render the raw id as the user name.
+    user: (act.performed_by ? names.get(act.performed_by) : null) ?? "System",
     performed_at: act.performed_at,
     type: act.activity_type,
   }));

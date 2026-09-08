@@ -19,6 +19,7 @@ export default function InventoryPage({
   initialConsumables,
   recentCalendarEvents,
   userRole,
+  currentUserName,
   blocks,
   farmId,
 }: {
@@ -26,6 +27,8 @@ export default function InventoryPage({
   initialConsumables: Consumable[];
   recentCalendarEvents: { id: string; title: string; date: Date; type: string }[];
   userRole: 'admin' | 'supervisor' | 'worker';
+  /** Stamped onto optimistic ledger rows so attribution shows before the refetch. */
+  currentUserName: string;
   blocks: string[];
   farmId: string;
 }) {
@@ -37,6 +40,9 @@ export default function InventoryPage({
   const [assets, setAssets] = useState<Asset[]>(initialAssets);
   const [consumables, setConsumables] = useState<Consumable[]>(initialConsumables);
   const [, startTransition] = useTransition();
+  // Server actions are role-gated, so a rejected write has to be shown rather
+  // than swallowed — otherwise an optimistic row lingers as a phantom entry.
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Modals
   const [showAddAsset, setShowAddAsset] = useState(false);
@@ -65,9 +71,15 @@ export default function InventoryPage({
     // Optimistic
     const tempAsset: Asset = { ...data, id: `temp-a-${Date.now()}`, maintenanceLog: [] };
     setAssets(prev => [tempAsset, ...prev]);
-    
+    setActionError(null);
+
     startTransition(async () => {
-      const { id } = await createAsset(data, farmId);
+      const { id, error } = await createAsset(data, farmId);
+      if (error || !id) {
+        setAssets(prev => prev.filter(a => a.id !== tempAsset.id));
+        setActionError(error ?? 'Could not save the asset.');
+        return;
+      }
       setAssets(prev => prev.map(a => a.id === tempAsset.id ? { ...a, id } : a));
     });
   };
@@ -81,9 +93,15 @@ export default function InventoryPage({
       usageLog: [] 
     };
     setConsumables(prev => [...prev, tempCons].sort((a,b) => a.name.localeCompare(b.name)));
-    
+    setActionError(null);
+
     startTransition(async () => {
-      const { id } = await createConsumable(data, farmId);
+      const { id, error } = await createConsumable(data, farmId);
+      if (error || !id) {
+        setConsumables(prev => prev.filter(c => c.id !== tempCons.id));
+        setActionError(error ?? 'Could not save the consumable.');
+        return;
+      }
       setConsumables(prev => prev.map(c => c.id === tempCons.id ? { ...c, id } : c));
     });
   };
@@ -95,52 +113,110 @@ export default function InventoryPage({
     const tempEntry: MaintenanceEntry = {
       ...data,
       id: `temp-m-${Date.now()}`,
-      assetId: maintAsset.id
+      assetId: maintAsset.id,
+      loggedByName: currentUserName,
     };
-    
-    setAssets(prev => prev.map(a => 
-      a.id === maintAsset.id 
+    const assetId = maintAsset.id;
+
+    setAssets(prev => prev.map(a =>
+      a.id === assetId
         ? { ...a, maintenanceLog: [tempEntry, ...a.maintenanceLog] }
         : a
     ));
-    
+    setActionError(null);
+
     startTransition(async () => {
-      await logMaintenance(maintAsset.id, data, farmId);
+      const { error } = await logMaintenance(assetId, data, farmId);
+      if (error) {
+        setAssets(prev => prev.map(a =>
+          a.id === assetId
+            ? { ...a, maintenanceLog: a.maintenanceLog.filter(m => m.id !== tempEntry.id) }
+            : a
+        ));
+        setActionError(error);
+      }
     });
   };
 
   const handleAddStock = (consumable: Consumable, quantity: number) => {
+    const restockEntry: UsageEntry = {
+      id: `temp-r-${Date.now()}`,
+      consumableId: consumable.id,
+      date: new Date(),
+      quantity,
+      entryType: 'restock',
+      balanceAfter: consumable.currentBalance + quantity,
+      loggedByName: currentUserName,
+    };
+
     setConsumables(prev => prev.map(c =>
       c.id === consumable.id
-        ? { ...c, currentBalance: c.currentBalance + quantity, startingBalance: c.startingBalance + quantity }
+        ? {
+            ...c,
+            currentBalance: c.currentBalance + quantity,
+            startingBalance: c.startingBalance + quantity,
+            usageLog: [restockEntry, ...c.usageLog],
+          }
         : c
     ));
+    setActionError(null);
+
     startTransition(async () => {
-      await addStock(consumable.id, quantity, farmId);
+      const { error } = await addStock(consumable.id, quantity, farmId);
+      if (error) {
+        setConsumables(prev => prev.map(c =>
+          c.id === consumable.id
+            ? {
+                ...c,
+                currentBalance: c.currentBalance - quantity,
+                startingBalance: c.startingBalance - quantity,
+                usageLog: c.usageLog.filter(u => u.id !== restockEntry.id),
+              }
+            : c
+        ));
+        setActionError(error);
+      }
     });
   };
 
-  const handleSaveUsage = (data: Omit<UsageEntry, 'id' | 'consumableId' | 'calendarEventTitle' | 'loggedBy'>, eventTitle?: string) => {
+  const handleSaveUsage = (
+    data: Omit<UsageEntry, 'id' | 'consumableId' | 'calendarEventTitle' | 'loggedBy' | 'loggedByName' | 'entryType' | 'balanceAfter'>,
+    eventTitle?: string,
+  ) => {
     if (!usageConsumable) return;
-    
-    const newBalance = usageConsumable.currentBalance - data.quantity;
-    
+
+    const consumableId = usageConsumable.id;
+    const previousBalance = usageConsumable.currentBalance;
+    const newBalance = previousBalance - data.quantity;
+
     // Optimistic
     const tempEntry: UsageEntry = {
       ...data,
       id: `temp-u-${Date.now()}`,
-      consumableId: usageConsumable.id,
-      calendarEventTitle: eventTitle
+      consumableId,
+      entryType: 'usage',
+      balanceAfter: newBalance,
+      calendarEventTitle: eventTitle,
+      loggedByName: currentUserName,
     };
-    
-    setConsumables(prev => prev.map(c => 
-      c.id === usageConsumable.id 
+
+    setConsumables(prev => prev.map(c =>
+      c.id === consumableId
         ? { ...c, currentBalance: newBalance, usageLog: [tempEntry, ...c.usageLog] }
         : c
     ));
-    
+    setActionError(null);
+
     startTransition(async () => {
-      await logUsage(usageConsumable.id, data, newBalance, farmId);
+      const { error } = await logUsage(consumableId, data, newBalance, farmId);
+      if (error) {
+        setConsumables(prev => prev.map(c =>
+          c.id === consumableId
+            ? { ...c, currentBalance: previousBalance, usageLog: c.usageLog.filter(u => u.id !== tempEntry.id) }
+            : c
+        ));
+        setActionError(error);
+      }
     });
   };
 
@@ -148,12 +224,28 @@ export default function InventoryPage({
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-6">
+      {actionError && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-lg border border-red/30 bg-red-soft px-4 py-3 text-sm text-red"
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span className="flex-1">{actionError}</span>
+          <button
+            onClick={() => setActionError(null)}
+            className="font-medium underline underline-offset-2"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl font-bold text-ink">{t('title')}</h1>
           <p className="text-sm text-ink-3 mt-1">{t('description')}</p>
         </div>
-        
+
         {/* Top actions */}
         <div className="flex gap-2">
           {activeTab === 'assets' && canAdd && (
