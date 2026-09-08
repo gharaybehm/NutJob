@@ -1,17 +1,91 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { createSensecapClient, mapTelemetryToPayloads } from "@/utils/sensecap-client";
+import {
+  createSensecapClient,
+  mapTelemetryToPayloads,
+  mapHistoryToPayloads,
+  type TimestampedPayloads,
+} from "@/utils/sensecap-client";
 
 // SenseCAP sensor sync — runs 3× per day at 00:00, 08:00, 16:00 UTC.
 //
-// For each farm with SenseCAP credentials configured, fetches the latest
-// telemetry reading for every registered sensor (device_id = SenseCAP EUI)
-// and writes the values into soil_water_readings / weather_snapshots.
+// For each farm with SenseCAP credentials configured, fetches every telemetry
+// reading each registered sensor (device_id = SenseCAP EUI) has logged since
+// its last stored reading, and writes them into soil_water_readings /
+// weather_snapshots.
+//
+// The cron cadence is the PULL frequency, not the sample frequency: the
+// devices uplink far more often than 3× a day, and the derived agronomy needs
+// that resolution (chill hours are meaningless below roughly hourly data, and
+// true daily Tmax/Tmin cannot be recovered from three fixed-time samples).
+// Where the history endpoint is unavailable this falls back to storing just
+// the latest point, which is the older behaviour.
 //
 // Trigger options (all call the same endpoint):
 //   - Trigger.dev schedule (src/trigger/sensecap-sync.ts)  ← recommended
 //   - External cron service (e.g. cron-job.org)
 //   - Manual: GET /api/cron/sensecap-sync?secret=YOUR_CRON_SECRET
+
+// How far back to look when a sensor has no stored readings at all. Bounded so
+// a newly-registered device does not pull an unbounded backfill on first sync.
+const MAX_BACKFILL_DAYS = 14;
+
+// Supabase rejects very large single inserts; chunk anything bigger.
+const INSERT_CHUNK = 200;
+
+function chunk<T>(rows: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, i + size));
+  return out;
+}
+
+/** Newest stored reading for a sensor, across both reading tables. */
+async function lastReadingAt(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  sensorId: string,
+): Promise<Date | null> {
+  const newest = async (table: string): Promise<string | null> => {
+    const { data } = await admin
+      .from(table)
+      .select("recorded_at")
+      .eq("sensor_id", sensorId)
+      .order("recorded_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return data?.recorded_at ?? null;
+  };
+
+  const [soil, weather] = await Promise.all([
+    newest("soil_water_readings"),
+    newest("weather_snapshots"),
+  ]);
+
+  const stamps = [soil, weather].filter(Boolean) as string[];
+  if (stamps.length === 0) return null;
+  return new Date(stamps.sort().reverse()[0]);
+}
+
+/** Timestamps already stored for a sensor since a cutoff, for dedup. */
+async function existingTimestamps(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  table: string,
+  sensorId: string,
+  since: Date,
+): Promise<Set<string>> {
+  const { data } = await admin
+    .from(table)
+    .select("recorded_at")
+    .eq("sensor_id", sensorId)
+    .gte("recorded_at", since.toISOString());
+
+  return new Set(
+    ((data ?? []) as { recorded_at: string }[]).map(r =>
+      new Date(r.recorded_at).toISOString(),
+    ),
+  );
+}
 
 export async function GET(request: NextRequest) {
   // Auth: same CRON_SECRET pattern as /api/cron/weather
@@ -94,98 +168,107 @@ export async function GET(request: NextRequest) {
       const eui: string = sensor.device_id;
 
       try {
-        const channels = await client.fetchLatestTelemetry(eui);
+        // ── Work out the window to pull ──────────────────────────────────────
+        const floor = new Date(Date.now() - MAX_BACKFILL_DAYS * 86_400_000);
+        const last = await lastReadingAt(admin, sensor.id);
+        // Start just after the newest stored reading so it is not re-fetched.
+        const since = last && last > floor ? new Date(last.getTime() + 1000) : floor;
 
-        if (!channels || channels.length === 0) {
-          totalSkipped++;
-          continue;
+        // ── Preferred path: full history since the last stored reading ───────
+        let readings: TimestampedPayloads[] = [];
+        try {
+          const points = await client.fetchTelemetryHistory(eui, since);
+          readings = mapHistoryToPayloads(points);
+        } catch (err) {
+          console.warn(
+            `[sensecap-sync] History unavailable for ${sensor.name}, falling back to latest:`,
+            err,
+          );
         }
 
-        const { soil, weather } = mapTelemetryToPayloads(channels);
-        const hasSoil = Object.keys(soil).some((k) => k !== "recorded_at" && soil[k as keyof typeof soil] != null);
-        const hasWeather = Object.keys(weather).some((k) => k !== "recorded_at" && weather[k as keyof typeof weather] != null);
-
-        if (!hasSoil && !hasWeather) {
-          totalSkipped++;
-          continue;
-        }
-
-        // ── Soil insert ───────────────────────────────────────────────────────
-        if (hasSoil) {
-          const recordedAt = soil.recorded_at ?? now;
-
-          // Dedup: skip if we already have a reading from this sensor at this timestamp
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { count } = await (admin as any)
-            .from("soil_water_readings")
-            .select("id", { count: "exact", head: true })
-            .eq("sensor_id", sensor.id)
-            .eq("recorded_at", recordedAt);
-
-          if ((count ?? 0) === 0) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { error: soilErr } = await (admin as any)
-              .from("soil_water_readings")
-              .insert({
-                block_id: sensor.block_id,
-                sensor_id: sensor.id,
-                source: "sensor",
-                recorded_at: recordedAt,
-                soil_moisture: soil.soil_moisture ?? null,
-                soil_ec: soil.soil_ec ?? null,
-                root_zone_temp: soil.root_zone_temp ?? null,
-                ph: soil.ph ?? null,
-              });
-
-            if (soilErr) {
-              errors.push(`[${farm.name}/${sensor.name}] Soil insert: ${soilErr.message}`);
-            } else {
-              totalSynced++;
-            }
-          } else {
+        // ── Fallback: the single latest point (previous behaviour) ───────────
+        if (readings.length === 0) {
+          const channels = await client.fetchLatestTelemetry(eui);
+          if (!channels || channels.length === 0) {
             totalSkipped++;
+            continue;
           }
-        }
 
-        // ── Weather insert ────────────────────────────────────────────────────
-        if (hasWeather) {
-          const recordedAt = weather.recorded_at ?? now;
+          const { soil, weather } = mapTelemetryToPayloads(channels);
+          const hasSoil = Object.keys(soil).some(
+            (k) => k !== "recorded_at" && soil[k as keyof typeof soil] != null,
+          );
+          const hasWeather = Object.keys(weather).some(
+            (k) => k !== "recorded_at" && weather[k as keyof typeof weather] != null,
+          );
 
-          // Dedup
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { count } = await (admin as any)
-            .from("weather_snapshots")
-            .select("id", { count: "exact", head: true })
-            .eq("sensor_id", sensor.id)
-            .eq("recorded_at", recordedAt);
-
-          if ((count ?? 0) === 0) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { error: wxErr } = await (admin as any)
-              .from("weather_snapshots")
-              .insert({
-                block_id: sensor.block_id,
-                sensor_id: sensor.id,
-                source: "sensor",
-                recorded_at: recordedAt,
-                temp_c: weather.temp_c ?? null,
-                humidity_pct: weather.humidity_pct ?? null,
-                wind_kmh: weather.wind_kmh ?? null,
-                wind_direction: weather.wind_direction != null ? String(weather.wind_direction) : null,
-                rainfall_mm: weather.rainfall_mm ?? null,
-                heat_stress_risk: weather.temp_c != null ? weather.temp_c > 38 : false,
-                frost_risk: weather.temp_c != null ? weather.temp_c < 2 : false,
-              });
-
-            if (wxErr) {
-              errors.push(`[${farm.name}/${sensor.name}] Weather insert: ${wxErr.message}`);
-            } else {
-              totalSynced++;
-            }
-          } else {
+          if (!hasSoil && !hasWeather) {
             totalSkipped++;
+            continue;
           }
+
+          const { recorded_at: soilAt, ...soilFields } = soil;
+          const { recorded_at: wxAt, ...weatherFields } = weather;
+          readings = [{
+            recorded_at: soilAt ?? wxAt ?? now,
+            soil: soilFields,
+            weather: weatherFields,
+            hasSoil,
+            hasWeather,
+          }];
         }
+
+        // ── Dedup against what is already stored ─────────────────────────────
+        const [storedSoil, storedWeather] = await Promise.all([
+          existingTimestamps(admin, "soil_water_readings", sensor.id, since),
+          existingTimestamps(admin, "weather_snapshots", sensor.id, since),
+        ]);
+
+        const soilRows = readings
+          .filter(r => r.hasSoil && !storedSoil.has(r.recorded_at))
+          .map(r => ({
+            block_id: sensor.block_id,
+            sensor_id: sensor.id,
+            source: "sensor",
+            recorded_at: r.recorded_at,
+            soil_moisture: r.soil.soil_moisture ?? null,
+            soil_ec: r.soil.soil_ec ?? null,
+            root_zone_temp: r.soil.root_zone_temp ?? null,
+            ph: r.soil.ph ?? null,
+          }));
+
+        const weatherRows = readings
+          .filter(r => r.hasWeather && !storedWeather.has(r.recorded_at))
+          .map(r => ({
+            block_id: sensor.block_id,
+            sensor_id: sensor.id,
+            source: "sensor",
+            recorded_at: r.recorded_at,
+            temp_c: r.weather.temp_c ?? null,
+            humidity_pct: r.weather.humidity_pct ?? null,
+            wind_kmh: r.weather.wind_kmh ?? null,
+            wind_direction: r.weather.wind_direction != null ? String(r.weather.wind_direction) : null,
+            rainfall_mm: r.weather.rainfall_mm ?? null,
+            heat_stress_risk: r.weather.temp_c != null ? r.weather.temp_c > 38 : false,
+            frost_risk: r.weather.temp_c != null ? r.weather.temp_c < 2 : false,
+          }));
+
+        totalSkipped += readings.length - Math.max(soilRows.length, weatherRows.length);
+
+        const insertBatches = async (table: string, rows: unknown[]) => {
+          for (const batch of chunk(rows, INSERT_CHUNK)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error: insErr } = await (admin as any).from(table).insert(batch);
+            if (insErr) {
+              errors.push(`[${farm.name}/${sensor.name}] ${table} insert: ${insErr.message}`);
+            } else {
+              totalSynced += batch.length;
+            }
+          }
+        };
+
+        await insertBatches("soil_water_readings", soilRows);
+        await insertBatches("weather_snapshots", weatherRows);
 
         // ── Update sensor heartbeat ───────────────────────────────────────────
         const statusInfo = statusMap[eui];

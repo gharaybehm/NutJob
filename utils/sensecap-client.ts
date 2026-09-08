@@ -42,6 +42,83 @@ interface SensecapOrgResponse {
   data: { org_id: string };
 }
 
+/** One measurement at one instant, flattened out of whatever shape the API used. */
+export interface TelemetryPoint {
+  measurement_id: string;
+  value: number;
+  time: string; // ISO 8601
+}
+
+// The historical endpoint is documented with two shapes across SenseCAP's API
+// versions: the same channel/points structure the "latest" endpoint returns,
+// and a `{ list: [...] }` wrapper of [value, timestamp] tuples paired with
+// measurement metadata. Both are accepted.
+interface SensecapHistoryResponse {
+  code: string;
+  data?:
+    | SensecapChannel[]
+    | {
+        list?: unknown[];
+      };
+}
+
+function toIsoTime(raw: unknown): string | null {
+  if (typeof raw === "number") return new Date(raw).toISOString();
+  if (typeof raw === "string") {
+    const parsed = new Date(/^\d+$/.test(raw) ? Number(raw) : raw);
+    return isNaN(parsed.getTime()) ? null : parsed.toISOString();
+  }
+  return null;
+}
+
+export function normaliseHistoryResponse(res: SensecapHistoryResponse): TelemetryPoint[] {
+  const data = res.data;
+  if (!data) return [];
+
+  const out: TelemetryPoint[] = [];
+
+  // Shape A — channel/points, identical to the "latest telemetry" endpoint.
+  if (Array.isArray(data)) {
+    for (const channel of data as SensecapChannel[]) {
+      for (const point of channel.points ?? []) {
+        const time = toIsoTime(point.time);
+        const value = point.value ?? point.measurement_value;
+        if (time == null || typeof value !== "number") continue;
+        out.push({ measurement_id: String(point.measurement_id), value, time });
+      }
+    }
+    return out;
+  }
+
+  // Shape B — { list: [ [ [value, time], ... ], [ { measurement_id }, ... ] ] }
+  // The two halves are positionally paired: series i belongs to metadata i.
+  const list = (data as { list?: unknown[] }).list;
+  if (!Array.isArray(list) || list.length < 2) return [];
+
+  const series = list[0];
+  const meta = list[1];
+  if (!Array.isArray(series) || !Array.isArray(meta)) return [];
+
+  for (let i = 0; i < series.length; i++) {
+    const metaEntry = meta[i] as { measurement_id?: string | number } | undefined;
+    const measurementId = metaEntry?.measurement_id;
+    if (measurementId == null) continue;
+
+    const points = series[i];
+    if (!Array.isArray(points)) continue;
+
+    for (const tuple of points) {
+      if (!Array.isArray(tuple) || tuple.length < 2) continue;
+      const value = tuple[0];
+      const time = toIsoTime(tuple[1]);
+      if (time == null || typeof value !== "number") continue;
+      out.push({ measurement_id: String(measurementId), value, time });
+    }
+  }
+
+  return out;
+}
+
 // ─── Measurement ID → our schema mapping ─────────────────────────────────────
 //
 // SenseCAP sensor types relevant for almond farms:
@@ -153,6 +230,39 @@ export class SensecapClient {
   }
 
   /**
+   * Fetch every telemetry point a device reported in a time window.
+   *
+   * The devices log far more often than this app's sync cron runs (LoRaWAN
+   * uplinks are typically every 15–60 min), so pulling only the latest point
+   * discards almost everything they measured. Full history matters for the
+   * derived agronomy: chill hours need near-hourly temperatures to be
+   * meaningful, and true daily Tmax/Tmin cannot be recovered from three
+   * fixed-time samples.
+   *
+   * ⚠ The historical endpoint's exact response shape is not verified against a
+   * live SenseCAP account — the parser below accepts the two documented
+   * shapes and the caller falls back to `fetchLatestTelemetry` if this throws
+   * or returns nothing, so an unexpected shape degrades to current behaviour
+   * rather than losing data.
+   */
+  async fetchTelemetryHistory(
+    deviceEui: string,
+    since: Date,
+    until: Date = new Date(),
+  ): Promise<TelemetryPoint[]> {
+    const params = new URLSearchParams({
+      device_eui: deviceEui,
+      time_start: String(since.getTime()),
+      time_end: String(until.getTime()),
+    });
+
+    const res = await this.get<SensecapHistoryResponse>(
+      `/list_telemetry_data?${params.toString()}`
+    );
+    return normaliseHistoryResponse(res);
+  }
+
+  /**
    * Fetch online/battery status for up to 50 devices at once.
    */
   async fetchDeviceStatus(deviceEuis: string[]): Promise<SensecapDeviceStatus[]> {
@@ -169,6 +279,54 @@ export function createSensecapClient(apiId: string, accessKey: string): Sensecap
 }
 
 // ─── Telemetry → payload mapping ─────────────────────────────────────────────
+
+export interface TimestampedPayloads {
+  recorded_at: string;
+  soil: SoilFields;
+  weather: WeatherFields;
+  hasSoil: boolean;
+  hasWeather: boolean;
+}
+
+/**
+ * Group flattened history points into one soil/weather payload per instant.
+ *
+ * Unlike `mapTelemetryToPayloads`, which collapses everything into a single
+ * "latest" row, this preserves the time series — the whole point of reading
+ * history. Timestamps are bucketed to the minute because a multi-channel
+ * device does not stamp every measurement in an uplink identically, and a
+ * handful of seconds' drift would otherwise split one reading into several
+ * near-empty rows.
+ */
+export function mapHistoryToPayloads(points: TelemetryPoint[]): TimestampedPayloads[] {
+  const buckets = new Map<string, TimestampedPayloads>();
+
+  for (const point of points) {
+    const def = MEASUREMENT_MAP[point.measurement_id];
+    if (!def) continue;
+
+    const value = def.transform ? def.transform(point.value) : point.value;
+    // Round to the minute; keep a real ISO timestamp as the bucket's identity.
+    const bucketKey = point.time.slice(0, 16);
+    const recordedAt = new Date(`${bucketKey}:00.000Z`).toISOString();
+
+    let bucket = buckets.get(bucketKey);
+    if (!bucket) {
+      bucket = { recorded_at: recordedAt, soil: {}, weather: {}, hasSoil: false, hasWeather: false };
+      buckets.set(bucketKey, bucket);
+    }
+
+    if (def.table === "soil") {
+      (bucket.soil as Record<string, unknown>)[def.field] = value;
+      bucket.hasSoil = true;
+    } else {
+      (bucket.weather as Record<string, unknown>)[def.field] = value;
+      bucket.hasWeather = true;
+    }
+  }
+
+  return Array.from(buckets.values()).sort((a, b) => a.recorded_at.localeCompare(b.recorded_at));
+}
 
 /**
  * Converts SenseCAP telemetry channels into typed soil/weather payloads.
