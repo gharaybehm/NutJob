@@ -6,7 +6,12 @@ import {
   estimatedDaillyChillHours,
   dayOfYear,
   sevenDayWaterDeficit,
+  sumGDD,
+  predictSeasonDates,
+  type MonthlyNormalTemps,
 } from "@/utils/agronomic";
+import { fetchDailyTemperatureRange } from "@/utils/weather-history";
+import { getOrFetchClimateProfile } from "@/utils/climate-profile";
 
 // Scheduled computed-fields run — designed to execute once per day (midnight).
 //
@@ -47,6 +52,102 @@ function inferGrowthStage(cumulativeGdd: number, month: number): GrowthStageKey 
   if (cumulativeGdd < 1600) return "nut-development";
   if (cumulativeGdd < 2100) return "hull-split";
   return "harvest";
+}
+
+// ─── Bloom-anchored season prediction ────────────────────────────────────────
+
+type AnchorEvent = { event_type: string; observed_on: string };
+
+/**
+ * Pick the anchor to measure heat accumulation from. Full bloom is the better
+ * anchor — bud break is accepted as a fallback because it is the observation a
+ * grower is most likely to have made first, with the GDD offset applied in
+ * `predictSeasonDates`.
+ */
+function pickAnchor(events: AnchorEvent[]): AnchorEvent | null {
+  return (
+    events.find(e => e.event_type === "full-bloom") ??
+    events.find(e => e.event_type === "bud-break") ??
+    null
+  );
+}
+
+interface PredictedFields {
+  bud_break_date: string | null;
+  estimated_harvest_start: string | null;
+  estimated_harvest_end: string | null;
+  days_to_hull_split: number | null;
+}
+
+const EMPTY_PREDICTION: PredictedFields = {
+  bud_break_date: null,
+  estimated_harvest_start: null,
+  estimated_harvest_end: null,
+  days_to_hull_split: null,
+};
+
+function isoDate(d: Date): string {
+  return d.toISOString().split("T")[0];
+}
+
+async function predictForBlock(
+  events: AnchorEvent[],
+  normals: MonthlyNormalTemps[] | null,
+  lat: number,
+  lng: number,
+  today: Date,
+  todayGdd: number,
+  // Shared across blocks in a farm so blocks with the same anchor date cost one fetch.
+  historyCache: Map<string, { tMax: number; tMin: number }[]>,
+): Promise<PredictedFields> {
+  const budBreak = events.find(e => e.event_type === "bud-break");
+  const budBreakDate = budBreak?.observed_on ?? null;
+
+  const anchor = pickAnchor(events);
+  // No anchor observed, or no climate normals to project forward with: report
+  // the bud-break observation if there is one, but predict nothing.
+  if (!anchor || !normals || normals.length !== 12) {
+    return { ...EMPTY_PREDICTION, bud_break_date: budBreakDate };
+  }
+
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const anchorDate = anchor.observed_on;
+
+  let history = historyCache.get(anchorDate);
+  if (!history) {
+    const series =
+      anchorDate <= isoDate(yesterday)
+        ? await fetchDailyTemperatureRange(lat, lng, anchorDate, isoDate(yesterday))
+        : [];
+    history = series.map(d => ({ tMax: d.tMax, tMin: d.tMin }));
+    historyCache.set(anchorDate, history);
+  }
+
+  const expectedDays = Math.max(
+    0,
+    Math.floor((yesterday.getTime() - new Date(`${anchorDate}T00:00:00Z`).getTime()) / 86_400_000),
+  );
+  // A badly incomplete series would understate accumulated heat and push every
+  // predicted date too late. Better to show nothing than a confidently wrong date.
+  if (expectedDays > 0 && history.length < expectedDays * 0.8) {
+    return { ...EMPTY_PREDICTION, bud_break_date: budBreakDate };
+  }
+
+  const gddSinceAnchor = sumGDD(history) + todayGdd;
+  const prediction = predictSeasonDates(
+    today,
+    gddSinceAnchor,
+    normals,
+    anchor.event_type === "bud-break",
+  );
+
+  return {
+    bud_break_date: budBreakDate,
+    estimated_harvest_start: prediction.harvestStart ? isoDate(prediction.harvestStart) : null,
+    estimated_harvest_end: prediction.harvestEnd ? isoDate(prediction.harvestEnd) : null,
+    days_to_hull_split: prediction.daysToHullSplit,
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -147,6 +248,28 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
+      // ── Season prediction inputs, gathered once per farm ──────────────────
+      // Climate normals drive the forward projection past the forecast horizon.
+      const climate = await getOrFetchClimateProfile(farm.id, latDeg, farm.gps_lng as number);
+      const normals: MonthlyNormalTemps[] | null = climate?.monthly_normals ?? null;
+
+      // Observed anchors for the current season, all blocks in one query.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: seasonEvents } = await (admin as any)
+        .from("phenology_events")
+        .select("block_id, event_type, observed_on")
+        .in("block_id", blockIds)
+        .eq("season", currentYear);
+
+      const eventsByBlock = new Map<string, AnchorEvent[]>();
+      for (const ev of (seasonEvents ?? []) as (AnchorEvent & { block_id: string })[]) {
+        const list = eventsByBlock.get(ev.block_id) ?? [];
+        list.push({ event_type: ev.event_type, observed_on: ev.observed_on });
+        eventsByBlock.set(ev.block_id, list);
+      }
+
+      const historyCache = new Map<string, { tMax: number; tMin: number }[]>();
+
       let updatedCount = 0;
 
       for (const blockId of blockIds) {
@@ -186,6 +309,18 @@ export async function GET(request: NextRequest) {
 
         const currentStage = inferGrowthStage(newCumulativeGdd, currentMonth);
 
+        // Bloom-anchored predictions. Null throughout when the grower has not
+        // logged a season anchor yet — the tab renders "—" rather than a guess.
+        const predicted = await predictForBlock(
+          eventsByBlock.get(blockId) ?? [],
+          normals,
+          latDeg,
+          farm.gps_lng as number,
+          now,
+          todayGdd,
+          historyCache,
+        );
+
         const { error: phenoError } = await admin.from("phenology_records").insert({
           block_id: blockId,
           cumulative_gdd: newCumulativeGdd,
@@ -195,6 +330,10 @@ export async function GET(request: NextRequest) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           source: "computed" as any,
           recorded_at: now.toISOString(),
+          bud_break_date: predicted.bud_break_date,
+          estimated_harvest_start: predicted.estimated_harvest_start,
+          estimated_harvest_end: predicted.estimated_harvest_end,
+          days_to_hull_split: predicted.days_to_hull_split,
         });
 
         if (phenoError) {

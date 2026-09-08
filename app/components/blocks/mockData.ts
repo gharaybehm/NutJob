@@ -6,8 +6,14 @@ import type {
 
 // ─── Date shorthand ───────────────────────────────────────────────────────────
 
-function d(y: number, mo: number, day: number, h = 0, min = 0): Date {
-  return new Date(y, mo - 1, day, h, min);
+// Object spread copies keys whose value is `undefined`, so `{...defaults, ...o}`
+// would let an override of `undefined` wipe out a default. Callers legitimately
+// pass `undefined` for columns that are NULL in the database, so strip those
+// keys before spreading and let the default stand.
+function defined<T extends object>(o: Partial<T>): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(o).filter(([, v]) => v !== undefined)
+  ) as Partial<T>;
 }
 
 // ─── Default nutrient reference ranges (almond tissue standards) ──────────────
@@ -30,7 +36,7 @@ export function makeSoilWater(o: Partial<SoilWaterDomain> = {}): SoilWaterDomain
     lastIrrigation: new Date(),
     nextIrrigationDue: new Date(),
     source: 'manual', alerts: [],
-    ...o,
+    ...defined(o),
   };
 }
 
@@ -39,12 +45,12 @@ export function makePhenology(o: Partial<PhenologyDomain> = {}): PhenologyDomain
     currentStage: 'dormancy',
     stageDescription: 'No phenology data recorded yet.',
     cumulativeGDD: 0, chillHours: 0,
-    budBreakDate: d(new Date().getFullYear(), 2, 1),
-    estimatedHarvestStart: d(new Date().getFullYear(), 8, 1),
-    estimatedHarvestEnd: d(new Date().getFullYear(), 9, 1),
+    budBreakDate: null,
+    estimatedHarvestStart: null,
+    estimatedHarvestEnd: null,
     daysToHullSplit: 0,
     source: 'manual', alerts: [],
-    ...o,
+    ...defined(o),
   };
 }
 
@@ -55,7 +61,7 @@ export function makeNutrition(o: Partial<NutritionDomain> = {}): NutritionDomain
     nextFertigation: new Date(),
     tissueSampleDate: new Date(),
     source: 'manual', alerts: [],
-    ...o,
+    ...defined(o),
   };
 }
 
@@ -65,7 +71,7 @@ export function makePestDisease(o: Partial<PestDiseaseDomain> = {}): PestDisease
     lastScouting: new Date(),
     nextScouting: new Date(),
     observations: [], source: 'manual', alerts: [],
-    ...o,
+    ...defined(o),
   };
 }
 
@@ -74,7 +80,7 @@ export function makeWeather(o: Partial<WeatherDomain> = {}): WeatherDomain {
     currentTemp: 0, currentHumidity: 0, currentWind: 0,
     windDirection: '—', rainfall7d: 0, frostRisk: false, heatStressRisk: false,
     source: 'forecast', alerts: [], forecast: [],
-    ...o,
+    ...defined(o),
   };
 }
 

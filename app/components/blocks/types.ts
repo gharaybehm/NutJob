@@ -87,9 +87,11 @@ export interface PhenologyDomain {
   stageDescription: string;
   cumulativeGDD: number;     // growing degree days since Jan 1
   chillHours: number;        // hours below 7°C since Nov 1
-  budBreakDate: Date;
-  estimatedHarvestStart: Date;
-  estimatedHarvestEnd: Date;
+  // Null until a manual phenology record supplies them — the daily
+  // compute-fields cron only writes GDD, chill hours and growth stage.
+  budBreakDate: Date | null;
+  estimatedHarvestStart: Date | null;
+  estimatedHarvestEnd: Date | null;
   daysToHullSplit: number;
   source: DataSource;
   alerts: BlockAlert[];

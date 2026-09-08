@@ -14,6 +14,8 @@ interface Props {
   onEdit?: () => void;
   onDelete?: () => void;
   soilRefreshKey?: number;
+  farmId: string;
+  canLogObservations?: boolean;
 }
 
 const TABS: { id: AgroDomain; label: string; icon: string }[] = [
@@ -40,7 +42,9 @@ function alertCountForDomain(profile: BlockProfile, domain: AgroDomain): number 
   }
 }
 
-export default function BlockDetailPanel({ profile, onEdit, onDelete, soilRefreshKey }: Props) {
+export default function BlockDetailPanel({
+  profile, onEdit, onDelete, soilRefreshKey, farmId, canLogObservations = false,
+}: Props) {
   const [activeTab, setActiveTab] = useState<AgroDomain>('soil-water');
   const { block } = profile;
   const cfg = statusConfig[block.status];
@@ -124,7 +128,15 @@ export default function BlockDetailPanel({ profile, onEdit, onDelete, soilRefres
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-5">
         {activeTab === 'soil-water'   && <SoilWaterTab   data={profile.soilWater}   blockId={profile.block.id} sensorCount={profile.sensorCount ?? 0} refreshKey={soilRefreshKey} />}
-        {activeTab === 'phenology'    && <PhenologyTab    data={profile.phenology}    />}
+        {activeTab === 'phenology'    && (
+          <PhenologyTab
+            data={profile.phenology}
+            blockId={block.id}
+            blockName={block.name}
+            farmId={farmId}
+            canLog={canLogObservations}
+          />
+        )}
         {activeTab === 'nutrition'    && <NutritionTab    data={profile.nutrition}    />}
         {activeTab === 'pest-disease' && <PestDiseaseTab  data={profile.pestDisease}  />}
         {activeTab === 'weather'      && <WeatherTab      data={profile.weather}      />}

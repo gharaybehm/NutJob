@@ -472,6 +472,8 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
             onEdit={userRole !== "worker" ? () => openEditBlock(selectedProfile.block) : undefined}
             onDelete={userRole === "admin" ? () => confirmDeleteBlock(selectedProfile.block.id) : undefined}
             soilRefreshKey={soilRefreshKey}
+            farmId={farmId}
+            canLogObservations={userRole !== "worker"}
           />
         ) : (
           <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-line text-ink-4 text-sm">
