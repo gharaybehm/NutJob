@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, ArrowLeft, Globe } from "lucide-react";
+import { Bell, ArrowLeft, Globe } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -89,32 +89,12 @@ export default function TopNav({ farmId, alertCount = 0, farms = [] }: TopNavPro
         )}
       </div>
 
-      {/* Desktop: farm switcher + search */}
+      {/* Desktop: farm switcher */}
       <div className="hidden md:flex flex-1 items-center gap-3.5">
         <FarmSwitcher farmId={farmId} farms={farms} />
-        <div className="w-[300px] shrink-0 relative">
-          <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3">
-            <Search className="h-4 w-4 text-ink-3" />
-          </div>
-          <input
-            type="search"
-            name="search"
-            id="search"
-            className="block w-full rounded-[11px] border border-line bg-tile-2 py-2.5 ps-9 pe-3 text-sm text-ink placeholder:text-ink-4 focus:outline-none focus:ring-2 focus:ring-green/30"
-            placeholder={tTop("searchPlaceholder")}
-          />
-        </div>
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Mobile: search icon on home only */}
-        {isHome && (
-          <button className="md:hidden h-11 w-11 flex items-center justify-center rounded-full text-ink-3 hover:bg-tile transition-colors">
-            <span className="sr-only">{tTop("search")}</span>
-            <Search className="h-5 w-5" aria-hidden="true" />
-          </button>
-        )}
-
         {/* Language switcher */}
         <div ref={langRef} className="relative">
           <button

@@ -15,9 +15,7 @@
     "current": "Current"
   },
   "topNav": {
-    "searchPlaceholder": "Search blocks, actions, or recommendations...",
     "viewNotifications": "View notifications",
-    "search": "Search",
     "selectLanguage": "Select language"
   },
   "dashboard": {
