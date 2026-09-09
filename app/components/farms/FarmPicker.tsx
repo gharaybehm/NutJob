@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Plus, MapPin, Layers, SquareStack, ArrowRight } from 'lucide-react';
+import { Plus, MapPin, Layers, SquareStack, ArrowRight, Trash2 } from 'lucide-react';
 import type { FarmWithMeta } from '@/utils/supabase/farm-types';
 import CreateFarmWizard from './CreateFarmWizard';
+import DeleteFarmDialog from './DeleteFarmDialog';
 import SignOutButton from '@/app/components/auth/SignOutButton';
 
 interface Props {
@@ -31,6 +32,7 @@ function avatarColor(id: string) {
 export default function FarmPicker({ farms, userName, openWizard }: Props) {
   const router = useRouter();
   const [wizardOpen, setWizardOpen] = useState(farms.length === 0 || !!openWizard);
+  const [farmToDelete, setFarmToDelete] = useState<FarmWithMeta | null>(null);
 
   return (
     <div className="min-h-screen bg-paper flex flex-col">
@@ -78,47 +80,68 @@ export default function FarmPicker({ farms, userName, openWizard }: Props) {
           {farms.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-[18px]">
               {farms.map((farm) => (
-                <button
+                <div
                   key={farm.id}
-                  onClick={() => router.push(`/${farm.id}/dashboard`)}
-                  className="text-left rounded-2xl bg-surface border border-line p-[22px] hover:border-green hover:shadow-[0_12px_26px_-12px_rgba(47,125,79,.4)] transition-all group flex flex-col"
+                  className="relative rounded-2xl bg-surface border border-line p-[22px] hover:border-green hover:shadow-[0_12px_26px_-12px_rgba(47,125,79,.4)] transition-all group flex flex-col"
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <div
-                      className="flex h-12 w-12 items-center justify-center rounded-[13px] font-heading text-xl font-bold text-white"
-                      style={{ backgroundColor: avatarColor(farm.id) }}
-                    >
-                      {farm.name.charAt(0).toUpperCase()}
+                  {/* Full-card hit area for opening the farm. Sits behind the
+                      content so the delete control stays independently clickable. */}
+                  <button
+                    onClick={() => router.push(`/${farm.id}/dashboard`)}
+                    aria-label={`Open ${farm.name}`}
+                    className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-green"
+                  />
+
+                  <div className="relative z-10 pointer-events-none flex flex-1 flex-col text-left">
+                    <div className="flex items-center justify-between mb-4">
+                      <div
+                        className="flex h-12 w-12 items-center justify-center rounded-[13px] font-heading text-xl font-bold text-white"
+                        style={{ backgroundColor: avatarColor(farm.id) }}
+                      >
+                        {farm.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${roleStyles[farm.userRole] ?? roleStyles.worker}`}>
+                          {farm.userRole.charAt(0).toUpperCase() + farm.userRole.slice(1)}
+                        </span>
+                        {farm.userRole === 'admin' && (
+                          <button
+                            onClick={() => setFarmToDelete(farm)}
+                            aria-label={`Delete ${farm.name}`}
+                            title="Delete farm"
+                            className="pointer-events-auto rounded-lg p-1.5 text-ink-4 hover:bg-red/10 hover:text-red focus:outline-none focus-visible:ring-2 focus-visible:ring-red transition"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ${roleStyles[farm.userRole] ?? roleStyles.worker}`}>
-                      {farm.userRole.charAt(0).toUpperCase() + farm.userRole.slice(1)}
-                    </span>
-                  </div>
 
-                  <h2 className="font-heading text-lg font-bold text-ink leading-tight">
-                    {farm.name}
-                  </h2>
+                    <h2 className="font-heading text-lg font-bold text-ink leading-tight">
+                      {farm.name}
+                    </h2>
 
-                  <div className="mt-1 flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-ink-3">
-                    <Layers className="h-3 w-3 shrink-0" />
-                    <span>{farm.blockCount} {farm.blockCount === 1 ? 'BLOCK' : 'BLOCKS'}</span>
-                    {farm.total_area && <span>· {farm.total_area} {farm.area_unit?.toUpperCase()}</span>}
-                    {farm.address && (
-                      <span className="flex items-center gap-1 truncate">
-                        <MapPin className="h-3 w-3 shrink-0" />
-                        {farm.address}
+                    <div className="mt-1 flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-ink-3">
+                      <Layers className="h-3 w-3 shrink-0" />
+                      <span>{farm.blockCount} {farm.blockCount === 1 ? 'BLOCK' : 'BLOCKS'}</span>
+                      {farm.total_area && <span>· {farm.total_area} {farm.area_unit?.toUpperCase()}</span>}
+                      {farm.address && (
+                        <span className="flex items-center gap-1 truncate">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          {farm.address}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between border-t border-line-soft pt-3.5">
+                      <span className="text-xs text-ink-3">Open in dashboard</span>
+                      <span className="flex items-center gap-1.5 text-[13px] font-semibold text-green">
+                        Open
+                        <ArrowRight className="h-[17px] w-[17px]" />
                       </span>
-                    )}
+                    </div>
                   </div>
-
-                  <div className="mt-4 flex items-center justify-between border-t border-line-soft pt-3.5">
-                    <span className="text-xs text-ink-3">Open in dashboard</span>
-                    <span className="flex items-center gap-1.5 text-[13px] font-semibold text-green">
-                      Open
-                      <ArrowRight className="h-[17px] w-[17px]" />
-                    </span>
-                  </div>
-                </button>
+                </div>
               ))}
 
               {/* New Farm card */}
@@ -139,6 +162,17 @@ export default function FarmPicker({ farms, userName, openWizard }: Props) {
       </div>
 
       <CreateFarmWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
+
+      {farmToDelete && (
+        <DeleteFarmDialog
+          farm={farmToDelete}
+          onClose={() => setFarmToDelete(null)}
+          onDeleted={() => {
+            setFarmToDelete(null);
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }
