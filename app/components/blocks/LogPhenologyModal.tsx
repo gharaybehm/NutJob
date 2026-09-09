@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { X, Loader2, Sprout } from 'lucide-react';
-import { logPhenologyEvent, type PhenologyEventType } from '@/app/actions/phenology';
+import { logPhenologyEvent } from '@/app/actions/phenology';
+import type { PhenologyEventType } from '@/app/actions/phenology-types';
 
 interface Props {
   open: boolean;

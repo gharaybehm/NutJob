@@ -8,8 +8,8 @@ import SourceBadge from '../SourceBadge';
 import {
   getPhenologyEvents,
   deletePhenologyEvent,
-  type PhenologyEvent,
 } from '@/app/actions/phenology';
+import type { PhenologyEvent } from '@/app/actions/phenology-types';
 import LogPhenologyModal from '../LogPhenologyModal';
 
 interface Props {
