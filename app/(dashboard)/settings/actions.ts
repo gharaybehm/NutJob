@@ -23,7 +23,12 @@ export async function setLocale(locale: string) {
     httpOnly: false,
   })
 
-  revalidatePath('/', 'layout')
+  // Deliberately no revalidatePath here. Callers follow this action with a hard
+  // window.location.reload(), which refetches the whole tree anyway (the app is
+  // dynamic — the root layout reads cookies()). Revalidating as well made Next
+  // stream a re-rendered tree back with the action result; the reload then tore
+  // the page down mid-render, aborting the in-flight RSC fetches and flashing
+  // the root error boundary for a split second before the new locale appeared.
   return { success: true }
 }
 

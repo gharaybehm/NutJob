@@ -351,5 +351,15 @@
       "supervisor": "Supervisor",
       "worker": "Worker"
     }
+  },
+  "errorBoundary": {
+    "title": "This section didn't load",
+    "description": "Something went wrong while loading this page. The rest of the app is still working — try again, or head back to your dashboard.",
+    "pageTitle": "This page didn't load",
+    "retry": "Try again",
+    "goToDashboard": "Back to dashboard",
+    "goToFarms": "Back to farms",
+    "reload": "Reload the page",
+    "referenceLabel": "Reference"
   }
 }

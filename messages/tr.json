@@ -351,5 +351,15 @@
       "supervisor": "Süpervizör",
       "worker": "İşçi"
     }
+  },
+  "errorBoundary": {
+    "title": "Bu bölüm yüklenemedi",
+    "description": "Bu sayfa yüklenirken bir sorun oluştu. Uygulamanın geri kalanı çalışmaya devam ediyor — tekrar deneyin veya kontrol paneline dönün.",
+    "pageTitle": "Bu sayfa yüklenemedi",
+    "retry": "Tekrar dene",
+    "goToDashboard": "Kontrol paneline dön",
+    "goToFarms": "Çiftliklere dön",
+    "reload": "Sayfayı yeniden yükle",
+    "referenceLabel": "Referans"
   }
 }

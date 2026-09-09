@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { useState, useRef, useEffect, useTransition } from "react";
+import { useState, useRef, useEffect } from "react";
 import { setLocale } from "@/app/(dashboard)/settings/actions";
 import FarmSwitcher from "@/app/components/farms/FarmSwitcher";
 import type { FarmWithMeta } from "@/utils/supabase/farm-types";
@@ -29,7 +29,6 @@ export default function TopNav({ farmId, alertCount = 0, farms = [] }: TopNavPro
   const tTop = useTranslations('topNav');
   const locale = useLocale();
   const [langOpen, setLangOpen] = useState(false);
-  const [, startTransition] = useTransition();
   const langRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,10 +44,8 @@ export default function TopNav({ farmId, alertCount = 0, farms = [] }: TopNavPro
   async function handleLocaleSelect(newLocale: string) {
     if (newLocale === locale) { setLangOpen(false); return; }
     setLangOpen(false);
-    startTransition(async () => {
-      await setLocale(newLocale);
-      window.location.reload();
-    });
+    await setLocale(newLocale);
+    window.location.reload();
   }
 
   const PAGE_SLUG_TITLES: Record<string, string> = {
