@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { evaluateIrrigation, type IrrigationInput } from './irrigation'
+import { evaluateIrrigation, totalAvailableWaterMm, type IrrigationInput } from './irrigation'
 import { makeStatefulValue } from '@/utils/value-state'
 
 const now = new Date()
@@ -81,5 +81,22 @@ describe('evaluateIrrigation', () => {
     expect(r.dataGaps.join(' ')).toMatch(/Canopy/)
     const withSwp = evaluateIrrigation({ ...base, stemWaterPotentialMpa: -1.4 })
     expect(withSwp.confidence).toBe('high')
+  })
+})
+
+describe('totalAvailableWaterMm', () => {
+  it('is the reserve between field capacity and wilting point over the rooting depth', () => {
+    expect(totalAvailableWaterMm(30, 12, 1.0)).toBe(180)
+    expect(totalAvailableWaterMm(30, 12, 1.5)).toBe(270)
+  })
+
+  it('is null when anything is missing or the thresholds are inverted', () => {
+    expect(totalAvailableWaterMm(null, 12, 1)).toBeNull()
+    expect(totalAvailableWaterMm(30, 12, null)).toBeNull()
+    expect(totalAvailableWaterMm(12, 30, 1)).toBeNull()
+  })
+
+  it('agrees with what the engine reports', () => {
+    expect(evaluateIrrigation(base).tawMm).toBe(totalAvailableWaterMm(30, 12, 1.0))
   })
 })

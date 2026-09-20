@@ -75,9 +75,15 @@ export default async function SettingsPage({
   // Fetch blocks scoped to this farm
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: blocks = [] } = await (supabase.from('blocks') as any)
-    .select('id, name, crop_type, variety, area, area_unit, field_capacity, wilting_point, notes')
+    .select('id, name, crop_type, variety, area, area_unit, field_capacity, wilting_point, root_depth_m, notes')
     .eq('farm_id', farmId)
     .order('name')
+
+  // Irrigation and alert policy for this farm (none saved yet means the defaults apply)
+  const { data: policyRow } = await db.from('farm_policy')
+    .select('irrigation_strategy_name, allowable_depletion, irrigation_efficiency, default_root_depth_m, well_licence_volume_m3, well_licence_season_year, frost_margin_c, sensor_failed_after_hours')
+    .eq('farm_id', farmId)
+    .maybeSingle()
 
   // Fetch farm details for the Farm Identity and Weather sections
   const { data: farmData } = await db.from('farms')
@@ -116,7 +122,8 @@ export default async function SettingsPage({
         currentUserId={user.id}
         userRole={effectiveRole || 'worker'}
         allUsers={allUsers as { id: string; full_name: string | null; phone: string | null; role: 'admin' | 'supervisor' | 'worker'; created_at: string }[]}
-        blocks={blocks as { id: string; name: string; crop_type: string; variety: string; area: number; area_unit: string; field_capacity: number | null; wilting_point: number | null; notes: string | null }[]}
+        blocks={blocks as { id: string; name: string; crop_type: string; variety: string; area: number; area_unit: string; field_capacity: number | null; wilting_point: number | null; root_depth_m: number | null; notes: string | null }[]}
+        farmPolicy={policyRow ?? null}
         farmId={farmId}
         farmName={farmData?.name ?? ''}
         farmAddress={farmData?.address ?? ''}

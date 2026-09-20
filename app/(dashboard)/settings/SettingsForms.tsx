@@ -9,6 +9,7 @@ import {
   removeMember,
   createWorker,
   updateBlockConfig,
+  updateFarmPolicy,
   setLocale,
   registerSensor,
   updateSensor,
@@ -54,6 +55,8 @@ import { useRouter } from 'next/navigation'
 import { updateFarm, deleteFarm } from '@/app/actions/farms'
 import type { SensorWithBlock, SensorFormValues, SensorType } from '@/types/sensors'
 import { SENSOR_TYPE_LABELS } from '@/types/sensors'
+import { POLICY_DEFAULTS, MAX_ROOT_DEPTH_M } from '@/utils/farm-policy'
+import { totalAvailableWaterMm } from '@/engines/irrigation'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -66,7 +69,20 @@ interface Block {
   area_unit: string
   field_capacity: number | null
   wilting_point: number | null
+  root_depth_m: number | null
   notes: string | null
+}
+
+/** A saved farm_policy row (column names as stored). Null when the farm has none yet. */
+interface FarmPolicyRow {
+  irrigation_strategy_name: string
+  allowable_depletion: number | string
+  irrigation_efficiency: number | string
+  default_root_depth_m: number | string | null
+  well_licence_volume_m3: number | string | null
+  well_licence_season_year: number | null
+  frost_margin_c: number | string
+  sensor_failed_after_hours: number
 }
 
 interface SettingsFormsProps {
@@ -81,6 +97,7 @@ interface SettingsFormsProps {
     created_at: string
   }[]
   blocks?: Block[]
+  farmPolicy?: FarmPolicyRow | null
   farmId?: string
   farmName?: string
   farmAddress?: string
@@ -464,6 +481,7 @@ function TeamTab({
 function BlockRow({ block }: { block: Block }) {
   const [fieldCapacity, setFieldCapacity] = useState(block.field_capacity?.toString() ?? '')
   const [wiltingPoint, setWiltingPoint] = useState(block.wilting_point?.toString() ?? '')
+  const [rootDepth, setRootDepth] = useState(block.root_depth_m?.toString() ?? '')
   const [notes, setNotes] = useState(block.notes ?? '')
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [isPending, setIsPending] = useState(false)
@@ -474,6 +492,7 @@ function BlockRow({ block }: { block: Block }) {
       const res = await updateBlockConfig(block.id, {
         fieldCapacity: fieldCapacity ? parseFloat(fieldCapacity) : null,
         wiltingPoint: wiltingPoint ? parseFloat(wiltingPoint) : null,
+        rootDepthM: rootDepth ? parseFloat(rootDepth) : null,
         notes: notes.trim() || null,
       })
       if (res.error) setStatus({ type: 'error', message: res.error })
@@ -506,7 +525,7 @@ function BlockRow({ block }: { block: Block }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div>
           <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
             Field Capacity (%)
@@ -543,7 +562,33 @@ function BlockRow({ block }: { block: Block }) {
           </div>
           <p className="mt-1 text-[11px] text-ink-4">Minimum moisture before stress — irrigation floor</p>
         </div>
+        <div>
+          <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
+            Root Depth (m)
+          </label>
+          <input type="number" min="0.1" max={MAX_ROOT_DEPTH_M} step="0.1" value={rootDepth}
+            onChange={e => setRootDepth(e.target.value)} placeholder="farm default"
+            className="w-full px-3 py-2 rounded-lg border border-line bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-green transition placeholder:text-ink-4" />
+          <p className="mt-1 text-[11px] text-ink-4">Soil depth the roots draw water from. Blank uses the farm default below.</p>
+        </div>
       </div>
+
+      {(() => {
+        const reserve = totalAvailableWaterMm(
+          fieldCapacity ? parseFloat(fieldCapacity) : null,
+          wiltingPoint ? parseFloat(wiltingPoint) : null,
+          rootDepth ? parseFloat(rootDepth) : null,
+        )
+        return reserve === null ? (
+          <p className="text-xs text-ink-4">
+            Irrigation advice needs field capacity, wilting point and a root depth (here or as the farm default).
+          </p>
+        ) : (
+          <p className="text-xs text-ink-3">
+            Water reserve in the root zone: <span className="font-semibold text-ink">{Math.round(reserve)} mm</span> between field capacity and wilting point.
+          </p>
+        )
+      })()}
 
       <div>
         <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
@@ -556,10 +601,110 @@ function BlockRow({ block }: { block: Block }) {
   )
 }
 
-function BlockConfigTab({ blocks }: { blocks: Block[] }) {
+function PolicyField({ label, hint, children }: { label: string; hint: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">{label}</label>
+      {children}
+      <p className="mt-1 text-[11px] text-ink-4">{hint}</p>
+    </div>
+  )
+}
+
+const POLICY_INPUT =
+  'w-full px-3 py-2 rounded-lg border border-line bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-green transition placeholder:text-ink-4'
+
+function FarmPolicyCard({ farmId, policy }: { farmId: string; policy: FarmPolicyRow | null }) {
+  const d = POLICY_DEFAULTS
+  const [strategy, setStrategy] = useState(policy?.irrigation_strategy_name ?? d.irrigationStrategyName)
+  const [depletion, setDepletion] = useState(String(policy?.allowable_depletion ?? d.allowableDepletion))
+  const [efficiency, setEfficiency] = useState(String(policy?.irrigation_efficiency ?? d.irrigationEfficiency))
+  const [rootDepth, setRootDepth] = useState(policy?.default_root_depth_m != null ? String(policy.default_root_depth_m) : '')
+  const [volume, setVolume] = useState(policy?.well_licence_volume_m3 != null ? String(policy.well_licence_volume_m3) : '')
+  const [year, setYear] = useState(policy?.well_licence_season_year != null ? String(policy.well_licence_season_year) : '')
+  const [frostMargin, setFrostMargin] = useState(String(policy?.frost_margin_c ?? d.frostMarginC))
+  const [sensorHours, setSensorHours] = useState(String(policy?.sensor_failed_after_hours ?? d.sensorFailedAfterHours))
+  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [isPending, setIsPending] = useState(false)
+
+  async function handleSave() {
+    setIsPending(true); setStatus(null)
+    try {
+      const res = await updateFarmPolicy(farmId, {
+        irrigationStrategyName: strategy,
+        allowableDepletion: depletion,
+        irrigationEfficiency: efficiency,
+        defaultRootDepthM: rootDepth,
+        wellLicenceVolumeM3: volume,
+        wellLicenceSeasonYear: year,
+        frostMarginC: frostMargin,
+        sensorFailedAfterHours: sensorHours,
+      })
+      if (res.error) setStatus({ type: 'error', message: res.error })
+      else setStatus({ type: 'success', message: 'Saved' })
+    } catch { setStatus({ type: 'error', message: 'Save failed' }) }
+    setIsPending(false)
+    setTimeout(() => setStatus(null), 4000)
+  }
+
+  return (
+    <div className="rounded-xl border border-line p-5 space-y-4 mb-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-semibold text-ink">Farm irrigation and alert policy</p>
+          <p className="text-xs text-ink-3 mt-0.5">
+            Starting values you and your agronomist can change. The system reports against them and never changes them itself.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {status && (
+            <span className={`text-xs font-medium ${status.type === 'success' ? 'text-green' : 'text-red'}`}>
+              {status.type === 'success' ? <span className="flex items-center gap-1"><Check className="h-3 w-3" />{status.message}</span> : status.message}
+            </span>
+          )}
+          <button onClick={handleSave} disabled={isPending}
+            className="flex items-center gap-1.5 rounded-lg bg-green px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 disabled:opacity-60 transition-colors">
+            {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+            Save
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <PolicyField label="Default root depth (m)" hint="Used for blocks with no depth of their own. Ask your agronomist: the system does not assume one, so irrigation advice stays off until a depth is set.">
+          <input type="number" min="0.1" max={MAX_ROOT_DEPTH_M} step="0.1" value={rootDepth} onChange={e => setRootDepth(e.target.value)} placeholder="e.g. 1.5" className={POLICY_INPUT} />
+        </PolicyField>
+        <PolicyField label="Irrigation strategy" hint="A label for the strategy you follow, such as full or planned deficit. Advice is reported against it.">
+          <input type="text" maxLength={40} value={strategy} onChange={e => setStrategy(e.target.value)} className={POLICY_INPUT} />
+        </PolicyField>
+        <PolicyField label="Allowable depletion (0 to 1)" hint="Share of the water reserve that may be used before irrigating. 0.40 is the FAO-56 starting value for almond; use a higher value only for a planned deficit strategy.">
+          <input type="number" min="0.05" max="1" step="0.05" value={depletion} onChange={e => setDepletion(e.target.value)} className={POLICY_INPUT} />
+        </PolicyField>
+        <PolicyField label="Application efficiency (0 to 1)" hint="Share of applied water that reaches the roots. Drip is typically about 0.90.">
+          <input type="number" min="0.1" max="1" step="0.05" value={efficiency} onChange={e => setEfficiency(e.target.value)} className={POLICY_INPUT} />
+        </PolicyField>
+        <PolicyField label="Well licence volume (m³ per season)" hint="Recorded for the water allocation check. Season water use is not tracked yet, so it is not used in advice.">
+          <input type="number" min="0" step="1000" value={volume} onChange={e => setVolume(e.target.value)} placeholder="e.g. 120000" className={POLICY_INPUT} />
+        </PolicyField>
+        <PolicyField label="Licence season (year)" hint="The year the licence volume applies to.">
+          <input type="number" min="2000" max="2100" step="1" value={year} onChange={e => setYear(e.target.value)} placeholder="e.g. 2026" className={POLICY_INPUT} />
+        </PolicyField>
+        <PolicyField label="Frost alert margin (°C)" hint="Allowance for forecast error. A frost warning is raised when the forecast minimum comes within this margin of the damage temperature.">
+          <input type="number" min="0" max="10" step="0.5" value={frostMargin} onChange={e => setFrostMargin(e.target.value)} className={POLICY_INPUT} />
+        </PolicyField>
+        <PolicyField label="Sensor failure after (hours)" hint="How long a soil sensor can go without a reading before it is treated as failed and left out of advice.">
+          <input type="number" min="1" max="168" step="1" value={sensorHours} onChange={e => setSensorHours(e.target.value)} className={POLICY_INPUT} />
+        </PolicyField>
+      </div>
+    </div>
+  )
+}
+
+function BlockConfigTab({ blocks, farmId, farmPolicy }: { blocks: Block[]; farmId: string; farmPolicy: FarmPolicyRow | null }) {
   if (blocks.length === 0) {
     return (
       <SectionCard title="Block Configuration" icon={Layers} description="Set water thresholds and notes for each block. These values are used by the AI recommendation engine.">
+        <FarmPolicyCard farmId={farmId} policy={farmPolicy} />
         <div className="text-center py-8 text-ink-4 text-sm">
           No blocks found. Create blocks on the <a href="/blocks" className="text-green underline underline-offset-2">Blocks page</a> first.
         </div>
@@ -568,7 +713,8 @@ function BlockConfigTab({ blocks }: { blocks: Block[] }) {
   }
   return (
     <SectionCard title="Block Configuration" icon={Layers}
-      description="Set field capacity and wilting point thresholds per block. These are used by the AI engine to calculate water deficit and irrigation urgency.">
+      description="Set field capacity, wilting point and root depth per block. These size the water reserve the irrigation advice works from.">
+      <FarmPolicyCard farmId={farmId} policy={farmPolicy} />
       <div className="space-y-4">
         {blocks.map(b => <BlockRow key={b.id} block={b} />)}
       </div>
@@ -1552,6 +1698,7 @@ export default function SettingsForms({
   userRole = 'worker',
   allUsers = [],
   blocks = [],
+  farmPolicy = null,
   farmId,
   farmName,
   farmAddress,
@@ -1597,7 +1744,7 @@ export default function SettingsForms({
       {/* Tab content */}
       {activeTab === 'profile'  && <AccountTab initialProfile={initialProfile} />}
       {activeTab === 'team'     && <TeamTab userRole={userRole} currentUserId={currentUserId} allUsers={allUsers} farmId={farmId ?? ''} farmName={farmName} />}
-      {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} />}
+      {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} farmId={farmId ?? ''} farmPolicy={farmPolicy} />}
       {activeTab === 'alerts'   && <NotificationAlertsTab farmId={farmId ?? ''} />}
       {activeTab === 'sensors'  && <SensorConnectionsTab initialSensors={sensors} blocks={blocks} farmId={farmId ?? ''} initialSensecapApiId={initialSensecapApiId} initialSensecapAccessKey={initialSensecapAccessKey} />}
       {activeTab === 'weather'  && <WeatherAPITab farmId={farmId} farmName={farmName} farmAddress={farmAddress} initialLat={farmGpsLat} initialLng={farmGpsLng} />}

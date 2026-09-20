@@ -8,6 +8,8 @@ import { routing, LOCALE_COOKIE, type Locale } from '@/i18n/routing'
 import type { SensorFormValues, Sensor } from '@/types/sensors'
 import { createSensecapClient } from '@/utils/sensecap-client'
 import { sendInviteEmail } from '@/utils/email'
+import { requireFarmRole } from '@/utils/supabase/farm-access'
+import { validateBlockConfig, validateFarmPolicy } from '@/utils/farm-policy'
 
 export async function setLocale(locale: string) {
   if (!routing.locales.includes(locale as Locale)) {
@@ -461,6 +463,7 @@ export async function updateBlockConfig(
   params: {
     fieldCapacity: number | null;
     wiltingPoint: number | null;
+    rootDepthM: number | null;
     notes: string | null;
   }
 ) {
@@ -468,22 +471,28 @@ export async function updateBlockConfig(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated' }
 
-  const { data: curProfile } = await supabase
-    .from('user_profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  // The caller's role on the block's own farm, not the platform-wide profile
+  // role (which is a different axis and must not gate farm data).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: block } = await (supabase.from('blocks') as any)
+    .select('farm_id')
+    .eq('id', blockId)
+    .maybeSingle()
+  if (!block?.farm_id) return { error: 'Block not found' }
 
-  if (curProfile?.role !== 'admin' && curProfile?.role !== 'supervisor') {
-    return { error: 'Only admins and supervisors can edit block configuration' }
-  }
+  const gate = await requireFarmRole(block.farm_id, 'supervisor')
+  if (!gate.ok) return { error: gate.error }
+
+  const v = validateBlockConfig(params)
+  if (!v.ok) return { error: v.error }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('blocks') as any)
     .update({
-      field_capacity: params.fieldCapacity,
-      wilting_point: params.wiltingPoint,
-      notes: params.notes,
+      field_capacity: v.value.fieldCapacity,
+      wilting_point: v.value.wiltingPoint,
+      root_depth_m: v.value.rootDepthM,
+      notes: v.value.notes,
       updated_at: new Date().toISOString(),
     })
     .eq('id', blockId)
@@ -493,6 +502,40 @@ export async function updateBlockConfig(
   revalidatePath('/blocks')
   revalidatePath('/settings')
   return { success: 'Block configuration saved' }
+}
+
+// ─── Farm policy (irrigation strategy, well licence, alert margins) ───────────
+
+export async function updateFarmPolicy(farmId: string, input: unknown) {
+  const gate = await requireFarmRole(farmId, 'supervisor')
+  if (!gate.ok) return { error: gate.error }
+
+  const v = validateFarmPolicy(input)
+  if (!v.ok) return { error: v.error }
+  const p = v.value
+
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('farm_policy').upsert(
+    {
+      farm_id: farmId,
+      irrigation_strategy_name: p.irrigationStrategyName,
+      allowable_depletion: p.allowableDepletion,
+      irrigation_efficiency: p.irrigationEfficiency,
+      default_root_depth_m: p.defaultRootDepthM,
+      well_licence_volume_m3: p.wellLicenceVolumeM3,
+      well_licence_season_year: p.wellLicenceSeasonYear,
+      frost_margin_c: p.frostMarginC,
+      sensor_failed_after_hours: p.sensorFailedAfterHours,
+      updated_by: gate.actor.userId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'farm_id' },
+  )
+  if (error) return { error: error.message }
+
+  revalidatePath(`/${farmId}/settings`)
+  return { success: 'Farm policy saved' }
 }
 
 // ─── SenseCAP integration ─────────────────────────────────────────────────────

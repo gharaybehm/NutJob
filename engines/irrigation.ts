@@ -88,6 +88,21 @@ function effectiveRain(mm: number): number {
 
 const round1 = (n: number) => Math.round(n * 10) / 10
 
+/**
+ * Total available water in the root zone (mm): the reserve between field
+ * capacity and wilting point over the rooting depth. Percentages are volumetric.
+ * Null when a value is missing or the two thresholds are the wrong way round.
+ */
+export function totalAvailableWaterMm(
+  fieldCapacityPct: number | null,
+  wiltingPointPct: number | null,
+  rootDepthM: number | null,
+): number | null {
+  if (fieldCapacityPct == null || wiltingPointPct == null || rootDepthM == null) return null
+  const taw = 10 * (fieldCapacityPct - wiltingPointPct) * rootDepthM
+  return taw > 0 ? taw : null
+}
+
 export function evaluateIrrigation(input: IrrigationInput): IrrigationResult {
   const strategy = input.strategy ?? FULL_IRRIGATION
   const efficiency = input.efficiency ?? 0.9
@@ -112,7 +127,7 @@ export function evaluateIrrigation(input: IrrigationInput): IrrigationResult {
     dataGaps.push('Soil field capacity, wilting point and rooting depth are needed')
     return empty
   }
-  const taw = 10 * (input.fieldCapacityPct - input.wiltingPointPct) * input.rootDepthM
+  const taw = 10 * (input.fieldCapacityPct - input.wiltingPointPct) * input.rootDepthM // = totalAvailableWaterMm
   const raw = taw * strategy.allowableDepletion
   if (taw <= 0) {
     dataGaps.push('Field capacity must be above wilting point')
