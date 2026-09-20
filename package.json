@@ -14,7 +14,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "ingest:kb": "tsx scripts/ingest-knowledge-base.ts"
+    "test": "vitest run",
+    "ingest:kb": "tsx scripts/ingest-knowledge-base.ts",
+    "test:kb": "tsx scripts/test-kb-retrieval.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",
@@ -53,6 +55,7 @@
     "png-to-ico": "^3.0.1",
     "tailwindcss": "^4",
     "tsx": "^4.19.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }

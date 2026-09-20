@@ -8,6 +8,7 @@
 
 import { AI_SYSTEM_PROMPT, buildAllBlockContexts } from "@/utils/build-block-context";
 import { openrouter } from "@/utils/openrouter";
+import { expandQuery, selectChunks } from "@/utils/kb-retrieval";
 // re-exported for existing callers
 export { openrouter };
 
@@ -33,7 +34,36 @@ export interface RetrievedChunk {
   content: string;
   source_title: string;
   source_section: string | null;
+  page_number?: number | null;
+  language?: string | null;
+  country?: string | null;
+  region?: string | null;
+  publisher?: string | null;
+  authority_type?: string | null;
+  regulatory?: boolean | null;
+  climate_context?: string | null;
+  publication_date?: string | null;
   similarity: number;
+  keyword_hit?: boolean | null;
+  rrf_score?: number | null;
+}
+
+/**
+ * One-line origin label so the model (and the manager reading its citation) can
+ * see where a passage comes from. The farm is in Türkiye; most of the corpus is
+ * Spanish or Californian, and the plan requires a recommendation to say so when
+ * it rests on a non-local source.
+ */
+export function describeChunkOrigin(c: RetrievedChunk): string {
+  const parts: string[] = [];
+  if (c.publisher) parts.push(c.publisher);
+  const place = [c.country, c.region].filter(Boolean).join("/");
+  if (place) parts.push(place);
+  if (c.publication_date) parts.push(c.publication_date.slice(0, 4));
+  if (c.language) parts.push(`language: ${c.language}`);
+  if (c.climate_context) parts.push(`climate: ${c.climate_context}`);
+  parts.push(c.regulatory ? "regulatory source" : "not a regulatory source for this farm");
+  return parts.join("; ");
 }
 
 /** Embeds `queryText` and returns the top matching knowledge-base chunks, filtered by crop type. */
@@ -44,13 +74,27 @@ export async function retrieveReferenceChunks(
   matchCount = CHUNKS_PER_BLOCK
 ): Promise<RetrievedChunk[]> {
   try {
+    // Spanish/Latin terms help the embedding find the Spanish MAPA guide, and the
+    // specific pest names also drive an exact keyword search (hybrid retrieval).
+    const { embeddingText, keywords } = expandQuery(queryText);
     const embeddingResponse = await openrouter.embeddings.create({
       model: EMBEDDING_MODEL,
-      input: queryText,
+      input: embeddingText,
     });
     const queryEmbedding = embeddingResponse.data[0]?.embedding;
     if (!queryEmbedding) return [];
 
+    const hybrid = await admin.rpc("match_knowledge_base_hybrid", {
+      query_embedding: JSON.stringify(queryEmbedding),
+      keywords,
+      match_count: matchCount * 3,
+      filter_crop_type: cropType,
+    });
+    if (!hybrid.error && hybrid.data) {
+      return selectChunks(hybrid.data as RetrievedChunk[], matchCount, MIN_SIMILARITY, keywords.length > 0);
+    }
+
+    // Hybrid function not deployed yet (migration pending): fall back to vector-only search.
     const { data, error } = await admin.rpc("match_knowledge_base", {
       query_embedding: JSON.stringify(queryEmbedding),
       match_count: matchCount,
@@ -81,9 +125,10 @@ function synthesizeBlockQuery(block: any, activeAlerts: any[], phenology: any): 
 /** Formats retrieved chunks as a REFERENCE MATERIAL section to append to a block's context. */
 function formatReferenceSection(chunks: RetrievedChunk[]): string {
   if (chunks.length === 0) return "";
-  const lines = chunks.map(
-    (c, i) => `[${i + 1}] ${c.source_title}${c.source_section ? ` — ${c.source_section}` : ""}: "${c.content}"`
-  );
+  const lines = chunks.map((c, i) => {
+    const where = [c.source_section, c.page_number ? `p. ${c.page_number}` : null].filter(Boolean).join(", ");
+    return `[${i + 1}] ${c.source_title}${where ? ` — ${where}` : ""} (${describeChunkOrigin(c)}): "${c.content}"`;
+  });
   return `\n\n=== REFERENCE MATERIAL ===\n${lines.join("\n\n")}`;
 }
 

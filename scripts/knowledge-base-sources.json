@@ -1,0 +1,115 @@
+{
+  "guiadealmendroweb.pdf": {
+    "title": "Guía de Gestión Integrada de Plagas: Almendro",
+    "publisher": "Ministerio de Agricultura, Alimentación y Medio Ambiente (MAPA), Spain",
+    "language": "es",
+    "country": "ES",
+    "region": null,
+    "authority_type": "government",
+    "regulatory": false,
+    "variety_applicability": [
+      "all"
+    ],
+    "detect_headings": false,
+    "climate_context": "Mediterranean Spain",
+    "publication_date": "2015-10-01",
+    "document_version": "2015 edition, NIPO 280-15-177-2 (date from PDF metadata). Pest biology, monitoring and thresholds only: not a source for current product authorization, and not Turkish regulation."
+  },
+  "uc-ipm-almond-pmg.pdf": {
+    "title": "UC IPM Almond Pest Management Guidelines",
+    "publisher": "University of California Statewide IPM Program",
+    "language": "en",
+    "country": "US",
+    "region": "California",
+    "authority_type": "university_extension",
+    "regulatory": false,
+    "variety_applicability": [
+      "all"
+    ],
+    "climate_context": "California Central Valley",
+    "publication_date": null,
+    "document_version": null
+  },
+  "geisseler-horwath-almond-nutrient-mgmt.pdf": {
+    "title": "Almond Nutrient Management (Geisseler & Horwath)",
+    "publisher": "University of California, Davis",
+    "language": "en",
+    "country": "US",
+    "region": "California",
+    "authority_type": "university_extension",
+    "regulatory": false,
+    "variety_applicability": [
+      "all"
+    ],
+    "climate_context": "California Central Valley",
+    "publication_date": null,
+    "document_version": null
+  },
+  "CalleUndestanding2025.pdf": {
+    "title": "Understanding Flower Frost Tolerance in Almond (Prunus dulcis): The Role of Phenology, Cultivar and Sugars Content",
+    "publisher": "IRTA (Calle et al.), Journal of Agronomy and Crop Science 211:e70090",
+    "language": "en",
+    "country": "ES",
+    "region": "Catalonia",
+    "authority_type": "peer_reviewed",
+    "regulatory": false,
+    "variety_applicability": [
+      "Vairo",
+      "all"
+    ],
+    "climate_context": "Lleida, NE Spain; controlled-chamber tests on cut branches (GF-677)",
+    "publication_date": "2025-06-13",
+    "document_version": "doi:10.1111/jac.70090, open access (CC BY). Lethal temperatures for 20 cultivars incl. Vairo; Makako not tested. Publication date is the accepted date.",
+    "skip_pages": [
+      12,
+      13
+    ]
+  },
+  "Ficha-Almendro-Makako-inglés.pdf": {
+    "title": "Makako: variety datasheet",
+    "publisher": "CEBAS-CSIC (CEBASfruit)",
+    "language": "en",
+    "country": "ES",
+    "region": "Murcia",
+    "authority_type": "breeder",
+    "regulatory": false,
+    "variety_applicability": [
+      "Makako"
+    ],
+    "climate_context": "Cieza (Murcia), 300 m altitude; flowering and ripening times refer to this site",
+    "publication_date": null,
+    "document_version": "Qualitative datasheet: no chill, heat or frost figures."
+  },
+  "BeeBPMs_12212020.pdf": {
+    "title": "Honey Bee Best Management Practices for California Almonds: A Guide for Pollination Stakeholders",
+    "publisher": "Almond Board of California",
+    "language": "en",
+    "country": "US",
+    "region": "California",
+    "authority_type": "industry_research",
+    "regulatory": false,
+    "variety_applicability": [
+      "all"
+    ],
+    "detect_headings": false,
+    "climate_context": "California almond orchards (bloom in February, large-scale commercial hive rental)",
+    "publication_date": "2020-12-21",
+    "document_version": "2018 revised copy, PDF dated 2020-12-21. Industry practice for California: hive numbers and strength are the local norm there, not a Turkish or Spanish recommendation, and it is not regulatory."
+  },
+  "VargasPaco_UETA-almendro_2010.pdf": {
+    "title": "Variedades de almendro IRTA (F. Vargas), presentation at UETA, Gandesa, July 2010",
+    "publisher": "IRTA (Institut de Recerca i Tecnologia Agroalimentàries), Catalonia",
+    "language": "es",
+    "country": "ES",
+    "region": "Catalonia",
+    "authority_type": "breeder",
+    "regulatory": false,
+    "variety_applicability": [
+      "Vairo"
+    ],
+    "detect_headings": false,
+    "climate_context": "Catalonia, NE Spain (Mas de Bover, Les Borges Blanques, Gandesa, Corbins trials)",
+    "publication_date": "2010-07-01",
+    "document_version": "Conference slides converted to PDF: words in tables can run together (e.g. 'TAR R AC O'). Vairo bloom is given as days after Desmayo Largueta (mean 4 Feb at Mas de Bover), so dates are for Catalonia and do not transfer to Central Anatolia."
+  }
+}
