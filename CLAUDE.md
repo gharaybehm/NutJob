@@ -27,9 +27,9 @@ The feedback loop closes when the manager logs what was actually done, writing b
 | AI / LLM           | OpenRouter                          |
 | Package Manager    | npm                                 |
 
-> Hosting and database are mid-migration from Netlify + Supabase Cloud to the
-> VPS documented in `INFRA.md`. Until cutover completes, Netlify remains the
-> live production deployment and the rollback path.
+> Hosting and database migrated from Netlify + Supabase Cloud to the VPS
+> (cutover completed 2026-08-31); `www.rootloot.ai` serves from the VPS and
+> Netlify no longer receives production traffic. See `INFRA.md`.
 >
 > Note the AI row: earlier versions of this file claimed Netlify AI Gateway.
 > No code has ever read it — every LLM call goes directly to OpenRouter
