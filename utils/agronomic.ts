@@ -44,8 +44,11 @@ export function hargreavesETo(
   doy: number
 ): number {
   const tMean = (tMax + tMin) / 2;
-  const Ra = extraterrestrialRadiation(latDeg, doy);
-  const eto = 0.0023 * Ra * (tMean + 17.8) * Math.sqrt(Math.max(0, tMax - tMin));
+  // Ra is in MJ/m²/day, but the Hargreaves equation needs it as equivalent
+  // evaporation in mm/day: multiply by 0.408 (FAO-56 eq. 52). Without this the
+  // result is ~2.45× too high (17 mm/day for a July day in Central Anatolia).
+  const RaMm = 0.408 * extraterrestrialRadiation(latDeg, doy);
+  const eto = 0.0023 * RaMm * (tMean + 17.8) * Math.sqrt(Math.max(0, tMax - tMin));
   return Math.max(0, Math.round(eto * 100) / 100);
 }
 
@@ -239,4 +242,43 @@ export function sevenDayWaterDeficit(
     deficit += eto - (day.precipitation_mm ?? 0);
   }
   return Math.round(deficit * 10) / 10;
+}
+
+// ─── Season-to-date totals ───────────────────────────────────────────────────
+
+export interface SeasonTotals {
+  /** GDD from `gddStart` through the last day supplied, base 7.2°C. */
+  gdd: number;
+  /** Estimated chill hours from `chillStart` through the last day supplied. */
+  chillHours: number;
+}
+
+/**
+ * Season-to-date heat and chill from a daily Tmax/Tmin history. Heat counts
+ * from `gddStart` (Jan 1) and chill from `chillStart` (Oct 1), both YYYY-MM-DD.
+ *
+ * The daily job used to add each day's heat to the previous record and start
+ * from zero when none existed, so a farm whose job started in September carried
+ * ~120 GDD in late September and every block was staged "bud break". Summing
+ * the real history makes the totals correct from the first run and self-healing.
+ */
+export function seasonToDate(
+  history: { date: string; tMax: number; tMin: number }[],
+  gddStart: string,
+  chillStart: string,
+): SeasonTotals {
+  let gdd = 0;
+  let chill = 0;
+  for (const d of history) {
+    if (d.tMax == null || d.tMin == null) continue;
+    if (d.date >= gddStart) gdd += dailyGDD(d.tMax, d.tMin);
+    if (d.date >= chillStart) chill += estimatedDaillyChillHours(d.tMax, d.tMin);
+  }
+  return { gdd: Math.round(gdd * 10) / 10, chillHours: Math.round(chill * 10) / 10 };
+}
+
+/** Whole days from `from` to `to` inclusive (both YYYY-MM-DD). */
+export function daysInclusive(from: string, to: string): number {
+  const ms = new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime();
+  return Math.max(0, Math.floor(ms / 86_400_000) + 1);
 }

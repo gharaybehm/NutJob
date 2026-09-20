@@ -7,6 +7,8 @@ import {
   dayOfYear,
   sevenDayWaterDeficit,
   sumGDD,
+  seasonToDate,
+  daysInclusive,
   predictSeasonDates,
   type MonthlyNormalTemps,
 } from "@/utils/agronomic";
@@ -253,6 +255,23 @@ export async function GET(request: NextRequest) {
       const climate = await getOrFetchClimateProfile(farm.id, latDeg, farm.gps_lng as number);
       const normals: MonthlyNormalTemps[] | null = climate?.monthly_normals ?? null;
 
+      // ── Season-to-date heat and chill, once per farm ──────────────────────
+      // Summed from the real history (Jan 1 for GDD, Oct 1 for chill) rather
+      // than accumulated from the previous record, which starts from zero
+      // whenever the job has no earlier record and left every block staged
+      // "bud break" in September. Falls back to the old running sum only if the
+      // archive returns too little data.
+      const gddStart = `${currentYear}-01-01`;
+      const chillStart = `${currentMonth >= 10 ? currentYear : currentYear - 1}-10-01`;
+      const historyStart = gddStart < chillStart ? gddStart : chillStart;
+      const yesterdayIso = isoDate(new Date(now.getTime() - 86_400_000));
+      const seasonHistory = await fetchDailyTemperatureRange(latDeg, farm.gps_lng as number, historyStart, yesterdayIso);
+      const seasonComplete = seasonHistory.length >= daysInclusive(historyStart, yesterdayIso) * 0.9;
+      const seasonTotals = seasonComplete ? seasonToDate(seasonHistory, gddStart, chillStart) : null;
+      if (!seasonTotals) {
+        console.warn(`compute-fields: incomplete temperature history for ${farm.name} (${seasonHistory.length} days), using running totals`);
+      }
+
       // Observed anchors for the current season, all blocks in one query.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: seasonEvents } = await (admin as any)
@@ -299,13 +318,13 @@ export async function GET(request: NextRequest) {
         const prevGdd = latestYear !== null && latestYear < currentYear
           ? 0
           : (latestPheno?.cumulative_gdd ?? 0);
-        const newCumulativeGdd = prevGdd + todayGdd;
+        const newCumulativeGdd = seasonTotals ? seasonTotals.gdd + todayGdd : prevGdd + todayGdd;
 
         // Reset chill hours at the start of a new chill season (Oct 1)
         const chillSeasonYear = currentMonth >= 10 ? currentYear : currentYear - 1;
         const isNewChillSeason = latestYear !== null && latestYear < chillSeasonYear;
         const prevChill = isNewChillSeason ? 0 : (latestPheno?.chill_hours ?? 0);
-        const newChillHours = prevChill + todayChillHours;
+        const newChillHours = seasonTotals ? seasonTotals.chillHours + todayChillHours : prevChill + todayChillHours;
 
         const currentStage = inferGrowthStage(newCumulativeGdd, currentMonth);
 

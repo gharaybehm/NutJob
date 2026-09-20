@@ -15,7 +15,12 @@
 const ARCHIVE_BASE = "https://archive-api.open-meteo.com/v1/archive";
 const FORECAST_BASE = "https://api.open-meteo.com/v1/forecast";
 
-const FORECAST_PAST_DAYS_MAX = 92;
+// The archive (ERA5-based) lags real time by a few days; anything newer than this
+// many days comes from the forecast endpoint's past_days. Splitting at 92 days
+// instead (the forecast endpoint's documented limit) left an 18-day hole
+// (21 Jun – 8 Jul 2026) where neither source returned data, which silently
+// understated season heat totals.
+const ARCHIVE_LAG_DAYS = 7;
 
 export interface DailyTemps {
   date: string; // YYYY-MM-DD
@@ -79,15 +84,15 @@ export async function fetchDailyTemperatureRange(
   if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return [];
 
   const today = new Date();
-  // Oldest date the forecast endpoint's past_days window can reach.
-  const forecastFloor = new Date(today);
-  forecastFloor.setDate(forecastFloor.getDate() - FORECAST_PAST_DAYS_MAX);
+  // Newest date the archive can be trusted for.
+  const archiveCutoff = new Date(today);
+  archiveCutoff.setDate(archiveCutoff.getDate() - ARCHIVE_LAG_DAYS);
 
   const byDate = new Map<string, DailyTemps>();
 
   // ── Older portion: archive endpoint ───────────────────────────────────────
-  if (start < forecastFloor) {
-    const archiveEnd = new Date(Math.min(end.getTime(), forecastFloor.getTime()));
+  if (start <= archiveCutoff) {
+    const archiveEnd = new Date(Math.min(end.getTime(), archiveCutoff.getTime()));
     const url = new URL(ARCHIVE_BASE);
     url.searchParams.set("latitude", lat.toFixed(4));
     url.searchParams.set("longitude", lng.toFixed(4));
@@ -100,11 +105,9 @@ export async function fetchDailyTemperatureRange(
   }
 
   // ── Recent portion: forecast endpoint with past_days ──────────────────────
-  if (end >= forecastFloor) {
-    const pastDays = Math.min(
-      FORECAST_PAST_DAYS_MAX,
-      Math.max(1, daysBetween(start, today) + 1),
-    );
+  if (end > archiveCutoff) {
+    const recentStart = start > archiveCutoff ? start : archiveCutoff;
+    const pastDays = Math.max(1, daysBetween(recentStart, today) + 1);
     const url = new URL(FORECAST_BASE);
     url.searchParams.set("latitude", lat.toFixed(4));
     url.searchParams.set("longitude", lng.toFixed(4));
