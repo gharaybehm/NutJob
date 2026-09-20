@@ -111,5 +111,41 @@
     "climate_context": "Catalonia, NE Spain (Mas de Bover, Les Borges Blanques, Gandesa, Corbins trials)",
     "publication_date": "2010-07-01",
     "document_version": "Conference slides converted to PDF: words in tables can run together (e.g. 'TAR R AC O'). Vairo bloom is given as days after Desmayo Largueta (mean 4 Feb at Mas de Bover), so dates are for Catalonia and do not transfer to Central Anatolia."
+  },
+  "IRTA-variedades-almendro-ESP.pdf": {
+    "title": "IRTA Variedades de almendro 'Vairo', 'Constantí', 'Marinada' y 'Tarraco'",
+    "publisher": "IRTA (Institut de Recerca i Tecnologia Agroalimentàries), Catalonia",
+    "language": "es",
+    "country": "ES",
+    "region": "Catalonia",
+    "authority_type": "breeder",
+    "regulatory": false,
+    "variety_applicability": [
+      "Vairo",
+      "Constantí",
+      "Marinada",
+      "Tarraco"
+    ],
+    "detect_headings": false,
+    "climate_context": "Catalonia, NE Spain",
+    "publication_date": null,
+    "document_version": "Breeder brochure (8 pages), qualitative: no chill, heat or frost figures. Publication date unknown (file uploaded to the IRTA site in March 2020)."
+  },
+  "Dicenta-2010-CEBAS-almond-breeding-CIHEAM.pdf": {
+    "title": "Almond breeding programme in CEBAS-CSIC, in Murcia (Spain)",
+    "publisher": "CEBAS-CSIC (Dicenta et al.), Options Méditerranéennes A no. 94, XIV GREMPA Meeting, CIHEAM/FAO",
+    "language": "en",
+    "country": "ES",
+    "region": "Murcia",
+    "authority_type": "research_conference",
+    "regulatory": false,
+    "variety_applicability": [
+      "Penta",
+      "Tardona"
+    ],
+    "detect_headings": false,
+    "climate_context": "Murcia, SE Spain",
+    "publication_date": "2010-01-01",
+    "document_version": "Conference paper, pp. 215-219 (2010). Covers Penta and Tardona (released 2007), NOT Makako, which came later from the same programme. Useful for the frost-escape rationale of extra-late flowering."
   }
 }

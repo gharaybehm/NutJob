@@ -41,6 +41,9 @@ const CASES: Case[] = [
   { query: "how many honey bee hives per acre for almond pollination", term: "per acre", pages: "Bee BMP p.7", country: "US" },
   { query: "do self-compatible almond varieties need bees", term: "self-compatible", pages: "Bee BMP", country: "US" },
   { query: "Vairo self-fertile late flowering tolerance to fusicoccum", term: "vairo", pages: "IRTA slides" },
+  // Added with the IRTA Vairo brochure and the CEBAS breeding paper.
+  { query: "Penta Tardona extra-late flowering reduces frost risk", term: "extra-late", pages: "CEBAS 2010 p.215" },
+  { query: "Vairo Constantí Marinada Tarraco new IRTA almond varieties", term: "tarraco", pages: "IRTA brochure" },
 ];
 
 // The guide has nothing on these, so they are informational: print what comes back.
