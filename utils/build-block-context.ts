@@ -6,7 +6,7 @@
 //
 //   SLOW (6-monthly) — soil lab tests, block static metadata, regional climate
 //   WEEKLY           — 7-day forecast, tissue samples, scouting, phenology
-//   DAILY (3×/day)   — IoT soil moisture/EC/temp, current weather, alerts
+//   DAILY (hourly)   — IoT soil moisture/EC/temp, current weather, alerts
 //
 // Both the Trigger.dev background task and the on-demand server action call
 // this module so the prompt logic stays in one place.
@@ -15,6 +15,8 @@ import { getOrFetchClimateProfile, buildClimateSection } from "@/utils/climate-p
 import { pickLabTest, checkLabConsistency, describeLabTest, describeConflict } from "@/utils/lab-tests";
 import { assessMaturity, expectsCrop } from "@/engines/maturity";
 import { assessLeafSample, describeLeafAssessment } from "@/engines/nutrition";
+import { nitrogenBudget, nitrogenApplied, describeNitrogenBudget, parseNSplit, type FertigationLog, type NitrogenSplitPart } from "@/engines/nitrogen";
+import { toHectares } from "@/utils/area";
 import { resolveVariety } from "@/engines/varieties";
 import { findCrop } from "@/utils/crops";
 
@@ -45,7 +47,7 @@ export const AI_SYSTEM_PROMPT = `You are an expert agronomist. Each block specif
 Data tiers:
 - SLOW DATA (6-month cadence): soil lab results, static block properties, and long-term regional climate normals derived from GPS coordinates. Use the regional climate profile to contextualise current conditions against historical norms (e.g. "current rainfall is 40% below the June average for this region").
 - WEEKLY DATA: 7-day weather forecast, scouting reports, tissue samples, phenological stage.
-- DAILY DATA (IoT — 3 readings/day at 00:00 / 08:00 / 16:00): soil moisture, EC, root-zone temp, current weather, computed ETo and water deficit.
+- DAILY DATA (IoT — synced every hour): soil moisture, EC, root-zone temp, current weather, computed ETo and water deficit.
 
 Rules:
 - Generate 1–3 recommendations per block, but ONLY where the data clearly indicates a need. Do not invent problems.
@@ -54,7 +56,7 @@ Rules:
 - Confidence: 90–100 = very strong signal, 70–89 = moderate, below 70 = weaker/precautionary.
 - Each block states its tree maturity (leaf year, and whether a crop is expected). Use it: for a block marked NO CROP EXPECTED, never recommend harvest, hull-split, crop-load or yield-based actions, and expect water and fertiliser needs far below a mature orchard's. Use the phenological stage to time stage-specific actions (e.g. bloom-period frost protection) only where the block can bear a crop.
 - Lines starting with [!] are data-quality warnings and [i] lines are assumptions. Do not base a recommendation on a value a [!] line calls suspect, and say so in the rationale. Every recommendation must respect the units shown (P2O5 and K2O are in kg/da, not ppm).
-- Leaf tissue results arrive already judged against the reference bands (deficient, marginal, adequate, high). Use those judgements, do not apply nutrient thresholds of your own, and never treat a nutrient marked "not judged" as adequate or deficient. If a caution says the sample was taken outside the July window, the block is not bearing, or the bands are provisional, say so in the rationale and lower the confidence. Do not recommend a fertiliser rate: recommend the action and the check, and leave the rate to the agronomist.
+- Leaf tissue results arrive already judged against the reference bands (deficient, marginal, adequate, high). Use those judgements, do not apply nutrient thresholds of your own, and never treat a nutrient marked "not judged" as adequate or deficient. If a caution says the sample was taken outside the July window, the block is not bearing, or the bands are provisional, say so in the rationale and lower the confidence. Each block may also carry a "Nitrogen budget (guide)" line, its seasonal split and the urea already logged this year. You may cite those figures as a guide and say how much of the budget remains, but do not invent a rate of your own or state a different one, and say the agronomist should confirm it. If the budget line is missing or a [!] line says it is unsupported, give no rate.
 - If critical slow data (soil lab test) is older than 6 months, include a "scout" or "other" recommendation to re-sample.
 - If daily IoT data is missing or its timestamp is older than 24 hours, note the data gap in the rationale and reduce your confidence score for irrigation/soil recommendations.
 - Each block's data may include a "=== REFERENCE MATERIAL ===" section with excerpts retrieved from trusted agronomic sources (e.g. university cooperative extension manuals) for that block's crop. Where a recommendation is supported by this material, ground your rationale in it and cite the source title/section in "sources". If no reference material was provided, or none of it is relevant to a given recommendation, leave "sources" as an empty array — never fabricate a citation.
@@ -202,6 +204,34 @@ export async function buildAllBlockContexts(
     })
   );
 
+  // ── nitrogen budget inputs: per-farm yield target and this year's fertigation ─
+  const yieldTargetByFarm = new Map<string, number>();
+  const nSplitByFarm = new Map<string, NitrogenSplitPart[]>();
+  const { data: policyRows } = await admin.from("farm_policy").select("*");
+  (policyRows as any[] | null)?.forEach((p) => {
+    const t = Number(p.n_yield_target_kg_ha);
+    if (p.farm_id && Number.isFinite(t) && t > 0) yieldTargetByFarm.set(p.farm_id, t);
+    const split = parseNSplit(p.n_split);
+    if (p.farm_id && split) nSplitByFarm.set(p.farm_id, split);
+  });
+  const fertByBlock = new Map<string, FertigationLog[]>();
+  const { data: fertRows } = await admin
+    .from("activity_log")
+    .select("block_id, performed_at, details")
+    .eq("activity_type", "fertigation")
+    .gte("performed_at", `${today.getFullYear()}-01-01`);
+  (fertRows as any[] | null)?.forEach((r) => {
+    const d = (r.details ?? {}) as Record<string, unknown>;
+    const list = fertByBlock.get(r.block_id) ?? [];
+    list.push({
+      performedAt: r.performed_at,
+      product: typeof d.product_name === "string" ? d.product_name : null,
+      amountPerTree: typeof d.amount_per_tree === "number" ? d.amount_per_tree : null,
+      unit: typeof d.amount_unit === "string" ? d.amount_unit : null,
+    });
+    fertByBlock.set(r.block_id, list);
+  });
+
   // ── build per-block context strings ─────────────────────────────────────────
   const blockContexts = blocks
     .map((block: any) => {
@@ -313,6 +343,15 @@ export async function buildAllBlockContexts(
         lines.push(`Leaf tissue sample: none on record`);
       }
 
+      {
+        const budget = nitrogenBudget({
+          cropType: block.crop_type ?? null, plantingDate: block.planting_date, plantingYear: block.planting_year,
+          areaHa: toHectares(block.area, block.area_unit), yieldTargetKgHa: yieldTargetByFarm.get(block.farm_id), split: nSplitByFarm.get(block.farm_id), now: today,
+        });
+        const applied = budget.supported ? nitrogenApplied(fertByBlock.get(block.id) ?? [], Number(block.tree_count) || 0, today.getFullYear()) : null;
+        for (const l of describeNitrogenBudget(budget, applied)) lines.push(l);
+      }
+
       if (scouting) {
         const scoutAge = ageLabel(scouting.scouted_at, today);
         lines.push(
@@ -335,8 +374,8 @@ export async function buildAllBlockContexts(
         lines.push(`Growth stage: unknown`);
       }
 
-      // ── DAILY tier (IoT — 3×/day) ────────────────────────────────────────────
-      lines.push(`\n=== DAILY DATA (IoT — 3 readings/day at 00:00 / 08:00 / 16:00) ===`);
+      // ── DAILY tier (IoT — synced hourly) ─────────────────────────────────────
+      lines.push(`\n=== DAILY DATA (IoT — synced every hour) ===`);
 
       if (dailySoil) {
         const soilAge = ageLabel(dailySoil.recorded_at, today);

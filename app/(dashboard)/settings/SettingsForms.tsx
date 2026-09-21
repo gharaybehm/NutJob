@@ -55,7 +55,10 @@ import { useRouter } from 'next/navigation'
 import { updateFarm, deleteFarm } from '@/app/actions/farms'
 import type { SensorWithBlock, SensorFormValues, SensorType } from '@/types/sensors'
 import { SENSOR_TYPE_LABELS } from '@/types/sensors'
-import { POLICY_DEFAULTS, MAX_ROOT_DEPTH_M } from '@/utils/farm-policy'
+import { POLICY_DEFAULTS, MAX_ROOT_DEPTH_M, MAX_N_YIELD_TARGET_KG_HA } from '@/utils/farm-policy'
+import { DEFAULT_KERNEL_TARGET_KG_HA, DEFAULT_N_SPLIT, parseNSplit } from '@/engines/nitrogen'
+import { checkStationsAgainstOpenMeteo, type StationCheckResult } from '@/app/actions/station-check'
+import type { MetricCheck, RainCheck, StationVerdict } from '@/engines/station-check'
 import { totalAvailableWaterMm } from '@/engines/irrigation'
 import { assessMaturity } from '@/engines/maturity'
 
@@ -86,6 +89,8 @@ interface FarmPolicyRow {
   well_licence_season_year: number | null
   frost_margin_c: number | string
   sensor_failed_after_hours: number
+  n_yield_target_kg_ha?: number | string | null
+  n_split?: unknown
 }
 
 interface SettingsFormsProps {
@@ -630,6 +635,9 @@ function FarmPolicyCard({ farmId, policy }: { farmId: string; policy: FarmPolicy
   const [year, setYear] = useState(policy?.well_licence_season_year != null ? String(policy.well_licence_season_year) : '')
   const [frostMargin, setFrostMargin] = useState(String(policy?.frost_margin_c ?? d.frostMarginC))
   const [sensorHours, setSensorHours] = useState(String(policy?.sensor_failed_after_hours ?? d.sensorFailedAfterHours))
+  const [yieldTarget, setYieldTarget] = useState(policy?.n_yield_target_kg_ha != null ? String(policy.n_yield_target_kg_ha) : '')
+  const [nSplit, setNSplit] = useState<{ label: string; percent: string }[]>(() =>
+    (parseNSplit(policy?.n_split) ?? DEFAULT_N_SPLIT).map(p => ({ label: p.label, percent: String(Math.round(p.share * 1000) / 10) })))
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [isPending, setIsPending] = useState(false)
 
@@ -645,6 +653,8 @@ function FarmPolicyCard({ farmId, policy }: { farmId: string; policy: FarmPolicy
         wellLicenceSeasonYear: year,
         frostMarginC: frostMargin,
         sensorFailedAfterHours: sensorHours,
+        nYieldTargetKgHa: yieldTarget,
+        nSplit,
       })
       if (res.error) setStatus({ type: 'error', message: res.error })
       else setStatus({ type: 'success', message: 'Saved' })
@@ -701,6 +711,45 @@ function FarmPolicyCard({ farmId, policy }: { farmId: string; policy: FarmPolicy
         <PolicyField label="Sensor failure after (hours)" hint="How long a soil sensor can go without a reading before it is treated as failed and left out of advice.">
           <input type="number" min="1" max="168" step="1" value={sensorHours} onChange={e => setSensorHours(e.target.value)} className={POLICY_INPUT} />
         </PolicyField>
+      </div>
+
+      <div className="border-t border-line pt-4 space-y-4">
+        <div>
+          <p className="text-sm font-semibold text-ink">Nitrogen budget</p>
+          <p className="text-xs text-ink-3 mt-0.5">
+            Sets the yearly nitrogen guide on each block&apos;s Nutrition tab. It is a guide only: confirm the figures with your agronomist.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <PolicyField label="Mature kernel yield target (kg/ha)" hint={`Kernel weight for a mature block. Empty uses ${DEFAULT_KERNEL_TARGET_KG_HA}. The UC Davis reference is about 3,140 kg/ha at 250 lb N/ac; the budget scales with your target. Young blocks follow the UC age schedule instead.`}>
+            <input type="number" min="1" max={MAX_N_YIELD_TARGET_KG_HA} step="50" value={yieldTarget} onChange={e => setYieldTarget(e.target.value)} placeholder={String(DEFAULT_KERNEL_TARGET_KG_HA)} className={POLICY_INPUT} />
+          </PolicyField>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-ink-3 uppercase tracking-wider mb-1.5">Seasonal split of the nitrogen</label>
+          <div className="space-y-2">
+            {nSplit.map((row, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input type="text" maxLength={40} value={row.label} placeholder="Application, e.g. Spring (Mar-Apr)"
+                  onChange={e => setNSplit(rows => rows.map((r, j) => (j === i ? { ...r, label: e.target.value } : r)))}
+                  className={POLICY_INPUT} />
+                <input type="number" min="0" max="100" step="5" value={row.percent} placeholder="%"
+                  onChange={e => setNSplit(rows => rows.map((r, j) => (j === i ? { ...r, percent: e.target.value } : r)))}
+                  className={`${POLICY_INPUT} !w-24`} />
+                <span className="text-xs text-ink-3">%</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 flex items-center gap-3 text-xs">
+            <span className={Math.abs(nSplit.reduce((s, r) => s + (Number(r.percent) || 0), 0) - 100) <= 0.5 ? 'text-ink-3' : 'text-red'}>
+              Total {Math.round(nSplit.reduce((s, r) => s + (Number(r.percent) || 0), 0) * 10) / 10} % (must be 100)
+            </span>
+            {nSplit.length < 6 && (
+              <button type="button" onClick={() => setNSplit(rows => [...rows, { label: '', percent: '' }])} className="text-green font-medium hover:underline">Add an application</button>
+            )}
+          </div>
+          <p className="mt-1 text-[11px] text-ink-4">Starting values are 30 / 40 / 30 and are not from a source: your agronomist should set the real split. Clear every row to go back to them.</p>
+        </div>
       </div>
     </div>
   )
@@ -991,6 +1040,83 @@ const BLANK_FORM: SensorFormValues = {
   name: '', device_id: '', sensor_type: 'soil_moisture', block_id: null, location_notes: null,
 }
 
+const VERDICT_STYLE: Record<StationVerdict, { badge: string; label: string }> = {
+  agree: { badge: 'bg-green-soft text-green', label: 'Agree' },
+  differs: { badge: 'bg-amber-soft text-amber', label: 'Differs' },
+  insufficient: { badge: 'bg-tile text-ink-3', label: 'Not enough data yet' },
+}
+
+function CheckRow({ label, verdict, message, detail }: { label: string; verdict: StationVerdict; message: string; detail?: string }) {
+  const v = VERDICT_STYLE[verdict]
+  return (
+    <div className="rounded-lg bg-tile px-3 py-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium text-ink">{label}</span>
+        <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${v.badge}`}>{v.label}</span>
+      </div>
+      <p className="mt-1 text-xs text-ink-3">{message}</p>
+      {detail && <p className="mt-0.5 text-[11px] text-ink-4">{detail}</p>}
+    </div>
+  )
+}
+
+function metricDetail(m: MetricCheck): string | undefined {
+  if (m.bias === null) return undefined
+  const sign = m.bias > 0 ? '+' : ''
+  return `${m.n} readings over ${m.days} days · station minus model: ${sign}${m.bias} ${m.unit} on average, ${m.mae} ${m.unit} typical gap, ${m.maxAbs} ${m.unit} largest`
+}
+
+function rainDetail(r: RainCheck): string | undefined {
+  return r.days > 0 ? `${r.days} days compared · both rain ${r.bothWet}, both dry ${r.bothDry}, station only ${r.stationOnly}, model only ${r.modelOnly}` : undefined
+}
+
+function StationCheckCard({ farmId }: { farmId: string }) {
+  const [running, setRunning] = useState(false)
+  const [results, setResults] = useState<StationCheckResult[] | null>(null)
+  const [windowDays, setWindowDays] = useState(14)
+  const [error, setError] = useState<string | null>(null)
+
+  async function run() {
+    setRunning(true); setError(null)
+    try {
+      const res = await checkStationsAgainstOpenMeteo(farmId)
+      setResults(res.results); setWindowDays(res.windowDays); setError(res.error ?? null)
+    } catch { setError('The check failed. Try again.') }
+    setRunning(false)
+  }
+
+  return (
+    <SectionCard title="Weather Station Check" icon={Cloud}
+      description="Compares your station's readings with Open-Meteo for the same place and time, over the last two weeks. Verification only: it changes nothing, and growth stages, GDD and recommendations still use Open-Meteo.">
+      <div className="flex items-center gap-3">
+        <button onClick={run} disabled={running}
+          className="flex items-center gap-1.5 rounded-lg bg-green px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 disabled:opacity-60 transition-colors">
+          {running ? <Loader2 className="h-3 w-3 animate-spin" /> : <Cloud className="h-3 w-3" />}
+          Check now
+        </button>
+        <span className="text-xs text-ink-4">Needs a registered station that has reported readings.</span>
+      </div>
+
+      {error && <div className="mt-3 rounded-lg border border-red/30 bg-red-soft px-3 py-2 text-sm text-red">{error}</div>}
+
+      {results !== null && results.length === 0 && !error && (
+        <p className="mt-3 text-sm text-ink-3">No sensor has reported weather readings in the last {windowDays} days, so there is nothing to compare yet. Once the station is installed and reporting, run the check again.</p>
+      )}
+
+      {results?.map(r => (
+        <div key={r.sensorId} className="mt-4 space-y-2">
+          <p className="text-sm font-semibold text-ink">{r.sensorName}</p>
+          <CheckRow label={r.report.temperature.label} verdict={r.report.temperature.verdict} message={r.report.temperature.message} detail={metricDetail(r.report.temperature)} />
+          <CheckRow label={r.report.humidity.label} verdict={r.report.humidity.verdict} message={r.report.humidity.message} detail={metricDetail(r.report.humidity)} />
+          <CheckRow label={r.report.wind.label} verdict={r.report.wind.verdict} message={r.report.wind.message} detail={metricDetail(r.report.wind)} />
+          <CheckRow label="Rain (rain or no rain per day)" verdict={r.report.rain.verdict} message={r.report.rain.message} detail={rainDetail(r.report.rain)} />
+          <p className="text-[11px] text-ink-4">The agreement limits are provisional starting values and will be adjusted once real station data has been seen.</p>
+        </div>
+      ))}
+    </SectionCard>
+  )
+}
+
 function SensorConnectionsTab({
   initialSensors,
   blocks,
@@ -1126,7 +1252,7 @@ function SensorConnectionsTab({
     <div className="space-y-8">
       {/* SenseCAP Cloud Integration */}
       <SectionCard title="SenseCAP Cloud Integration" icon={Wifi}
-        description="Connect your SenseCAP LoRaWAN/4G sensors. Telemetry is pulled 3× per day and written directly into the block state.">
+        description="Connect your SenseCAP LoRaWAN/4G sensors. Telemetry is pulled every hour and written directly into the block state.">
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -1380,6 +1506,8 @@ function SensorConnectionsTab({
           </div>
         </div>
       )}
+
+      <StationCheckCard farmId={farmId} />
 
       {/* Ingest reference */}
       <SectionCard title="Ingest Endpoints" icon={Wifi}

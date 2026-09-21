@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
 import { requireFarmRole } from '@/utils/supabase/farm-access';
 import { leafFormFields } from '@/engines/nutrition';
+import { parseNSplit, type FertigationLog, type NitrogenSplitPart } from '@/engines/nitrogen';
 
 export interface TissueSampleRow {
   id: string;
@@ -96,10 +97,17 @@ export async function logTissueSample(formData: FormData): Promise<{ error?: str
 export async function getNutritionHistory(blockId: string): Promise<{
   samples: TissueSampleRow[];
   lastFertigation: LastFertigation | null;
+  /** This year's fertigation entries, for the nitrogen budget. */
+  fertigations: FertigationLog[];
+  /** The farm's mature-tree kernel target, kg/ha; null when not set. */
+  yieldTargetKgHa: number | null;
+  /** The farm's seasonal split; undefined when not set (the engine default applies). */
+  nSplit?: NitrogenSplitPart[];
   error?: string;
 }> {
   const supabase = await createClient();
-  const [samplesRes, fertRes] = await Promise.all([
+  const yearStart = `${new Date().getFullYear()}-01-01`;
+  const [samplesRes, fertRes, yearFertRes, blockRes] = await Promise.all([
     (supabase as any)
       .from('tissue_samples')
       .select('id, sampled_at, lab_reference, notes, nutrients')
@@ -113,9 +121,37 @@ export async function getNutritionHistory(blockId: string): Promise<{
       .eq('activity_type', 'fertigation')
       .order('performed_at', { ascending: false })
       .limit(1),
+    (supabase as any)
+      .from('activity_log')
+      .select('performed_at, details')
+      .eq('block_id', blockId)
+      .eq('activity_type', 'fertigation')
+      .gte('performed_at', yearStart)
+      .order('performed_at', { ascending: false })
+      .limit(200),
+    (supabase as any).from('blocks').select('farm_id').eq('id', blockId).maybeSingle(),
   ]);
 
-  if (samplesRes.error) return { samples: [], lastFertigation: null, error: samplesRes.error.message };
+  if (samplesRes.error) return { samples: [], lastFertigation: null, fertigations: [], yieldTargetKgHa: null, error: samplesRes.error.message };
+
+  // select('*') so a database without the yield-target column yet still works (the default is used).
+  let yieldTargetKgHa: number | null = null;
+  let nSplit: NitrogenSplitPart[] | undefined;
+  if (blockRes.data?.farm_id) {
+    const { data: policy } = await (supabase as any).from('farm_policy').select('*').eq('farm_id', blockRes.data.farm_id).maybeSingle();
+    const t = Number(policy?.n_yield_target_kg_ha);
+    yieldTargetKgHa = Number.isFinite(t) && t > 0 ? t : null;
+    nSplit = parseNSplit(policy?.n_split);
+  }
+  const fertigations: FertigationLog[] = (yearFertRes.data ?? []).map((r: any) => {
+    const d = (r.details ?? {}) as Record<string, unknown>;
+    return {
+      performedAt: r.performed_at,
+      product: typeof d.product_name === 'string' ? d.product_name : null,
+      amountPerTree: typeof d.amount_per_tree === 'number' ? d.amount_per_tree : null,
+      unit: typeof d.amount_unit === 'string' ? d.amount_unit : null,
+    };
+  });
 
   const samples: TissueSampleRow[] = (samplesRes.data ?? []).map((r: any) => ({
     id: r.id,
@@ -137,7 +173,7 @@ export async function getNutritionHistory(blockId: string): Promise<{
       }
     : null;
 
-  return { samples, lastFertigation };
+  return { samples, lastFertigation, fertigations, yieldTargetKgHa, nSplit };
 }
 
 export async function deleteTissueSample(id: string, farmId: string): Promise<{ error?: string }> {

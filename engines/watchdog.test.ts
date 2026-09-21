@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildSnapshot, defaultPolicy, type SnapshotInput } from './snapshot'
-import { alertsFromSnapshot, reconcileAlerts, type AlertCandidate } from './watchdog'
+import { alertsFromSnapshot, alertsFromLeafAssessment, leafSampleReminder, reconcileAlerts, type AlertCandidate } from './watchdog'
+import { assessLeafSample } from './nutrition'
 
 const now = new Date('2026-04-12T12:00:00')
 const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000).toISOString()
@@ -137,5 +138,72 @@ describe('reconcileAlerts', () => {
     const r = reconcileAlerts([cand('frost', 'frost:2026-04-14')], [{ id: 'old', ruleId: 'frost', dedupKey: 'frost:2026-04-13' }])
     expect(r.create).toHaveLength(1)
     expect(r.resolve).toEqual(['old'])
+  })
+})
+
+describe('alertsFromLeafAssessment', () => {
+  const july = new Date('2026-07-20T12:00:00')
+  const leaf = (values: Record<string, number>, sampledAt = '2026-07-10') =>
+    assessLeafSample({ cropType: 'almond', sampledAt, values })
+
+  it('raises one nutrition alert per deficient or high nutrient, and none for marginal or adequate', () => {
+    const out = alertsFromLeafAssessment(leaf({ n: 1.9, k: 1.3, zn: 30, cl: 0.4 }), july)
+    const keys = out.map(a => a.dedupKey).sort()
+    expect(keys).toContain('leaf_nutrient:2026-07-10:n')
+    expect(keys).toContain('leaf_nutrient:2026-07-10:cl')
+    expect(out.every(a => a.ruleId === 'leaf_nutrient' && a.domain === 'nutrition' && a.severity === 'warning')).toBe(true)
+    expect(alertsFromLeafAssessment(leaf({ n: 2.1 }), july)).toEqual([]) // marginal
+    expect(alertsFromLeafAssessment(leaf({ n: 2.4 }), july)).toEqual([]) // adequate
+  })
+
+  it('raises nothing without a sample, for an unsupported crop, or for a sample over a year old', () => {
+    expect(alertsFromLeafAssessment(null, july)).toEqual([])
+    expect(alertsFromLeafAssessment(assessLeafSample({ cropType: 'Pistachio', sampledAt: '2026-07-10', values: { n: 1 } }), july)).toEqual([])
+    expect(alertsFromLeafAssessment(leaf({ n: 1.9 }, '2025-06-01'), july)).toEqual([])
+  })
+
+  it('disappears after September and never carries into the next year', () => {
+    const l = leaf({ n: 1.9 })
+    expect(alertsFromLeafAssessment(l, new Date('2026-09-30T12:00:00'))).toHaveLength(1)
+    expect(alertsFromLeafAssessment(l, new Date('2026-10-01T12:00:00'))).toEqual([])
+    expect(alertsFromLeafAssessment(l, new Date('2027-07-15T12:00:00'))).toEqual([])
+  })
+
+  it('notes a sample taken outside the reference window', () => {
+    const [a] = alertsFromLeafAssessment(leaf({ n: 1.9 }, '2026-04-10'), july)
+    expect(a.message).toMatch(/outside the reference window/)
+  })
+
+  it('closes the old sample alerts when a newer sample arrives', () => {
+    const [old] = alertsFromLeafAssessment(leaf({ n: 1.9 }, '2026-07-01'), july)
+    const fresh = alertsFromLeafAssessment(leaf({ n: 2.4 }, '2026-07-15'), july)
+    const { create, resolve } = reconcileAlerts(fresh, [{ id: 'a1', ruleId: 'leaf_nutrient', dedupKey: old.dedupKey }])
+    expect(create).toEqual([])
+    expect(resolve).toEqual(['a1'])
+  })
+})
+
+describe('leafSampleReminder', () => {
+  const opts = { supported: true, hasSampleThisYear: false, alreadyRaised: new Set<string>() }
+  const june = new Date('2026-06-10T12:00:00')
+
+  it('raises one quiet info reminder in June only', () => {
+    const [r] = leafSampleReminder(opts, june)
+    expect(r).toMatchObject({ ruleId: 'leaf_sample_due', dedupKey: 'leaf_sample_due:2026', domain: 'nutrition', severity: 'info' })
+    expect(r.message).toMatch(/optional/)
+    expect(leafSampleReminder(opts, new Date('2026-05-31T12:00:00'))).toEqual([])
+    expect(leafSampleReminder(opts, new Date('2026-07-01T12:00:00'))).toEqual([])
+  })
+
+  it('stays quiet when a sample is already logged, the crop is unsupported, or it was dismissed', () => {
+    expect(leafSampleReminder({ ...opts, hasSampleThisYear: true }, june)).toEqual([])
+    expect(leafSampleReminder({ ...opts, supported: false }, june)).toEqual([])
+    expect(leafSampleReminder({ ...opts, alreadyRaised: new Set(['leaf_sample_due:2026']) }, june)).toEqual([])
+  })
+
+  it('is resolved by the reconcile step once June is over', () => {
+    const { create, resolve } = reconcileAlerts([], [{ id: 'r1', ruleId: 'leaf_sample_due', dedupKey: 'leaf_sample_due:2026' }])
+    expect(create).toEqual([])
+    expect(resolve).toEqual(['r1'])
   })
 })

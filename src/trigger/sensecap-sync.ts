@@ -1,12 +1,13 @@
 import { logger, schedules } from "@trigger.dev/sdk/v3";
 
-// Pulls live telemetry from SenseCAP cloud into NutJob 3× per day,
-// matching the "DAILY IoT" data tier consumed by the AI Agronomist.
-// SenseCAP sensors transmit every 15 min; we read the latest buffered value
-// at each of these three windows.
+// Pulls live telemetry from SenseCAP cloud into NutJob every hour, feeding the
+// "DAILY IoT" data tier consumed by the AI Agronomist and the weather-station
+// check. Each pull stores every reading the devices logged since the last one,
+// so the pull rate sets how fresh the data is; the resolution is set by how
+// often the devices themselves report (a device-side setting).
 export const sensecapSyncTask = schedules.task({
   id: "sensecap-sync",
-  cron: "0 0,8,16 * * *", // 3× daily: 00:00, 08:00, 16:00 UTC
+  cron: "0 * * * *", // hourly, on the hour (UTC)
   maxDuration: 120,
   run: async () => {
     logger.log("Starting SenseCAP telemetry sync");

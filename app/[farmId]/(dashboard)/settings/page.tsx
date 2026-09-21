@@ -81,7 +81,7 @@ export default async function SettingsPage({
 
   // Irrigation and alert policy for this farm (none saved yet means the defaults apply)
   const { data: policyRow } = await db.from('farm_policy')
-    .select('irrigation_strategy_name, allowable_depletion, irrigation_efficiency, default_root_depth_m, well_licence_volume_m3, well_licence_season_year, frost_margin_c, sensor_failed_after_hours')
+    .select('irrigation_strategy_name, allowable_depletion, irrigation_efficiency, default_root_depth_m, well_licence_volume_m3, well_licence_season_year, frost_margin_c, sensor_failed_after_hours, n_yield_target_kg_ha, n_split')
     .eq('farm_id', farmId)
     .maybeSingle()
 

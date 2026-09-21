@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { assessMaturity } from '@/engines/maturity';
 import { assessLeafSample, type LeafStatus } from '@/engines/nutrition';
+import { nitrogenBudget, nitrogenApplied, type FertigationLog, type NitrogenSplitPart } from '@/engines/nitrogen';
+import { toHectares } from '@/utils/area';
 import { getNutritionHistory, deleteTissueSample, type TissueSampleRow, type LastFertigation } from '@/app/actions/tissue';
 import type { Block, NutritionDomain } from '../types';
 import AlertBadge from '../AlertBadge';
@@ -31,6 +33,9 @@ const fmtDate = (iso: string, withYear = false) =>
 export default function NutritionTab({ data, block, farmId, canLog = false }: Props) {
   const [samples, setSamples] = useState<TissueSampleRow[]>([]);
   const [lastFertigation, setLastFertigation] = useState<LastFertigation | null>(null);
+  const [fertigations, setFertigations] = useState<FertigationLog[]>([]);
+  const [yieldTarget, setYieldTarget] = useState<number | null>(null);
+  const [nSplit, setNSplit] = useState<NitrogenSplitPart[] | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -39,7 +44,7 @@ export default function NutritionTab({ data, block, farmId, canLog = false }: Pr
   const load = useCallback(async () => {
     const res = await getNutritionHistory(block.id);
     if (res.error) setError(res.error);
-    else { setError(null); setSamples(res.samples); setLastFertigation(res.lastFertigation); }
+    else { setError(null); setSamples(res.samples); setLastFertigation(res.lastFertigation); setFertigations(res.fertigations); setYieldTarget(res.yieldTargetKgHa); setNSplit(res.nSplit); }
     setLoading(false);
   }, [block.id]);
 
@@ -57,6 +62,15 @@ export default function NutritionTab({ data, block, farmId, canLog = false }: Pr
     });
     return assessLeafSample({ cropType: block.cropType, sampledAt: latest.sampledAt, values: latest.nutrients, maturity });
   }, [latest, block.plantingDate, block.plantingYear, block.cropType]);
+
+  const budget = useMemo(() => nitrogenBudget({
+    cropType: block.cropType, plantingDate: block.plantingDate, plantingYear: block.plantingYear,
+    areaHa: toHectares(block.area, block.areaUnit), yieldTargetKgHa: yieldTarget ?? undefined, split: nSplit,
+  }), [block.cropType, block.plantingDate, block.plantingYear, block.area, block.areaUnit, yieldTarget, nSplit]);
+  const applied = useMemo(
+    () => nitrogenApplied(fertigations, block.treeCount, new Date().getFullYear()),
+    [fertigations, block.treeCount],
+  );
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -170,6 +184,50 @@ export default function NutritionTab({ data, block, farmId, canLog = false }: Pr
           </div>
         </div>
       )}
+
+      <div className="rounded-xl border border-line bg-surface p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-ink-2">Nitrogen Budget</h3>
+          <span className="text-xs text-ink-4">Guide only</span>
+        </div>
+        {!budget.supported ? (
+          <p className="rounded-lg bg-tile px-3 py-2 text-xs text-ink-3">{budget.cautions[0]}</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg bg-tile px-3 py-2">
+                <div className="text-xs text-ink-3">Nitrogen this year</div>
+                <div className="text-sm font-semibold text-ink">{budget.nKgHa} kg N/ha</div>
+                {budget.nKgBlock !== null && <div className="text-xs text-ink-3">{budget.nKgBlock} kg for the block</div>}
+              </div>
+              <div className="rounded-lg bg-tile px-3 py-2">
+                <div className="text-xs text-ink-3">As urea (46% N)</div>
+                <div className="text-sm font-semibold text-ink">{budget.ureaKgHa} kg/ha</div>
+                {budget.ureaKgBlock !== null && <div className="text-xs text-ink-3">{budget.ureaKgBlock} kg for the block</div>}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              {budget.split.map(p => (
+                <div key={p.label} className="flex items-center justify-between text-sm">
+                  <span className="text-ink-3">{p.label}</span>
+                  <span className="font-medium text-ink">
+                    {Math.round(p.share * 100)}%{p.ureaKgBlock !== null ? ` · ${p.ureaKgBlock} kg urea` : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="text-sm text-ink-3">
+              Urea fertigation logged this year: <span className="font-medium text-ink">{applied.nKg} kg N</span>
+              {budget.nKgBlock !== null && <> of {budget.nKgBlock}</>}
+              {applied.skipped.length > 0 && <> ({applied.skipped.length} {applied.skipped.length === 1 ? 'entry' : 'entries'} not counted: product or amount unclear)</>}
+            </div>
+            <ul className="flex flex-col gap-1">
+              {budget.cautions.map(c => <li key={c} className="rounded-lg bg-tile px-3 py-2 text-xs text-ink-3">{c}</li>)}
+              <li className="text-xs text-ink-4">Source: {budget.source}{budget.yieldTargetKgHa ? `; mature kernel target ${budget.yieldTargetKgHa} kg/ha` : ''}.</li>
+            </ul>
+          </div>
+        )}
+      </div>
 
       <div className="rounded-xl border border-line bg-surface p-4">
         <h3 className="text-sm font-semibold text-ink-2 mb-3">Last Fertigation</h3>

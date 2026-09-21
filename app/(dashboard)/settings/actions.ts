@@ -527,6 +527,8 @@ export async function updateFarmPolicy(farmId: string, input: unknown) {
       well_licence_season_year: p.wellLicenceSeasonYear,
       frost_margin_c: p.frostMarginC,
       sensor_failed_after_hours: p.sensorFailedAfterHours,
+      n_yield_target_kg_ha: p.nYieldTargetKgHa,
+      n_split: p.nSplit,
       updated_by: gate.actor.userId,
       updated_at: new Date().toISOString(),
     },

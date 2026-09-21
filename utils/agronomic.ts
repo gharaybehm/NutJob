@@ -53,12 +53,13 @@ export function hargreavesETo(
 }
 
 /**
- * Growing Degree Days contribution for a single day (°C·day, base 7.2°C).
+ * Growing Degree Days contribution for a single day (°C·day). The base is the
+ * crop's own (see engines/heat-model.ts); it defaults to the almond 7.2°C.
  * Clamped so neither the average nor the range goes below base.
  */
-export function dailyGDD(tMax: number, tMin: number): number {
+export function dailyGDD(tMax: number, tMin: number, baseC: number = ALMOND_GDD_BASE): number {
   const tMean = (tMax + tMin) / 2;
-  return Math.max(0, Math.round((tMean - ALMOND_GDD_BASE) * 10) / 10);
+  return Math.max(0, Math.round((tMean - baseC) * 10) / 10);
 }
 
 /**
@@ -129,11 +130,11 @@ export const DEFAULT_PHENOLOGY_THRESHOLDS: PhenologyThresholds = {
 export const BUD_BREAK_TO_BLOOM_GDD = 120;
 
 /** Sum daily GDD across a series of daily Tmax/Tmin pairs. */
-export function sumGDD(days: { tMax: number; tMin: number }[]): number {
+export function sumGDD(days: { tMax: number; tMin: number }[], baseC: number = ALMOND_GDD_BASE): number {
   let total = 0;
   for (const day of days) {
     if (day.tMax == null || day.tMin == null) continue;
-    total += dailyGDD(day.tMax, day.tMin);
+    total += dailyGDD(day.tMax, day.tMin, baseC);
   }
   return Math.round(total * 10) / 10;
 }
@@ -160,6 +161,7 @@ export function projectGddDate(
   gddAlreadyAccumulated: number,
   targetGdd: number,
   normals: MonthlyNormalTemps[],
+  baseC: number = ALMOND_GDD_BASE,
 ): Date | null {
   // A target already met is in the PAST, not today. Returning `from` here
   // would render a completed season as "harvest window: today → today" —
@@ -176,7 +178,7 @@ export function projectGddDate(
     cursor.setDate(cursor.getDate() + 1);
     const normal = byMonth.get(cursor.getMonth() + 1);
     if (!normal) return null;
-    accumulated += dailyGDD(normal.avg_high_c, normal.avg_low_c);
+    accumulated += dailyGDD(normal.avg_high_c, normal.avg_low_c, baseC);
     if (accumulated >= targetGdd) return new Date(cursor);
   }
 
@@ -205,14 +207,16 @@ export function predictSeasonDates(
   normals: MonthlyNormalTemps[],
   anchorIsBudBreak = false,
   thresholds: PhenologyThresholds = DEFAULT_PHENOLOGY_THRESHOLDS,
+  baseC: number = ALMOND_GDD_BASE,
+  budBreakToBloomGdd: number = BUD_BREAK_TO_BLOOM_GDD,
 ): SeasonPrediction {
   // Bud break precedes bloom, so the same physical events sit further along
   // the accumulation curve when measured from a bud-break anchor.
-  const shift = anchorIsBudBreak ? BUD_BREAK_TO_BLOOM_GDD : 0;
+  const shift = anchorIsBudBreak ? budBreakToBloomGdd : 0;
 
-  const hullSplitDate = projectGddDate(today, gddSinceAnchor, thresholds.hullSplitGdd + shift, normals);
-  const harvestStart  = projectGddDate(today, gddSinceAnchor, thresholds.harvestStartGdd + shift, normals);
-  const harvestEnd    = projectGddDate(today, gddSinceAnchor, thresholds.harvestEndGdd + shift, normals);
+  const hullSplitDate = projectGddDate(today, gddSinceAnchor, thresholds.hullSplitGdd + shift, normals, baseC);
+  const harvestStart  = projectGddDate(today, gddSinceAnchor, thresholds.harvestStartGdd + shift, normals, baseC);
+  const harvestEnd    = projectGddDate(today, gddSinceAnchor, thresholds.harvestEndGdd + shift, normals, baseC);
 
   const daysToHullSplit = hullSplitDate
     ? Math.max(0, Math.round((hullSplitDate.getTime() - today.getTime()) / 86_400_000))
@@ -266,12 +270,13 @@ export function seasonToDate(
   history: { date: string; tMax: number; tMin: number }[],
   gddStart: string,
   chillStart: string,
+  baseC: number = ALMOND_GDD_BASE,
 ): SeasonTotals {
   let gdd = 0;
   let chill = 0;
   for (const d of history) {
     if (d.tMax == null || d.tMin == null) continue;
-    if (d.date >= gddStart) gdd += dailyGDD(d.tMax, d.tMin);
+    if (d.date >= gddStart) gdd += dailyGDD(d.tMax, d.tMin, baseC);
     if (d.date >= chillStart) chill += estimatedDaillyChillHours(d.tMax, d.tMin);
   }
   return { gdd: Math.round(gdd * 10) / 10, chillHours: Math.round(chill * 10) / 10 };

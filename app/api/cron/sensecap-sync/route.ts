@@ -7,7 +7,7 @@ import {
   type TimestampedPayloads,
 } from "@/utils/sensecap-client";
 
-// SenseCAP sensor sync — runs 3× per day at 00:00, 08:00, 16:00 UTC.
+// SenseCAP sensor sync — runs every hour, on the hour (UTC).
 //
 // For each farm with SenseCAP credentials configured, fetches every telemetry
 // reading each registered sensor (device_id = SenseCAP EUI) has logged since
@@ -15,7 +15,7 @@ import {
 // weather_snapshots.
 //
 // The cron cadence is the PULL frequency, not the sample frequency: the
-// devices uplink far more often than 3× a day, and the derived agronomy needs
+// devices may uplink more often than the pull, and the derived agronomy needs
 // that resolution (chill hours are meaningless below roughly hourly data, and
 // true daily Tmax/Tmin cannot be recovered from three fixed-time samples).
 // Where the history endpoint is unavailable this falls back to storing just

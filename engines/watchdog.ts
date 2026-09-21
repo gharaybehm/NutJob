@@ -3,13 +3,21 @@
  * Rule-based and deterministic. It never depends on the LLM, and it only
  * advises: a candidate is a message for the manager, not an action.
  *
- * To avoid alert fatigue only warning and critical conditions raise an alert,
+ * To avoid alert fatigue only warning and critical conditions raise an alert
+ * (the one exception is the optional June leaf-sample reminder, info level),
  * and each event has a stable dedup key so it raises one alert, not one per run.
  */
 import type { DailySnapshot } from './snapshot'
+import type { LeafAssessment } from './nutrition'
 
-export type AlertRuleId = 'frost' | 'sensor_failed' | 'irrigate_now' | 'forecast_stale'
-export const WATCHDOG_RULE_IDS: AlertRuleId[] = ['frost', 'sensor_failed', 'irrigate_now', 'forecast_stale']
+export type AlertRuleId = 'frost' | 'sensor_failed' | 'irrigate_now' | 'forecast_stale' | 'leaf_nutrient' | 'leaf_sample_due'
+export const WATCHDOG_RULE_IDS: AlertRuleId[] = ['frost', 'sensor_failed', 'irrigate_now', 'forecast_stale', 'leaf_nutrient', 'leaf_sample_due']
+
+/**
+ * Leaf-nutrient alerts belong to the season they were sampled in: they show
+ * until the end of this month (1-12) of the sample's own year, then disappear.
+ */
+export const LEAF_ALERT_LAST_MONTH = 9
 
 /** A forecast older than this is not trusted for frost. The weather job runs every 3 hours. */
 export const FORECAST_MAX_AGE_HOURS = 12
@@ -18,8 +26,8 @@ export interface AlertCandidate {
   ruleId: AlertRuleId
   /** Stable per event within a block, e.g. `frost:2026-04-12`. */
   dedupKey: string
-  domain: 'weather' | 'soil-water'
-  severity: 'warning' | 'critical'
+  domain: 'weather' | 'soil-water' | 'nutrition'
+  severity: 'info' | 'warning' | 'critical'
   message: string
   details: Record<string, unknown>
 }
@@ -123,6 +131,71 @@ export function alertsFromSnapshot(s: DailySnapshot, blockHasSensor: boolean): A
   }
 
   return out
+}
+
+/**
+ * One alert per deficient or high nutrient in the block's latest leaf sample.
+ * Marginal values raise nothing (alert fatigue); they stay visible on the
+ * Nutrition tab. The dedup key carries the sample date, so a new sample closes
+ * the old sample's alerts and opens its own. They expire after the season
+ * (see LEAF_ALERT_LAST_MONTH), so a July result does not sit open all winter.
+ */
+export function alertsFromLeafAssessment(a: LeafAssessment | null, now: Date): AlertCandidate[] {
+  if (!a || !a.supported || !a.sampledAt) return []
+  // Only this season's sample raises alerts; a sample from an earlier year, or
+  // one still open after the season month, is left to the Nutrition tab.
+  if (Number(a.sampledAt.slice(0, 4)) !== now.getFullYear() || now.getMonth() + 1 > LEAF_ALERT_LAST_MONTH) return []
+  const sampled = a.sampledAt.slice(0, 10)
+  const caution = !a.inWindow && a.windowLabel
+    ? ` Sampled outside the reference window (${a.windowLabel}), so treat this as indicative.`
+    : ''
+  return a.results
+    .filter(r => r.status === 'deficient' || r.status === 'high')
+    .map(r => ({
+      ruleId: 'leaf_nutrient' as const,
+      dedupKey: `leaf_nutrient:${sampled}:${r.key}`,
+      domain: 'nutrition' as const,
+      severity: 'warning' as const,
+      message:
+        `Leaf ${r.label.toLowerCase()} (${r.symbol}) is ${r.status === 'deficient' ? 'deficient' : 'high'} ` +
+        `in the ${sampled} sample: ${r.value} ${r.unit} (${r.bandText}).` +
+        (r.note ? ` ${r.note}` : '') +
+        (r.provisional ? ' The reference band is provisional.' : '') +
+        caution,
+      details: {
+        sampledAt: sampled,
+        nutrient: r.key,
+        value: r.value,
+        unit: r.unit,
+        status: r.status,
+        band: r.bandText,
+        provisional: r.provisional,
+        inWindow: a.inWindow,
+      },
+    }))
+}
+
+/**
+ * A single quiet reminder in June to take the July leaf sample. Info only, and
+ * never blocks anything: a block with no sample is simply not judged.
+ * `alreadyRaised` holds the dedup keys this block has ever had (open or
+ * dismissed), so dismissing the reminder means it does not come back.
+ */
+export function leafSampleReminder(
+  o: { supported: boolean; hasSampleThisYear: boolean; alreadyRaised: ReadonlySet<string> },
+  now: Date,
+): AlertCandidate[] {
+  if (now.getMonth() !== 5 || !o.supported || o.hasSampleThisYear) return []
+  const dedupKey = `leaf_sample_due:${now.getFullYear()}`
+  if (o.alreadyRaised.has(dedupKey)) return []
+  return [{
+    ruleId: 'leaf_sample_due',
+    dedupKey,
+    domain: 'nutrition',
+    severity: 'info',
+    message: 'The July leaf-tissue sample window opens 1 July and closes 15 August. If you plan to sample this block, now is the time to arrange the lab. It is optional: without a result the block is just not judged on leaf nutrients.',
+    details: { year: now.getFullYear() },
+  }]
 }
 
 export interface OpenAlert {

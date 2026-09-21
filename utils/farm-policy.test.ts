@@ -74,3 +74,27 @@ describe('validateBlockConfig', () => {
     expect(validateBlockConfig({ fieldCapacity: 30, wiltingPoint: 10, rootDepthM: 6 }).ok).toBe(false)
   })
 })
+
+describe('validateFarmPolicy: nitrogen fields', () => {
+  it('accepts a yield target and a split that adds up to 100 %', () => {
+    const r = validateFarmPolicy({ ...valid, nYieldTargetKgHa: '2500', nSplit: [{ label: 'Spring', percent: '30' }, { label: 'Summer', percent: '40' }, { label: 'Post-harvest', percent: '30' }, { label: '', percent: '' }] })
+    expect(r.ok && r.value).toMatchObject({ nYieldTargetKgHa: 2500, nSplit: [{ label: 'Spring', share: 0.3 }, { label: 'Summer', share: 0.4 }, { label: 'Post-harvest', share: 0.3 }] })
+  })
+
+  it('treats an empty target and an empty split as not set', () => {
+    const r = validateFarmPolicy({ ...valid, nYieldTargetKgHa: '', nSplit: [{ label: '', percent: '' }] })
+    expect(r.ok && r.value).toMatchObject({ nYieldTargetKgHa: null, nSplit: null })
+  })
+
+  it.each([
+    ['a target of zero', { nYieldTargetKgHa: 0 }, /yield target/],
+    ['a target above 10,000', { nYieldTargetKgHa: 20000 }, /yield target/],
+    ['shares not adding to 100', { nSplit: [{ label: 'A', percent: 50 }, { label: 'B', percent: 30 }] }, /add up to 80 %/],
+    ['a share with no name', { nSplit: [{ label: '', percent: 100 }] }, /needs a name/],
+    ['a name with no share', { nSplit: [{ label: 'A', percent: '' }] }, /share for "A"/],
+  ])('refuses %s', (_name, over, msg) => {
+    const r = validateFarmPolicy({ ...valid, ...over })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error).toMatch(msg)
+  })
+})

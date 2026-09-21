@@ -14,12 +14,14 @@ import {
 } from "@/utils/agronomic";
 import { fetchDailyTemperatureRange } from "@/utils/weather-history";
 import { getOrFetchClimateProfile } from "@/utils/climate-profile";
+import { heatModelFor, inferGrowthStage, type HeatModel } from "@/engines/heat-model";
 
 // Scheduled computed-fields run — designed to execute once per day (midnight).
 //
 // For each farm with GPS coordinates, fetches today's Tmax/Tmin from Open-Meteo
 // and writes per-block rows to:
-//   - phenology_records  (cumulative GDD, chill hours, inferred growth stage)
+//   - phenology_records  (cumulative GDD, chill hours, inferred growth stage),
+//                        only for blocks whose crop has a heat model (engines/heat-model.ts)
 //   - soil_water_readings (daily ETo, 7-day forward water deficit)
 //
 // Idempotent: skips blocks that already have a source="computed" phenology row
@@ -30,31 +32,6 @@ import { getOrFetchClimateProfile } from "@/utils/climate-profile";
 //   - Manual: GET /api/cron/compute-fields?secret=YOUR_CRON_SECRET
 
 const OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast";
-
-type GrowthStageKey =
-  | "dormancy"
-  | "bud-swell"
-  | "bud-break"
-  | "bloom"
-  | "petal-fall"
-  | "nut-development"
-  | "hull-split"
-  | "harvest"
-  | "post-harvest";
-
-// GDD thresholds calibrated for Prunus dulcis in semi-arid Mediterranean climate.
-// Cumulative GDD is measured from Jan 1 with base 7.2°C.
-function inferGrowthStage(cumulativeGdd: number, month: number): GrowthStageKey {
-  if (month === 11 || month === 12 || month === 1) return "dormancy";
-  if (month === 10) return "post-harvest";
-  if (cumulativeGdd < 50)   return "bud-swell";
-  if (cumulativeGdd < 150)  return "bud-break";
-  if (cumulativeGdd < 300)  return "bloom";
-  if (cumulativeGdd < 500)  return "petal-fall";
-  if (cumulativeGdd < 1600) return "nut-development";
-  if (cumulativeGdd < 2100) return "hull-split";
-  return "harvest";
-}
 
 // ─── Bloom-anchored season prediction ────────────────────────────────────────
 
@@ -99,6 +76,7 @@ async function predictForBlock(
   lng: number,
   today: Date,
   todayGdd: number,
+  model: HeatModel,
   // Shared across blocks in a farm so blocks with the same anchor date cost one fetch.
   historyCache: Map<string, { tMax: number; tMin: number }[]>,
 ): Promise<PredictedFields> {
@@ -136,12 +114,15 @@ async function predictForBlock(
     return { ...EMPTY_PREDICTION, bud_break_date: budBreakDate };
   }
 
-  const gddSinceAnchor = sumGDD(history) + todayGdd;
+  const gddSinceAnchor = sumGDD(history, model.baseC) + todayGdd;
   const prediction = predictSeasonDates(
     today,
     gddSinceAnchor,
     normals,
     anchor.event_type === "bud-break",
+    model.season,
+    model.baseC,
+    model.budBreakToBloomGdd,
   );
 
   return {
@@ -227,7 +208,6 @@ export async function GET(request: NextRequest) {
       const doy = dayOfYear(now);
 
       const todayEto = hargreavesETo(tMax, tMin, latDeg, doy);
-      const todayGdd = dailyGDD(tMax, tMin);
       const todayChillHours = estimatedDaillyChillHours(tMax, tMin);
 
       // 7-day forward water deficit (days 1-7 of the forecast)
@@ -241,10 +221,11 @@ export async function GET(request: NextRequest) {
       // Fetch all blocks for this farm
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: farmBlocks } = await (admin.from("blocks") as any)
-        .select("id")
+        .select("id, crop_type")
         .eq("farm_id", farm.id);
 
-      const blockIds: string[] = (farmBlocks ?? []).map((b: { id: string }) => b.id);
+      const blockList: { id: string; crop_type: string | null }[] = farmBlocks ?? [];
+      const blockIds: string[] = blockList.map(b => b.id);
       if (blockIds.length === 0) {
         results.push({ farm: farm.name, status: "No blocks found" });
         continue;
@@ -265,12 +246,23 @@ export async function GET(request: NextRequest) {
       const chillStart = `${currentMonth >= 10 ? currentYear : currentYear - 1}-10-01`;
       const historyStart = gddStart < chillStart ? gddStart : chillStart;
       const yesterdayIso = isoDate(new Date(now.getTime() - 86_400_000));
-      const seasonHistory = await fetchDailyTemperatureRange(latDeg, farm.gps_lng as number, historyStart, yesterdayIso);
+      // Only blocks whose crop has a heat model need it: a farm of other crops costs no archive call.
+      const anyHeatModel = blockList.some(b => heatModelFor(b.crop_type) !== null);
+      const seasonHistory = anyHeatModel
+        ? await fetchDailyTemperatureRange(latDeg, farm.gps_lng as number, historyStart, yesterdayIso)
+        : [];
       const seasonComplete = seasonHistory.length >= daysInclusive(historyStart, yesterdayIso) * 0.9;
-      const seasonTotals = seasonComplete ? seasonToDate(seasonHistory, gddStart, chillStart) : null;
-      if (!seasonTotals) {
+      if (anyHeatModel && !seasonComplete) {
         console.warn(`compute-fields: incomplete temperature history for ${farm.name} (${seasonHistory.length} days), using running totals`);
       }
+      // GDD depend on the crop's base temperature, so season totals are computed once per base.
+      const totalsByBase = new Map<number, ReturnType<typeof seasonToDate> | null>();
+      const totalsFor = (baseC: number) => {
+        if (!totalsByBase.has(baseC)) {
+          totalsByBase.set(baseC, seasonComplete ? seasonToDate(seasonHistory, gddStart, chillStart, baseC) : null);
+        }
+        return totalsByBase.get(baseC) ?? null;
+      };
 
       // Observed anchors for the current season, all blocks in one query.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -291,73 +283,102 @@ export async function GET(request: NextRequest) {
 
       let updatedCount = 0;
 
-      for (const blockId of blockIds) {
-        // Idempotency check — skip if already computed today
-        const { data: existing } = await admin
-          .from("phenology_records")
-          .select("id")
-          .eq("block_id", blockId)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .eq("source", "computed" as any)
-          .gte("recorded_at", `${todayDate}T00:00:00.000Z`)
-          .maybeSingle();
+      let stagedCount = 0;
+      let skippedNoModel = 0;
 
-        if (existing) continue;
+      for (const block of blockList) {
+        const blockId = block.id;
+        // Growth stage, GDD and harvest prediction exist only for a crop with a
+        // heat model. Other crops get none of them (a stage row is required to
+        // carry a stage, so none is written), but still get ETo below: it
+        // depends on the weather, not the crop.
+        const model = heatModelFor(block.crop_type);
 
-        // Fetch latest phenology record for running totals
-        const { data: latestPheno } = await admin
-          .from("phenology_records")
-          .select("cumulative_gdd, chill_hours, recorded_at")
-          .eq("block_id", blockId)
-          .order("recorded_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        if (model) {
+          // Idempotency check — skip if already computed today
+          const { data: existing } = await admin
+            .from("phenology_records")
+            .select("id")
+            .eq("block_id", blockId)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .eq("source", "computed" as any)
+            .gte("recorded_at", `${todayDate}T00:00:00.000Z`)
+            .maybeSingle();
 
-        // Reset cumulative GDD on Jan 1 of a new year
-        const latestYear = latestPheno ? new Date(latestPheno.recorded_at).getFullYear() : null;
-        const prevGdd = latestYear !== null && latestYear < currentYear
-          ? 0
-          : (latestPheno?.cumulative_gdd ?? 0);
-        const newCumulativeGdd = seasonTotals ? seasonTotals.gdd + todayGdd : prevGdd + todayGdd;
+          if (existing) continue;
 
-        // Reset chill hours at the start of a new chill season (Oct 1)
-        const chillSeasonYear = currentMonth >= 10 ? currentYear : currentYear - 1;
-        const isNewChillSeason = latestYear !== null && latestYear < chillSeasonYear;
-        const prevChill = isNewChillSeason ? 0 : (latestPheno?.chill_hours ?? 0);
-        const newChillHours = seasonTotals ? seasonTotals.chillHours + todayChillHours : prevChill + todayChillHours;
+          // Fetch latest phenology record for running totals
+          const { data: latestPheno } = await admin
+            .from("phenology_records")
+            .select("cumulative_gdd, chill_hours, recorded_at")
+            .eq("block_id", blockId)
+            .order("recorded_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-        const currentStage = inferGrowthStage(newCumulativeGdd, currentMonth);
+          const todayGdd = dailyGDD(tMax, tMin, model.baseC);
+          const seasonTotals = totalsFor(model.baseC);
 
-        // Bloom-anchored predictions. Null throughout when the grower has not
-        // logged a season anchor yet — the tab renders "—" rather than a guess.
-        const predicted = await predictForBlock(
-          eventsByBlock.get(blockId) ?? [],
-          normals,
-          latDeg,
-          farm.gps_lng as number,
-          now,
-          todayGdd,
-          historyCache,
-        );
+          // Reset cumulative GDD on Jan 1 of a new year
+          const latestYear = latestPheno ? new Date(latestPheno.recorded_at).getFullYear() : null;
+          const prevGdd = latestYear !== null && latestYear < currentYear
+            ? 0
+            : (latestPheno?.cumulative_gdd ?? 0);
+          const newCumulativeGdd = seasonTotals ? seasonTotals.gdd + todayGdd : prevGdd + todayGdd;
 
-        const { error: phenoError } = await admin.from("phenology_records").insert({
-          block_id: blockId,
-          cumulative_gdd: newCumulativeGdd,
-          chill_hours: newChillHours,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          current_stage: currentStage as any,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          source: "computed" as any,
-          recorded_at: now.toISOString(),
-          bud_break_date: predicted.bud_break_date,
-          estimated_harvest_start: predicted.estimated_harvest_start,
-          estimated_harvest_end: predicted.estimated_harvest_end,
-          days_to_hull_split: predicted.days_to_hull_split,
-        });
+          // Reset chill hours at the start of a new chill season (Oct 1)
+          const chillSeasonYear = currentMonth >= 10 ? currentYear : currentYear - 1;
+          const isNewChillSeason = latestYear !== null && latestYear < chillSeasonYear;
+          const prevChill = isNewChillSeason ? 0 : (latestPheno?.chill_hours ?? 0);
+          const newChillHours = seasonTotals ? seasonTotals.chillHours + todayChillHours : prevChill + todayChillHours;
 
-        if (phenoError) {
-          console.error(`[compute-fields] Phenology insert error block ${blockId}:`, phenoError);
-          continue;
+          const currentStage = inferGrowthStage(model, newCumulativeGdd, currentMonth);
+
+          // Bloom-anchored predictions. Null throughout when the grower has not
+          // logged a season anchor yet — the tab renders "—" rather than a guess.
+          const predicted = await predictForBlock(
+            eventsByBlock.get(blockId) ?? [],
+            normals,
+            latDeg,
+            farm.gps_lng as number,
+            now,
+            todayGdd,
+            model,
+            historyCache,
+          );
+
+          const { error: phenoError } = await admin.from("phenology_records").insert({
+            block_id: blockId,
+            cumulative_gdd: newCumulativeGdd,
+            chill_hours: newChillHours,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            current_stage: currentStage as any,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            source: "computed" as any,
+            recorded_at: now.toISOString(),
+            bud_break_date: predicted.bud_break_date,
+            estimated_harvest_start: predicted.estimated_harvest_start,
+            estimated_harvest_end: predicted.estimated_harvest_end,
+            days_to_hull_split: predicted.days_to_hull_split,
+          });
+
+          if (phenoError) {
+            console.error(`[compute-fields] Phenology insert error block ${blockId}:`, phenoError);
+            continue;
+          }
+          stagedCount++;
+        } else {
+          // No phenology row to key idempotency on: use today's computed ETo row.
+          const { data: existingSoil } = await admin
+            .from("soil_water_readings")
+            .select("id")
+            .eq("block_id", blockId)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .eq("source", "computed" as any)
+            .gte("recorded_at", `${todayDate}T00:00:00.000Z`)
+            .maybeSingle();
+          if (existingSoil) continue;
+          skippedNoModel++;
         }
 
         // If a sensor reading arrived in the last 24 h, carry its soil_moisture
@@ -393,7 +414,7 @@ export async function GET(request: NextRequest) {
 
       results.push({
         farm: farm.name,
-        status: `OK — ETo: ${todayEto} mm/day, +${todayGdd} GDD, +${todayChillHours} chill hrs — ${updatedCount}/${blockIds.length} blocks`,
+        status: `OK — ETo: ${todayEto} mm/day — ${updatedCount}/${blockIds.length} blocks (${stagedCount} staged, ${skippedNoModel} with no heat model for their crop)`,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

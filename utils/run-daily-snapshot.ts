@@ -5,7 +5,9 @@
  * only: all the decisions live in the pure modules under engines/.
  */
 import { buildSnapshot, defaultPolicy, type DailySnapshot, type ForecastDay, type SnapshotPolicy } from '@/engines/snapshot'
-import { alertsFromSnapshot, reconcileAlerts, WATCHDOG_RULE_IDS, type OpenAlert } from '@/engines/watchdog'
+import { alertsFromSnapshot, alertsFromLeafAssessment, leafSampleReminder, reconcileAlerts, WATCHDOG_RULE_IDS, type OpenAlert } from '@/engines/watchdog'
+import { assessLeafSample, leafReferenceFor } from '@/engines/nutrition'
+import { assessMaturity } from '@/engines/maturity'
 import { toHectares } from '@/utils/area'
 
 export interface FarmRunResult {
@@ -127,6 +129,29 @@ export async function runDailySnapshot(admin: any, opts: RunOptions = {}): Promi
       openByBlock.set(o.block_id, list)
     }
 
+    // Newest sample first, so the first row seen per block is its latest.
+    const { data: tissueRows } = await admin
+      .from('tissue_samples')
+      .select('block_id, sampled_at, nutrients')
+      .in('block_id', blockIds)
+      .order('sampled_at', { ascending: false })
+    const latestTissue = new Map<string, any>()
+    for (const t of tissueRows ?? []) if (!latestTissue.has(t.block_id)) latestTissue.set(t.block_id, t)
+
+    // Reminder keys ever raised (open or dismissed), so a dismissed reminder stays dismissed.
+    const { data: reminderRows } = await admin
+      .from('block_alerts')
+      .select('block_id, dedup_key')
+      .in('block_id', blockIds)
+      .eq('rule_id', 'leaf_sample_due')
+    const raisedByBlock = new Map<string, Set<string>>()
+    for (const o of reminderRows ?? []) {
+      if (!o.dedup_key) continue
+      const set = raisedByBlock.get(o.block_id) ?? new Set<string>()
+      set.add(o.dedup_key)
+      raisedByBlock.set(o.block_id, set)
+    }
+
     const since = new Date(now.getTime() - MOISTURE_WINDOW_HOURS * 3_600_000).toISOString()
 
     for (const b of blocks) {
@@ -173,7 +198,24 @@ export async function runDailySnapshot(admin: any, opts: RunOptions = {}): Promi
         })
 
         opts.collect?.push(snapshot)
-        const candidates = alertsFromSnapshot(snapshot, hasSensor)
+        const tissue = latestTissue.get(b.id)
+        const leaf = tissue
+          ? assessLeafSample({
+              cropType: b.crop_type ?? null,
+              sampledAt: String(tissue.sampled_at).slice(0, 10),
+              values: tissue.nutrients && typeof tissue.nutrients === 'object' && !Array.isArray(tissue.nutrients) ? tissue.nutrients : {},
+              maturity: assessMaturity({ plantingDate: b.planting_date ?? null, plantingYear: num(b.planting_year), cropType: b.crop_type ?? null, now }),
+            })
+          : null
+        const reminder = leafSampleReminder(
+          {
+            supported: leafReferenceFor(b.crop_type ?? null) !== null,
+            hasSampleThisYear: tissue ? String(tissue.sampled_at).slice(0, 4) === String(now.getFullYear()) : false,
+            alreadyRaised: raisedByBlock.get(b.id) ?? new Set<string>(),
+          },
+          now,
+        )
+        const candidates = [...alertsFromSnapshot(snapshot, hasSensor), ...alertsFromLeafAssessment(leaf, now), ...reminder]
         const { create, resolve } = reconcileAlerts(candidates, openByBlock.get(b.id) ?? [])
 
         if (opts.dryRun) {

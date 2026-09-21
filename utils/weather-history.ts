@@ -124,3 +124,100 @@ export async function fetchDailyTemperatureRange(
     .filter(d => d.date >= startDate && d.date <= endDate)
     .sort((a, b) => a.date.localeCompare(b.date));
 }
+
+// ─── Hourly weather, for verifying a weather station ─────────────────────────
+
+export interface HourlyWeather {
+  /** ISO timestamp of the hour, UTC (e.g. 2026-09-20T13:00:00Z). */
+  at: string;
+  tempC: number | null;
+  humidityPct: number | null;
+  /** 10 m hourly mean wind speed, km/h. */
+  windKmh: number | null;
+  /** Precipitation over the hour ending at `at`, mm. */
+  precipMm: number | null;
+}
+
+const HOURLY_VARS = "temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation";
+
+async function fetchHourly(url: URL): Promise<HourlyWeather[]> {
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), { cache: "no-store" });
+  } catch {
+    return [];
+  }
+  if (!res.ok) return [];
+  const json = await res.json();
+  const h = json.hourly as {
+    time?: string[];
+    temperature_2m?: (number | null)[];
+    relative_humidity_2m?: (number | null)[];
+    wind_speed_10m?: (number | null)[];
+    precipitation?: (number | null)[];
+  } | undefined;
+  if (!h?.time?.length) return [];
+  return h.time.map((t, i) => ({
+    // timezone=GMT returns "YYYY-MM-DDTHH:mm" with no offset: it is UTC.
+    at: `${t}:00Z`,
+    tempC: h.temperature_2m?.[i] ?? null,
+    humidityPct: h.relative_humidity_2m?.[i] ?? null,
+    windKmh: h.wind_speed_10m?.[i] ?? null,
+    precipMm: h.precipitation?.[i] ?? null,
+  }));
+}
+
+/**
+ * Hourly temperature, humidity, wind and precipitation (UTC, wind in km/h) for
+ * [startDate, endDate] inclusive, stitched from the archive (older) and the
+ * forecast endpoint's past_days (recent), the same way
+ * `fetchDailyTemperatureRange` does. Returns whatever could be retrieved; empty
+ * on total failure.
+ */
+export async function fetchHourlyWeatherRange(
+  lat: number,
+  lng: number,
+  startDate: string,
+  endDate: string,
+): Promise<HourlyWeather[]> {
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return [];
+
+  const today = new Date();
+  const archiveCutoff = new Date(today);
+  archiveCutoff.setDate(archiveCutoff.getDate() - ARCHIVE_LAG_DAYS);
+
+  const byTime = new Map<string, HourlyWeather>();
+
+  if (start <= archiveCutoff) {
+    const archiveEnd = new Date(Math.min(end.getTime(), archiveCutoff.getTime()));
+    const url = new URL(ARCHIVE_BASE);
+    url.searchParams.set("latitude", lat.toFixed(4));
+    url.searchParams.set("longitude", lng.toFixed(4));
+    url.searchParams.set("start_date", isoDate(start));
+    url.searchParams.set("end_date", isoDate(archiveEnd));
+    url.searchParams.set("hourly", HOURLY_VARS);
+    url.searchParams.set("wind_speed_unit", "kmh");
+    url.searchParams.set("timezone", "GMT");
+    for (const h of await fetchHourly(url)) byTime.set(h.at, h);
+  }
+
+  if (end > archiveCutoff) {
+    const recentStart = start > archiveCutoff ? start : archiveCutoff;
+    const pastDays = Math.max(1, daysBetween(recentStart, today) + 1);
+    const url = new URL(FORECAST_BASE);
+    url.searchParams.set("latitude", lat.toFixed(4));
+    url.searchParams.set("longitude", lng.toFixed(4));
+    url.searchParams.set("hourly", HOURLY_VARS);
+    url.searchParams.set("wind_speed_unit", "kmh");
+    url.searchParams.set("timezone", "GMT");
+    url.searchParams.set("past_days", String(pastDays));
+    url.searchParams.set("forecast_days", "1");
+    for (const h of await fetchHourly(url)) byTime.set(h.at, h);
+  }
+
+  return Array.from(byTime.values())
+    .filter(h => h.at.slice(0, 10) >= startDate && h.at.slice(0, 10) <= endDate)
+    .sort((a, b) => a.at.localeCompare(b.at));
+}
