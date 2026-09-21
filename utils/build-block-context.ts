@@ -14,6 +14,7 @@
 import { getOrFetchClimateProfile, buildClimateSection } from "@/utils/climate-profile";
 import { pickLabTest, checkLabConsistency, describeLabTest, describeConflict } from "@/utils/lab-tests";
 import { assessMaturity, expectsCrop } from "@/engines/maturity";
+import { assessLeafSample, describeLeafAssessment } from "@/engines/nutrition";
 import { resolveVariety } from "@/engines/varieties";
 import { findCrop } from "@/utils/crops";
 
@@ -53,6 +54,7 @@ Rules:
 - Confidence: 90–100 = very strong signal, 70–89 = moderate, below 70 = weaker/precautionary.
 - Each block states its tree maturity (leaf year, and whether a crop is expected). Use it: for a block marked NO CROP EXPECTED, never recommend harvest, hull-split, crop-load or yield-based actions, and expect water and fertiliser needs far below a mature orchard's. Use the phenological stage to time stage-specific actions (e.g. bloom-period frost protection) only where the block can bear a crop.
 - Lines starting with [!] are data-quality warnings and [i] lines are assumptions. Do not base a recommendation on a value a [!] line calls suspect, and say so in the rationale. Every recommendation must respect the units shown (P2O5 and K2O are in kg/da, not ppm).
+- Leaf tissue results arrive already judged against the reference bands (deficient, marginal, adequate, high). Use those judgements, do not apply nutrient thresholds of your own, and never treat a nutrient marked "not judged" as adequate or deficient. If a caution says the sample was taken outside the July window, the block is not bearing, or the bands are provisional, say so in the rationale and lower the confidence. Do not recommend a fertiliser rate: recommend the action and the check, and leave the rate to the agronomist.
 - If critical slow data (soil lab test) is older than 6 months, include a "scout" or "other" recommendation to re-sample.
 - If daily IoT data is missing or its timestamp is older than 24 hours, note the data gap in the rationale and reduce your confidence score for irrigation/soil recommendations.
 - Each block's data may include a "=== REFERENCE MATERIAL ===" section with excerpts retrieved from trusted agronomic sources (e.g. university cooperative extension manuals) for that block's crop. Where a recommendation is supported by this material, ground your rationale in it and cite the source title/section in "sources". If no reference material was provided, or none of it is relevant to a given recommendation, leave "sources" as an empty array — never fabricate a citation.
@@ -301,14 +303,14 @@ export async function buildAllBlockContexts(
       if (tissue) {
         const tissueAge = ageLabel(tissue.sampled_at, today);
         const nutrients =
-          tissue.nutrients && typeof tissue.nutrients === "object"
-            ? Object.entries(tissue.nutrients as Record<string, unknown>)
-                .map(([k, v]) => `${k}:${v}`)
-                .join(", ")
-            : "no data";
-        lines.push(`Tissue sample: ${formatDate(tissue.sampled_at)} (${tissueAge}) — ${nutrients}`);
+          tissue.nutrients && typeof tissue.nutrients === "object" && !Array.isArray(tissue.nutrients)
+            ? (tissue.nutrients as Record<string, unknown>)
+            : {};
+        const leaf = assessLeafSample({ cropType: block.crop_type, sampledAt: String(tissue.sampled_at).slice(0, 10), values: nutrients, maturity });
+        lines.push(`Leaf tissue sample: ${formatDate(tissue.sampled_at)} (${tissueAge})${tissue.lab_reference ? ` | lab ref ${tissue.lab_reference}` : ""}`);
+        for (const l of describeLeafAssessment(leaf)) lines.push(`  ${l}`);
       } else {
-        lines.push(`Tissue sample: none on record`);
+        lines.push(`Leaf tissue sample: none on record`);
       }
 
       if (scouting) {
