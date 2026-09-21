@@ -17,6 +17,7 @@ import { assessMaturity, expectsCrop } from "@/engines/maturity";
 import { assessLeafSample, describeLeafAssessment } from "@/engines/nutrition";
 import { nitrogenBudget, nitrogenApplied, describeNitrogenBudget, parseNSplit, type FertigationLog, type NitrogenSplitPart } from "@/engines/nitrogen";
 import { toHectares } from "@/utils/area";
+import { heatModelFor } from "@/engines/heat-model";
 import { resolveVariety } from "@/engines/varieties";
 import { findCrop } from "@/utils/crops";
 
@@ -245,7 +246,9 @@ export async function buildAllBlockContexts(
       const activeAlerts = blockAlerts.get(block.id) ?? [];
       const scouting = latestScouting.get(block.id);
       const tissue = latestTissue.get(block.id);
-      const phenology = latestPhenology.get(block.id);
+      // A crop with no heat model has no valid stage: rows written before the per-crop model are ignored.
+      const hasHeatModel = heatModelFor(block.crop_type) !== null;
+      const phenology = hasHeatModel ? latestPhenology.get(block.id) : undefined;
       const climate = block.farm_id ? climateByFarm.get(block.farm_id) : null;
 
       const lines: string[] = [];
@@ -370,6 +373,8 @@ export async function buildAllBlockContexts(
             `Est. harvest window: ${phenology.estimated_harvest_start ?? "?"} – ${phenology.estimated_harvest_end ?? "?"}`
           );
         }
+      } else if (!hasHeatModel) {
+        lines.push(`[i] No growth-stage model is loaded for ${block.crop_type ? `"${block.crop_type}"` : "this crop"}: its growth stage, GDD and harvest timing are unknown, so do not assume one`);
       } else {
         lines.push(`Growth stage: unknown`);
       }

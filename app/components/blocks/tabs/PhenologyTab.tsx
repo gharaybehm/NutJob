@@ -106,6 +106,16 @@ export default function PhenologyTab({ data, blockId, blockName, farmId, canLog 
         </div>
       )}
 
+      {data.noStageModel ? (
+        <div className="rounded-xl border border-line bg-surface p-4">
+          <h3 className="text-sm font-semibold text-ink-2 mb-1">Growth stage</h3>
+          <p className="text-sm text-ink-3">
+            No growth-stage model is loaded for &ldquo;{data.noStageModel.crop}&rdquo;, so no stage, heat accumulation or harvest estimate is shown.
+            The current model is for almond only, and its figures are not applied to other crops. You can still log observations below.
+          </p>
+        </div>
+      ) : (
+      <>
       {/* Current stage hero */}
       <div className="rounded-xl border border-green/25 bg-green-soft p-4">
         <div className="flex items-center justify-between mb-1">
@@ -239,6 +249,8 @@ export default function PhenologyTab({ data, blockId, blockName, farmId, canLog 
           </p>
         )}
       </div>
+      )}
+      </>
       )}
 
       {/* Observation log */}

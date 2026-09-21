@@ -97,6 +97,8 @@ export interface PhenologyDomain {
   daysToHullSplit: number;
   /** Set when the trees are not bearing yet: no harvest window applies. */
   notBearing?: { label: string } | null;
+  /** Set when the crop has no heat model: no stage, GDD or harvest estimate is shown (almond numbers are not reused). */
+  noStageModel?: { crop: string } | null;
   source: DataSource;
   alerts: BlockAlert[];
 }

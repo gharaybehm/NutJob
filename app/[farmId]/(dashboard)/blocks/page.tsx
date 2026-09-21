@@ -4,6 +4,7 @@ import type { Block, BlockProfile, GrowthStage, DataSource, BlockAlert, AgroDoma
 import { makeSoilWater, makeNutrition, makePestDisease, makeWeather, makePhenology } from '@/app/components/blocks/mockData';
 import { redirect } from 'next/navigation';
 import { assessMaturity, expectsCrop } from '@/engines/maturity';
+import { heatModelFor } from '@/engines/heat-model';
 
 export const metadata = {
   title: 'Blocks — RootLoot',
@@ -157,7 +158,9 @@ export default async function BlocksRoute({ params }: { params: Promise<{ farmId
     initialProfiles = {};
     for (const block of initialBlocks) {
       const soil = soilMap[block.id];
-      const pheno = phenoMap[block.id];
+      // A crop with no heat model has no valid stage: rows written before the per-crop model are ignored.
+      const hasHeatModel = heatModelFor(block.cropType) !== null;
+      const pheno = hasHeatModel ? phenoMap[block.id] : undefined;
       const wx = weatherMap[block.id];
       const blockAlerts = (alertsByBlock[block.id] ?? []).map(alertRowToBlockAlert);
       const maturity = assessMaturity({ plantingDate: block.plantingDate, plantingYear: block.plantingYear, cropType: block.cropType });
@@ -178,6 +181,7 @@ export default async function BlocksRoute({ params }: { params: Promise<{ farmId
         }),
         phenology: makePhenology({
           notBearing:          expectsCrop(maturity) ? null : { label: maturity.label },
+          noStageModel:        hasHeatModel ? null : { crop: block.cropType || 'this crop' },
           currentStage:        (pheno?.current_stage as GrowthStage) ?? 'dormancy',
           stageDescription:    pheno?.stage_description ?? 'No phenology data yet.',
           cumulativeGDD:       pheno?.cumulative_gdd   ?? 0,
