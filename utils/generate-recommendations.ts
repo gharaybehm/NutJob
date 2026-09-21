@@ -9,6 +9,7 @@
 import { AI_SYSTEM_PROMPT, buildAllBlockContexts } from "@/utils/build-block-context";
 import { openrouter } from "@/utils/openrouter";
 import { expandQuery, selectChunks } from "@/utils/kb-retrieval";
+import { knowledgeBaseCrop } from "@/utils/crops";
 // re-exported for existing callers
 export { openrouter };
 
@@ -168,7 +169,8 @@ async function augmentWithRAGContext(
       );
       // blocks.crop_type is stored capitalized (e.g. "Almond"); the RPC does a
       // case-insensitive compare, but normalize here too for consistency.
-      const cropType = typeof block.crop_type === "string" ? block.crop_type.toLowerCase() : null;
+      // "Almond", "badem" and "almendro" all find the almond documents.
+      const cropType = knowledgeBaseCrop(block.crop_type);
       const chunks = await retrieveReferenceChunks(admin, query, cropType);
       return section + formatReferenceSection(chunks);
     })

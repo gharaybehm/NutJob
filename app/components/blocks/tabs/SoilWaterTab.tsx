@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Paperclip, Wifi } from 'lucide-react';
 import { getLabReadings } from '@/app/actions/soilTests';
+import { getBenchmark, type BS } from '@/utils/soil-benchmarks';
 import type { SoilWaterDomain } from '../types';
 import AlertBadge from '../AlertBadge';
 import SourceBadge from '../SourceBadge';
@@ -10,6 +11,8 @@ import SourceBadge from '../SourceBadge';
 interface Props {
   data: SoilWaterDomain;
   blockId: string;
+  /** Lets the history include the farm-wide tests of this block's farm. */
+  farmId?: string;
   sensorCount?: number;
   refreshKey?: number;
 }
@@ -37,6 +40,7 @@ interface SoilParams {
 
 interface ManualReading {
   id:             string;
+  block_id?:      string | null;
   recorded_at:    string;
   test_type:      string | null;
   ph:             number | null;
@@ -64,29 +68,8 @@ function formatRelativeTime(date: Date): string {
 
 // ─── Benchmark helpers ────────────────────────────────────────────────────────
 
-type BS = 'green' | 'amber' | 'red';
 function bench(key: string, v: number): BS {
-  const t: Record<string, [number, BS][]> = {
-    ph_soil:        [[6,  'amber'], [6.5, 'amber'], [7.5, 'green'], [8.5, 'amber'], [Infinity, 'red']],
-    ph_water:       [[6.5,'amber'], [8.5, 'green'], [Infinity, 'amber']],
-    ec_soil:        [[1,  'green'], [1.5, 'amber'], [4,   'amber'], [Infinity, 'red']],
-    organic_matter: [[1,  'red'],   [2,   'amber'], [4,   'green'], [8, 'green'], [Infinity, 'amber']],
-    phosphorus:     [[3,  'red'],   [6,   'amber'], [9,   'green'], [12,'green'], [Infinity, 'amber']],
-    potassium:      [[20, 'red'],   [40,  'amber'], [80,  'green'], [160,'green'],[Infinity, 'amber']],
-    lime:           [[1,  'green'], [5,   'green'], [15,  'amber'], [25,'amber'], [Infinity, 'red']],
-    cec:            [[5,  'red'],   [15,  'amber'], [25,  'green'], [40,'green'], [Infinity, 'amber']],
-    calcium:        [[1000,'amber'],[3000,'green'], [6000,'green'], [Infinity,'amber']],
-    magnesium:      [[300,'red'],   [1000,'green'], [2000,'amber'], [Infinity,'red']],
-    iron:           [[5,  'red'],   [20,  'green'], [Infinity,'amber']],
-    zinc:           [[0.5,'red'],   [1,   'amber'], [3,   'green'], [Infinity,'amber']],
-    copper:         [[0.5,'red'],   [2,   'green'], [Infinity,'amber']],
-    manganese:      [[2,  'red'],   [15,  'green'], [Infinity,'amber']],
-    boron:          [[0.5,'red'],   [1.5, 'green'], [Infinity,'amber']],
-  };
-  const thresholds = t[key];
-  if (!thresholds) return 'green';
-  for (const [max, status] of thresholds) if (v <= max) return status;
-  return 'green';
+  return getBenchmark(key, v).status;
 }
 
 function StatusDot({ k, v }: { k: string; v: number }) {
@@ -208,6 +191,9 @@ function ReadingCard({ r }: { r: ManualReading }) {
           <span className="text-xs font-bold text-ink-2">
             {new Date(r.recorded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
+          {r.block_id === null && (
+            <span className="ml-2 rounded-full bg-tile px-2 py-0.5 text-[10px] font-semibold text-ink-3" title="Saved for the whole farm, so it applies to every block that has no test of its own">Whole farm</span>
+          )}
           {r.lab_reference && (
             <span className="ml-2 text-xs text-ink-4">· {r.lab_reference}</span>
           )}
@@ -263,7 +249,7 @@ function ReadingCard({ r }: { r: ManualReading }) {
 
 // ─── Main tab ─────────────────────────────────────────────────────────────────
 
-export default function SoilWaterTab({ data, blockId, sensorCount = 0, refreshKey }: Props) {
+export default function SoilWaterTab({ data, blockId, farmId, sensorCount = 0, refreshKey }: Props) {
   const [history, setHistory]               = useState<ManualReading[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
@@ -271,11 +257,11 @@ export default function SoilWaterTab({ data, blockId, sensorCount = 0, refreshKe
     if (!blockId) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag for async fetch triggered by prop change
     setHistoryLoading(true);
-    getLabReadings(blockId).then(result => {
+    getLabReadings(blockId, farmId).then(result => {
       setHistory((result.data ?? []) as ManualReading[]);
       setHistoryLoading(false);
     }).catch(() => setHistoryLoading(false));
-  }, [blockId, refreshKey]);
+  }, [blockId, farmId, refreshKey]);
 
   const moistureStatus =
     data.soilMoisture < data.wiltingPoint ? 'text-red' :

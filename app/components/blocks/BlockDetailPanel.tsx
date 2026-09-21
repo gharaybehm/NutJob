@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { assessMaturity } from '@/engines/maturity';
 import type { BlockProfile, AgroDomain } from './types';
 import AlertBadge from './AlertBadge';
 import SoilWaterTab from './tabs/SoilWaterTab';
@@ -49,6 +50,7 @@ export default function BlockDetailPanel({
   const { block } = profile;
   const cfg = statusConfig[block.status];
   const allAlerts = block.alerts;
+  const plantingLabel = assessMaturity({ plantingDate: block.plantingDate, plantingYear: block.plantingYear, cropType: block.cropType }).label;
 
   return (
     <div className="flex flex-col gap-0 rounded-2xl border border-line bg-tile overflow-hidden h-full">
@@ -64,7 +66,7 @@ export default function BlockDetailPanel({
               </span>
             </div>
             <p className="text-sm text-ink-2 mt-0.5">
-              {block.cropType || 'Almond'} - {block.variety} · {block.area} {block.areaUnit} · Planted {block.plantingYear} · {block.rootstock} rootstock · {block.treeCount.toLocaleString()} trees
+              {block.cropType || 'Almond'} - {block.variety} · {block.area} {block.areaUnit} · Planted {block.plantingDate ?? `${block.plantingYear} (Q4 assumed)`} · {plantingLabel} · {block.rootstock} rootstock · {block.treeCount.toLocaleString()} trees
             </p>
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0">
@@ -127,7 +129,7 @@ export default function BlockDetailPanel({
 
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-5">
-        {activeTab === 'soil-water'   && <SoilWaterTab   data={profile.soilWater}   blockId={profile.block.id} sensorCount={profile.sensorCount ?? 0} refreshKey={soilRefreshKey} />}
+        {activeTab === 'soil-water'   && <SoilWaterTab   data={profile.soilWater}   blockId={profile.block.id} farmId={farmId} sensorCount={profile.sensorCount ?? 0} refreshKey={soilRefreshKey} />}
         {activeTab === 'phenology'    && (
           <PhenologyTab
             data={profile.phenology}

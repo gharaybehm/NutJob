@@ -8,9 +8,12 @@ import { makeStatefulValue, type StatefulValue } from '@/utils/value-state'
 import { toEngineStages } from '@/utils/stage-map'
 import { checkSeries, SOIL_MOISTURE_RULES, usableReadings, type RawReading, type SensorHealth } from './quality'
 import { evaluateIrrigation, FULL_IRRIGATION, type IrrigationResult } from './irrigation'
+import { assessMaturity, expectsCrop, type MaturityAssessment } from './maturity'
+import { resolveVariety } from './varieties'
+import { cropSupports, findCrop } from '@/utils/crops'
 import { evaluateFrostRisk, type FrostRiskResult } from './weather-risk'
 
-export const SNAPSHOT_VERSION = 1
+export const SNAPSHOT_VERSION = 3
 
 export interface SnapshotPolicy {
   strategyName: string
@@ -31,12 +34,20 @@ export interface ForecastDay {
 
 export interface SnapshotBlock {
   id: string
+  /** The block's crop as typed. Left out, it is read as almond (the crop the engines were first built for). */
+  cropType?: string | null
   variety: string | null
+  /** As typed or picked by the user; null or 'Unknown' when not recorded. */
+  rootstock?: string | null
   fieldCapacityPct: number | null
   wiltingPointPct: number | null
   rootDepthM: number | null
   areaHa: number | null
   hasSensor: boolean
+  /** When the trees were planted (YYYY-MM-DD). Preferred over the year. */
+  plantingDate?: string | null
+  /** Read as the last quarter (Sep to Dec) of that year when there is no date. */
+  plantingYear?: number | null
 }
 
 export interface SnapshotInput {
@@ -59,7 +70,12 @@ export interface DailySnapshot {
   version: number
   date: string
   blockId: string
+  crop: { name: string | null; profile: string | null; hasProfile: boolean }
   variety: string | null
+  /** False when the variety is not on the crop's reference list: no variety-specific data applies. */
+  varietyRecognised: boolean
+  rootstock: string | null
+  maturity: MaturityAssessment
   phenology: {
     stage: StatefulValue<string>
     notes: string[]
@@ -100,7 +116,14 @@ const doyOf = (date: string) => dayOfYear(new Date(`${date}T12:00:00`))
 
 export function buildSnapshot(input: SnapshotInput): DailySnapshot {
   const { block, policy, now } = input
-  const stages = toEngineStages(input.dbStage)
+  const cropName = block.cropType === undefined ? 'almond' : block.cropType
+  const cropProfile = findCrop(cropName)
+  // Stages, frost thresholds and crop coefficients are per crop: a crop with no profile gets none of them.
+  const hasStages = cropSupports(cropName, 'heatStages')
+  const stages = hasStages
+    ? toEngineStages(input.dbStage)
+    : { irrigation: null, frost: null, notes: [`No growth-stage, frost or crop-coefficient data is loaded for ${cropName ? `"${cropName}"` : 'this crop'}: the stage shown is not valid for it`] }
+  const maturity = assessMaturity({ plantingDate: block.plantingDate, plantingYear: block.plantingYear, cropType: cropName, now })
 
   // ── Sensor quality ────────────────────────────────────────────────────────
   const quality = checkSeries(input.moistureReadings, { ...SOIL_MOISTURE_RULES, failedAfterHours: policy.sensorFailedAfterHours }, now)
@@ -154,6 +177,9 @@ export function buildSnapshot(input: SnapshotInput): DailySnapshot {
     areaHa: block.areaHa,
     remainingAllocationM3: null, // season usage is not tracked yet, so the remaining volume is unknown
     canopyCoverKnown: false,
+    maturity: { class: maturity.class, leafYear: maturity.leafYear, waterFraction: maturity.waterFraction, assumed: maturity.assumed },
+    rootDepthIsFarmDefault: block.rootDepthM == null && policy.defaultRootDepthM != null,
+    cropSupported: cropSupports(cropName, 'cropCoefficients'),
   })
 
   const frost = evaluateFrostRisk(
@@ -176,7 +202,19 @@ export function buildSnapshot(input: SnapshotInput): DailySnapshot {
     date: input.date,
     blockId: block.id,
     variety: block.variety,
-    phenology: { stage, notes: stages.notes },
+    crop: { name: cropName ?? null, profile: cropProfile?.id ?? null, hasProfile: cropProfile !== null },
+    varietyRecognised: resolveVariety(block.variety, cropName).recognised,
+    rootstock: block.rootstock && block.rootstock.trim().toLowerCase() !== 'unknown' ? block.rootstock.trim() : null,
+    maturity,
+    phenology: {
+      stage,
+      notes: [
+        ...stages.notes,
+        ...(expectsCrop(maturity)
+          ? []
+          : [`${maturity.label}: the stage shown is the tree's seasonal development, not a crop stage, and no harvest window applies`]),
+      ],
+    },
     water: {
       moisture,
       sensor: { health, reasons: quality.reasons, excluded },

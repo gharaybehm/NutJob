@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { getBenchmark, type BS } from '@/utils/soil-benchmarks';
 import { X, Loader2, FlaskConical, Paperclip } from 'lucide-react';
 import type { Block } from './types';
 import { logTestResult, getFarmLabReadings, getLatestSoilReading } from '@/app/actions/soilTests';
@@ -10,94 +11,8 @@ interface Props {
   onClose: () => void;
   blocks: Block[];
   defaultBlockId?: string;
-}
-
-// ─── Benchmark engine ─────────────────────────────────────────────────────────
-
-type BS = 'green' | 'amber' | 'red';
-interface Benchmark { status: BS; label: string }
-
-function getBenchmark(key: string, v: number): Benchmark {
-  switch (key) {
-    case 'ph':
-      if (v < 6.0) return { status: 'amber', label: 'Very Acidic' };
-      if (v < 6.5) return { status: 'amber', label: 'Slightly Acidic' };
-      if (v <= 7.5) return { status: 'green', label: 'Optimal' };
-      if (v <= 8.5) return { status: 'amber', label: 'Slightly Alkaline' };
-      return { status: 'red', label: 'Very Alkaline' };
-    case 'ec_soil':
-      if (v < 1.0) return { status: 'green', label: 'Non-saline' };
-      if (v < 1.5) return { status: 'amber', label: 'Low Salinity' };
-      if (v < 4.0) return { status: 'amber', label: 'Moderate' };
-      return { status: 'red', label: 'High Salinity' };
-    case 'ec_water':
-      if (v < 750)  return { status: 'green', label: 'Good' };
-      if (v < 2000) return { status: 'amber', label: 'Moderate' };
-      return { status: 'red', label: 'Poor' };
-    case 'organic_matter':
-      if (v < 1)  return { status: 'red',   label: 'Very Low' };
-      if (v < 2)  return { status: 'amber', label: 'Low' };
-      if (v < 4)  return { status: 'green', label: 'Medium' };
-      if (v < 8)  return { status: 'green', label: 'High' };
-      return { status: 'amber', label: 'Very High' };
-    case 'phosphorus':
-      if (v < 3)  return { status: 'red',   label: 'Very Low' };
-      if (v < 6)  return { status: 'amber', label: 'Low' };
-      if (v < 9)  return { status: 'green', label: 'Medium' };
-      if (v < 12) return { status: 'green', label: 'High' };
-      return { status: 'amber', label: 'Very High' };
-    case 'potassium':
-      if (v < 20)  return { status: 'red',   label: 'Very Low' };
-      if (v < 40)  return { status: 'amber', label: 'Low' };
-      if (v < 80)  return { status: 'green', label: 'Medium' };
-      if (v < 160) return { status: 'green', label: 'High' };
-      return { status: 'amber', label: 'Very High' };
-    case 'lime':
-      if (v < 1)  return { status: 'green', label: 'Non-calcareous' };
-      if (v < 5)  return { status: 'green', label: 'Slightly Calcareous' };
-      if (v < 15) return { status: 'amber', label: 'Calcareous' };
-      if (v < 25) return { status: 'amber', label: 'Very Calcareous' };
-      return { status: 'red', label: 'Extremely Calcareous' };
-    case 'calcium':
-      if (v < 1000) return { status: 'amber', label: 'Low' };
-      if (v < 3000) return { status: 'green', label: 'Sufficient' };
-      if (v < 6000) return { status: 'green', label: 'High' };
-      return { status: 'amber', label: 'Very High' };
-    case 'magnesium':
-      if (v < 300)  return { status: 'red',   label: 'Low' };
-      if (v < 1000) return { status: 'green', label: 'Sufficient' };
-      if (v < 2000) return { status: 'amber', label: 'High' };
-      return { status: 'red', label: 'Very High' };
-    case 'iron':
-      if (v < 5)  return { status: 'red',   label: 'Deficient' };
-      if (v < 20) return { status: 'green', label: 'Sufficient' };
-      return { status: 'amber', label: 'High' };
-    case 'zinc':
-      if (v < 0.5) return { status: 'red',   label: 'Deficient' };
-      if (v < 1.0) return { status: 'amber', label: 'Marginal' };
-      if (v < 3.0) return { status: 'green', label: 'Sufficient' };
-      return { status: 'amber', label: 'High' };
-    case 'copper':
-      if (v < 0.5) return { status: 'red',   label: 'Deficient' };
-      if (v < 2.0) return { status: 'green', label: 'Sufficient' };
-      return { status: 'amber', label: 'High' };
-    case 'manganese':
-      if (v < 2)  return { status: 'red',   label: 'Deficient' };
-      if (v < 15) return { status: 'green', label: 'Sufficient' };
-      return { status: 'amber', label: 'High' };
-    case 'cec':
-      if (v < 5)  return { status: 'red',   label: 'Very Low' };
-      if (v < 15) return { status: 'amber', label: 'Low' };
-      if (v < 25) return { status: 'green', label: 'Medium' };
-      if (v < 40) return { status: 'green', label: 'High' };
-      return { status: 'amber', label: 'Very High' };
-    case 'boron':
-      if (v < 0.5) return { status: 'red',   label: 'Deficient' };
-      if (v < 1.5) return { status: 'green', label: 'Sufficient' };
-      return { status: 'amber', label: 'High' };
-    default:
-      return { status: 'green', label: '' };
-  }
+  /** The farm a whole-farm test belongs to. */
+  farmId: string;
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -270,7 +185,7 @@ const EMPTY_SOIL = {
   sand: '', clay: '', silt: '', textureClass: '',
 };
 
-export default function LogTestResultModal({ open, onClose, blocks, defaultBlockId }: Props) {
+export default function LogTestResultModal({ open, onClose, blocks, defaultBlockId, farmId }: Props) {
   const [blockId,      setBlockId]      = useState(defaultBlockId ?? '');
   const [recordedAt,   setRecordedAt]   = useState('');
   const [labReference, setLabReference] = useState('');
@@ -319,7 +234,7 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
       setError(null);
       try {
         const targetId = blockId === '__farm__' ? null : blockId;
-        const res = await getLatestSoilReading(targetId);
+        const res = await getLatestSoilReading(targetId, farmId);
         if (res.error) {
           setError(res.error);
           return;
@@ -398,12 +313,12 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
     }
 
     loadLatestReading();
-  }, [open, blockId]);
+  }, [open, blockId, farmId]);
 
   function switchToHistory() {
     setView('history');
     setHistLoading(true);
-    getFarmLabReadings().then(r => {
+    getFarmLabReadings(farmId).then(r => {
       setHistReadings(r.data ?? []);
       setHistLoading(false);
     });
@@ -469,6 +384,7 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
         fd.append('id', existingId);
       }
       fd.append('blockId',      blockId === '__farm__' ? '' : blockId);
+      fd.append('farmId',       farmId);
       fd.append('testType',     'soil');
       fd.append('recordedAt',   recordedAt);
       fd.append('labReference', labReference);
@@ -634,10 +550,20 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
                     className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-green"
                   >
                     <option value="">— Select —</option>
+                    <option value="Sand">Sand</option>
+                    <option value="Loamy Sand">Loamy Sand</option>
+                    <option value="Sandy Loam">Sandy Loam</option>
                     <option value="Loam">Loam</option>
+                    <option value="Silt Loam">Silt Loam</option>
+                    <option value="Silt">Silt</option>
+                    <option value="Sandy Clay Loam">Sandy Clay Loam</option>
+                    <option value="Clay Loam">Clay Loam</option>
+                    <option value="Silty Clay Loam">Silty Clay Loam</option>
+                    <option value="Sandy Clay">Sandy Clay</option>
+                    <option value="Silty Clay">Silty Clay</option>
                     <option value="Clay">Clay</option>
-                    <option value="Sandy">Sandy</option>
-                    <option value="Silty">Silty</option>
+                    <option value="Sandy">Sandy (older entries)</option>
+                    <option value="Silty">Silty (older entries)</option>
                     <option value="Peaty">Peaty</option>
                     <option value="Chalky">Chalky</option>
                   </select>

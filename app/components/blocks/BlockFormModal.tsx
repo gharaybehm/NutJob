@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Loader2 } from 'lucide-react';
+import { isKnownOption, mergeOptions, usedValues } from '@/utils/plant-catalog';
+import { rootstocksFor } from '@/utils/crops';
 import type { Block, LatLng } from './types';
 
 export interface BlockFormValues {
@@ -11,6 +13,8 @@ export interface BlockFormValues {
   area: string;
   areaUnit: string;
   plantingYear: string;
+  /** YYYY-MM-DD, optional. Without it the year is read as the last quarter (Sep to Dec). */
+  plantingDate: string;
   rootstock: string;
   treeCount: string;
   rowSpacing: string;
@@ -30,6 +34,8 @@ interface Props {
   onSave: (values: BlockFormValues) => void;
   initialData?: Block;
   initialBoundary?: LatLng[];
+  /** The farm's blocks, so a variety or rootstock typed once is suggested next time. */
+  existingBlocks?: { cropType?: string | null; variety?: string | null; rootstock?: string | null }[];
 }
 
 const EMPTY_FORM: BlockFormValues = {
@@ -39,6 +45,7 @@ const EMPTY_FORM: BlockFormValues = {
   area: '',
   areaUnit: 'Dunm',
   plantingYear: '',
+  plantingDate: '',
   rootstock: '',
   treeCount: '',
   rowSpacing: '',
@@ -56,10 +63,13 @@ type PlantOption = { id: number; commonName: string; scientificName: string };
 function PlantSearchInput({
   value,
   onSelect,
+  onTextChange,
   label,
 }: {
   value: string;
   onSelect: (plant: PlantOption) => void;
+  /** Called with the typed text, so a crop that is not in the search results can still be used. */
+  onTextChange?: (text: string) => void;
   label: string;
 }) {
   const [query, setQuery] = useState(value);
@@ -102,6 +112,7 @@ function PlantSearchInput({
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
     setQuery(val);
+    onTextChange?.(val);
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => search(val), 400);
   }
@@ -146,6 +157,7 @@ function PlantSearchInput({
           <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-4 animate-spin" />
         )}
       </div>
+      <p className="text-[11px] text-ink-4">Not in the list? Just type it: it is saved as you typed it.</p>
       {isOpen && results.length > 0 && (
         <ul className="absolute z-10 top-[calc(100%+4px)] left-0 w-full max-h-52 overflow-y-auto rounded-lg border border-line bg-surface shadow-lg p-1">
           {results.map((plant, i) => (
@@ -232,6 +244,9 @@ function AutocompleteInput({
         className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
         autoComplete="off"
       />
+      {value.trim() !== '' && !isKnownOption(value, options) && (
+        <p className="text-[11px] text-ink-4">New entry &ldquo;{value.trim()}&rdquo;: saved as typed and suggested next time.</p>
+      )}
       {isOpen && filtered.length > 0 && (
         <ul className="absolute z-10 top-[calc(100%+4px)] left-0 w-full max-h-52 overflow-y-auto rounded-lg border border-line bg-surface shadow-lg p-1">
           {filtered.map((opt, i) => (
@@ -252,20 +267,19 @@ function AutocompleteInput({
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
-export default function BlockFormModal({ open, onClose, onSave, initialData, initialBoundary }: Props) {
+export default function BlockFormModal({ open, onClose, onSave, initialData, initialBoundary, existingBlocks = [] }: Props) {
   const [form, setForm] = useState<BlockFormValues>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedPlantId, setSelectedPlantId] = useState<number | null>(null);
   const [varietySuggestions, setVarietySuggestions] = useState<string[]>([]);
   const [varietyLoading, setVarietyLoading] = useState(false);
 
-  async function fetchVarieties(plantId: number, commonName: string) {
+  async function fetchVarieties(plantId: number | null, commonName: string) {
     setVarietyLoading(true);
     setVarietySuggestions([]);
     try {
       const res = await fetch(
-        `/api/plant-varieties?plantId=${plantId}&commonName=${encodeURIComponent(commonName)}`,
+        `/api/plant-varieties?${plantId != null ? `plantId=${plantId}&` : ''}commonName=${encodeURIComponent(commonName)}`,
       );
       if (res.ok) {
         const data: string[] = await res.json();
@@ -293,6 +307,7 @@ export default function BlockFormModal({ open, onClose, onSave, initialData, ini
           area: String(initialData.area),
           areaUnit: initialData.areaUnit || 'Dunm',
           plantingYear: String(initialData.plantingYear),
+          plantingDate: initialData.plantingDate ?? '',
           rootstock: initialData.rootstock,
           treeCount: String(initialData.treeCount),
           rowSpacing: String(initialData.rowSpacing),
@@ -311,6 +326,14 @@ export default function BlockFormModal({ open, onClose, onSave, initialData, ini
       setVarietySuggestions([]);
     }
   }, [open, initialData, initialBoundary]);
+
+  // A crop that was typed, or a block being edited, has no search result to take varieties from:
+  // fetch the curated list for that crop name.
+  useEffect(() => {
+    if (!open || selectedPlantId !== null || form.cropType.trim().length < 3) return;
+    const t = setTimeout(() => { void fetchVarieties(null, form.cropType.trim()); }, 500);
+    return () => clearTimeout(t);
+  }, [open, selectedPlantId, form.cropType]);
 
   function handleSave() {
     if (!form.name.trim()) { setError('Block name is required.'); return; }
@@ -376,6 +399,10 @@ export default function BlockFormModal({ open, onClose, onSave, initialData, ini
                   setSelectedPlantId(plant.id);
                   fetchVarieties(plant.id, plant.commonName);
                 }}
+                onTextChange={(text) => {
+                  setForm(f => ({ ...f, cropType: text }));
+                  setSelectedPlantId(null);
+                }}
               />
             </div>
 
@@ -392,7 +419,7 @@ export default function BlockFormModal({ open, onClose, onSave, initialData, ini
                 }
                 value={form.variety}
                 onChange={(val) => setForm(f => ({ ...f, variety: val }))}
-                options={varietySuggestions}
+                options={mergeOptions(varietySuggestions, usedValues(existingBlocks, 'variety', form.cropType))}
               />
               {varietyLoading && (
                 <Loader2 className="absolute right-2.5 bottom-2.5 h-4 w-4 text-ink-4 animate-spin" />
@@ -422,16 +449,30 @@ export default function BlockFormModal({ open, onClose, onSave, initialData, ini
               </div>
             </div>
 
-            {/* Planting Year */}
+            {/* Planting date / year */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-ink-2">Planting Year</label>
+              <label className="text-sm font-medium text-ink-2">Planting Date</label>
               <input
-                type="number"
-                placeholder="e.g. 2015"
-                value={form.plantingYear}
-                onChange={e => setForm(f => ({ ...f, plantingYear: e.target.value }))}
+                type="date"
+                value={form.plantingDate}
+                onChange={e => setForm(f => ({ ...f, plantingDate: e.target.value, plantingYear: e.target.value ? e.target.value.slice(0, 4) : f.plantingYear }))}
                 className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green"
               />
+              <p className="text-[11px] text-ink-4">When the trees went into the ground. Sets the tree age, which changes irrigation advice and hides harvest windows on young blocks.</p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-ink-2">Planting Year {form.plantingDate ? '' : '(if the date is unknown)'}</label>
+              <input
+                type="number"
+                placeholder="e.g. 2025"
+                value={form.plantingYear}
+                disabled={!!form.plantingDate}
+                onChange={e => setForm(f => ({ ...f, plantingYear: e.target.value }))}
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green disabled:opacity-60"
+              />
+              {!form.plantingDate && (
+                <p className="text-[11px] text-ink-4">A year alone is read as planted in the last quarter (Sep to Dec) of that year.</p>
+              )}
             </div>
 
             {/* Rootstock */}
@@ -440,7 +481,7 @@ export default function BlockFormModal({ open, onClose, onSave, initialData, ini
               placeholder="e.g. Nemaguard…"
               value={form.rootstock}
               onChange={(val) => setForm(f => ({ ...f, rootstock: val }))}
-              options={['Nemaguard', 'Lovell', 'Hansen 536', 'Titan', 'Guardian', 'M9', 'MM106', 'Krymsk']}
+              options={mergeOptions(rootstocksFor(form.cropType), usedValues(existingBlocks, 'rootstock'))}
             />
 
             {/* Tree Count */}

@@ -3,6 +3,7 @@ import BlocksPage from '@/app/components/blocks/BlocksPage';
 import type { Block, BlockProfile, GrowthStage, DataSource, BlockAlert, AgroDomain, AlertSeverity } from '@/app/components/blocks/types';
 import { makeSoilWater, makeNutrition, makePestDisease, makeWeather, makePhenology } from '@/app/components/blocks/mockData';
 import { redirect } from 'next/navigation';
+import { assessMaturity, expectsCrop } from '@/engines/maturity';
 
 export const metadata = {
   title: 'Blocks — RootLoot',
@@ -19,6 +20,7 @@ function rowToBlock(row: any): Block {
     area:         Number(row.area),
     areaUnit:     row.area_unit || 'Dunm',
     plantingYear: Number(row.planting_year),
+    plantingDate: row.planting_date ?? null,
     rootstock:    row.rootstock,
     treeCount:    Number(row.tree_count),
     rowSpacing:   Number(row.row_spacing),
@@ -81,7 +83,7 @@ export default async function BlocksRoute({ params }: { params: Promise<{ farmId
 
   const { data, error } = await db
     .from('blocks')
-    .select('id, name, crop_type, variety, area, area_unit, planting_year, rootstock, tree_count, row_spacing, tree_spacing, map_col, map_row, map_col_span, map_row_span, boundary')
+    .select('id, name, crop_type, variety, area, area_unit, planting_year, planting_date, rootstock, tree_count, row_spacing, tree_spacing, map_col, map_row, map_col_span, map_row_span, boundary')
     .eq('farm_id', farmId)
     .order('map_row')
     .order('map_col');
@@ -158,6 +160,7 @@ export default async function BlocksRoute({ params }: { params: Promise<{ farmId
       const pheno = phenoMap[block.id];
       const wx = weatherMap[block.id];
       const blockAlerts = (alertsByBlock[block.id] ?? []).map(alertRowToBlockAlert);
+      const maturity = assessMaturity({ plantingDate: block.plantingDate, plantingYear: block.plantingYear, cropType: block.cropType });
 
       initialProfiles[block.id] = {
         block,
@@ -174,6 +177,7 @@ export default async function BlocksRoute({ params }: { params: Promise<{ farmId
           alerts:           blockAlerts.filter(a => a.domain === 'soil-water'),
         }),
         phenology: makePhenology({
+          notBearing:          expectsCrop(maturity) ? null : { label: maturity.label },
           currentStage:        (pheno?.current_stage as GrowthStage) ?? 'dormancy',
           stageDescription:    pheno?.stage_description ?? 'No phenology data yet.',
           cumulativeGDD:       pheno?.cumulative_gdd   ?? 0,

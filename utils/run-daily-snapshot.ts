@@ -84,7 +84,7 @@ export async function runDailySnapshot(admin: any, opts: RunOptions = {}): Promi
 
     const { data: blocks, error: blocksError } = await admin
       .from('blocks')
-      .select('id, variety, field_capacity, wilting_point, root_depth_m, area, area_unit')
+      .select('id, crop_type, variety, rootstock, field_capacity, wilting_point, root_depth_m, area, area_unit, planting_date, planting_year')
       .eq('farm_id', farm.id)
     if (blocksError) {
       r.errors.push(`Could not load blocks: ${blocksError.message}`)
@@ -153,12 +153,16 @@ export async function runDailySnapshot(admin: any, opts: RunOptions = {}): Promi
           latDeg: Number(farm.gps_lat),
           block: {
             id: b.id,
+            cropType: b.crop_type ?? null,
             variety: b.variety ?? null,
+            rootstock: b.rootstock ?? null,
             fieldCapacityPct: num(b.field_capacity),
             wiltingPointPct: num(b.wilting_point),
             rootDepthM: num(b.root_depth_m),
             areaHa: toHectares(b.area, b.area_unit),
             hasSensor,
+            plantingDate: b.planting_date ?? null,
+            plantingYear: num(b.planting_year),
           },
           dbStage: stage?.stage ?? null,
           stageSource: stage ? (stage.source === 'manual' ? 'manual' : 'computed') : null,

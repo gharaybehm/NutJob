@@ -15,6 +15,11 @@
 // authority type, ...): a PDF with no entry is refused, because every passage
 // must carry its origin.
 //
+// Any crop works: use --crop=<crop id> with a folder of that name. The id is the
+// crop profile id when the crop has one (utils/crops.ts; "almond" also serves
+// "Badem" and "Almendro"), otherwise the crop name in lower case as typed on the
+// block. Key an entry "<crop>/<file>" when two crops share a file name.
+//
 // Each document is replaced on its own (keyed by source_file): an unchanged PDF
 // (same SHA-256) is skipped without re-embedding, a changed one has its old
 // chunks removed and re-ingested. Other documents are left untouched.
@@ -123,7 +128,7 @@ async function main() {
     process.exit(1);
   }
 
-  const missing = files.filter((f) => !sources[f]);
+  const missing = files.filter((f) => !sources[`${crop}/${f}`] && !sources[f]);
   if (missing.length > 0) {
     console.error(`No metadata in scripts/knowledge-base-sources.json for: ${missing.join(", ")}`);
     process.exit(1);
@@ -133,7 +138,8 @@ async function main() {
   const admin = dryRun ? null : createAdminClient();
 
   for (const file of files) {
-    const meta = sources[file];
+    // A crop's documents can be keyed "<crop>/<file>" so two crops may share a file name.
+    const meta = sources[`${crop}/${file}`] ?? sources[file];
     const buffer = readFileSync(join(cropDir, file));
     const hash = createHash("sha256").update(buffer).digest("hex");
 

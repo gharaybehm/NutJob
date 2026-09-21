@@ -5,6 +5,7 @@
  * manager or agronomist chose; it never changes that strategy.
  */
 import { usableForCalculation, type StatefulValue } from '@/utils/value-state'
+import type { MaturityClass } from './maturity'
 
 export type IrrigationStatus =
   | 'no_irrigation_needed'
@@ -64,6 +65,16 @@ export interface IrrigationInput {
   /** Any stem water potential reading available (MPa, more negative = more stress). */
   stemWaterPotentialMpa?: number | null
   canopyCoverKnown?: boolean
+  /**
+   * Tree maturity. Young trees use far less water than a mature orchard, so
+   * their demand is scaled by `waterFraction` (from the UC Davis young-orchard
+   * schedule). Left out, the block is treated as mature.
+   */
+  maturity?: { class: MaturityClass; leafYear: number | null; waterFraction: number; assumed: boolean } | null
+  /** True when the rooting depth comes from the farm default, which is set for mature trees. */
+  rootDepthIsFarmDefault?: boolean
+  /** False when no crop coefficients are loaded for this crop: the engine then refuses rather than borrow another crop's. Default true. */
+  cropSupported?: boolean
 }
 
 export interface IrrigationResult {
@@ -123,8 +134,20 @@ export function evaluateIrrigation(input: IrrigationInput): IrrigationResult {
     dataGaps,
   }
 
+  if (input.cropSupported === false) {
+    dataGaps.push('No crop coefficients are loaded for this crop, so irrigation advice is not calculated')
+    return empty
+  }
   if (input.fieldCapacityPct == null || input.wiltingPointPct == null || input.rootDepthM == null) {
     dataGaps.push('Soil field capacity, wilting point and rooting depth are needed')
+    return empty
+  }
+  const mat = input.maturity ?? null
+  const young = mat !== null && (mat.class === 'non_bearing' || mat.class === 'young_bearing')
+  if (young && input.rootDepthIsFarmDefault) {
+    // The farm default depth is meant for mature trees. A first-year tree cannot
+    // draw from it, so the reserve would be overstated and irrigation advice wrong.
+    dataGaps.push(`Trees are young (leaf year ${mat!.leafYear ?? 1}) and the farm default root depth is for mature trees: set a root depth for this block`)
     return empty
   }
   const taw = 10 * (input.fieldCapacityPct - input.wiltingPointPct) * input.rootDepthM // = totalAvailableWaterMm
@@ -147,16 +170,27 @@ export function evaluateIrrigation(input: IrrigationInput): IrrigationResult {
   if (input.stage == null || !(input.stage in KC_BY_STAGE)) dataGaps.push('Growth stage unknown, using a default crop coefficient')
   if (!input.canopyCoverKnown) dataGaps.push('Canopy cover not recorded, Kc assumes a mature canopy')
 
+  // Young trees use a fraction of a mature orchard's water.
+  const demandShare = mat?.waterFraction ?? 1
+  const kcEff = kc * demandShare
+  if (young) {
+    dataGaps.push(
+      `Young trees (leaf year ${mat!.leafYear ?? 1}): water use is taken as ${Math.round(demandShare * 100)}% of a mature orchard, from a California schedule (UC Davis). Confirm with your agronomist`,
+    )
+  } else if (mat?.class === 'unknown') {
+    dataGaps.push('Planting date not recorded, so mature trees are assumed')
+  }
+
   const eto = input.etoToday ?? input.forecast[0]?.eto ?? null
   if (eto == null) dataGaps.push('No ETo available')
-  const etc = eto == null ? null : kc * eto
+  const etc = eto == null ? null : kcEff * eto
 
   // Walk the forecast forward to find when depletion reaches the threshold.
   let daysToThreshold: number | null = depletion >= raw ? 0 : null
   if (daysToThreshold === null && etc != null) {
     let d = depletion
     for (let i = 0; i < input.forecast.length; i++) {
-      d = Math.max(0, d + kc * input.forecast[i].eto - effectiveRain(input.forecast[i].rain))
+      d = Math.max(0, d + kcEff * input.forecast[i].eto - effectiveRain(input.forecast[i].rain))
       if (d >= raw) {
         daysToThreshold = i + 1
         break
@@ -191,6 +225,8 @@ export function evaluateIrrigation(input: IrrigationInput): IrrigationResult {
   if (input.forecast.length >= 3) score += 1
   if (input.stemWaterPotentialMpa != null) score += 1
   if (input.canopyCoverKnown) score += 1
+  // A demand estimated from tree age, not measured, caps confidence at low.
+  if (young) score = Math.min(score, 2)
   const confidence: Confidence = score >= 4 ? 'high' : score >= 3 ? 'medium' : 'low'
 
   return {

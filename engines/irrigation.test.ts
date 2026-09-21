@@ -100,3 +100,52 @@ describe('totalAvailableWaterMm', () => {
     expect(evaluateIrrigation(base).tawMm).toBe(totalAvailableWaterMm(30, 12, 1.0))
   })
 })
+
+describe('young trees', () => {
+  const young = { class: 'non_bearing' as const, leafYear: 1, waterFraction: 0.1, assumed: true }
+
+  it('asks for a block root depth instead of using the mature farm default', () => {
+    const r = evaluateIrrigation({ ...base, maturity: young, rootDepthIsFarmDefault: true })
+    expect(r.status).toBe('data_required')
+    expect(r.dataGaps.join(' ')).toMatch(/set a root depth for this block/)
+  })
+
+  it('scales demand by the water share and says where it came from', () => {
+    const mature = evaluateIrrigation(base)
+    const y = evaluateIrrigation({ ...base, maturity: young })
+    expect(y.etcMmPerDay).toBeCloseTo((mature.etcMmPerDay ?? 0) * 0.1, 0)
+    expect(y.etcMmPerDay).toBe(0.6) // 0.9 Kc * 7 mm * 0.1 = 0.63
+    expect(y.dataGaps.join(' ')).toMatch(/10% of a mature orchard/)
+    expect(y.dataGaps.join(' ')).toMatch(/UC Davis/)
+  })
+
+  it('does not call for irrigation on the mature schedule for a first-leaf block', () => {
+    // 60 mm depletion, RAW 72 mm: a mature orchard reaches the limit in 2 days, a leaf-year-1 block in about 20.
+    expect(evaluateIrrigation(base).status).toBe('irrigate_soon')
+    expect(evaluateIrrigation({ ...base, maturity: young }).status).toBe('monitor')
+  })
+
+  it('caps confidence at low because the demand is estimated', () => {
+    expect(evaluateIrrigation({ ...base, stemWaterPotentialMpa: -1.4, maturity: young }).confidence).toBe('low')
+    expect(evaluateIrrigation({ ...base, stemWaterPotentialMpa: -1.4 }).confidence).toBe('high')
+  })
+
+  it('leaves a mature block unchanged and flags an unknown planting date', () => {
+    const mature = { class: 'mature' as const, leafYear: 8, waterFraction: 1, assumed: false }
+    expect(evaluateIrrigation({ ...base, maturity: mature }).etcMmPerDay).toBe(evaluateIrrigation(base).etcMmPerDay)
+    const unknown = evaluateIrrigation({ ...base, maturity: { class: 'unknown', leafYear: null, waterFraction: 1, assumed: false } })
+    expect(unknown.dataGaps.join(' ')).toMatch(/Planting date not recorded/)
+  })
+})
+
+describe('crops without crop coefficients', () => {
+  it('refuses rather than borrow the coefficients of another crop', () => {
+    const r = evaluateIrrigation({ ...base, cropSupported: false })
+    expect(r.status).toBe('data_required')
+    expect(r.dataGaps.join(' ')).toMatch(/No crop coefficients are loaded for this crop/)
+  })
+
+  it('is unchanged when the crop is supported or unspecified', () => {
+    expect(evaluateIrrigation({ ...base, cropSupported: true }).status).toBe(evaluateIrrigation(base).status)
+  })
+})

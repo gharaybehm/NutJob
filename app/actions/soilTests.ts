@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
+import { requireFarmRole } from '@/utils/supabase/farm-access';
 
 function numOrNull(v: string | null): number | null {
   if (!v || v.trim() === '') return null;
@@ -14,6 +15,7 @@ export async function logTestResult(
 ): Promise<{ error?: string }> {
   const id           = formData.get('id')         as string | null;
   const blockId      = formData.get('blockId')    as string | null;
+  const formFarmId   = formData.get('farmId')     as string | null;
   const testType     = (formData.get('testType')  as string) || 'soil';
   const recordedAt   = formData.get('recordedAt') as string;
   const labReference = formData.get('labReference') as string;
@@ -64,6 +66,20 @@ export async function logTestResult(
 
   const supabase = await createClient();
 
+  // Every test belongs to a farm, whether or not it names a block. A whole-farm
+  // test with no farm cannot be read by anyone (row-level security) and must
+  // never be applied to a farm it does not belong to.
+  let farmId: string | null = formFarmId || null;
+  if (blockId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: blk } = await (supabase.from('blocks') as any).select('farm_id').eq('id', blockId).maybeSingle();
+    if (!blk?.farm_id) return { error: 'Block not found' };
+    farmId = blk.farm_id;
+  }
+  if (!farmId) return { error: 'Missing farm: a whole-farm test needs to know which farm it belongs to.' };
+  const gate = await requireFarmRole(farmId, 'supervisor');
+  if (!gate.ok) return { error: gate.error };
+
   // Handle file upload if present
   if (file && file.size > 0) {
     const fileExt = file.name.split('.').pop();
@@ -89,6 +105,7 @@ export async function logTestResult(
 
   const row = {
     block_id:       blockId || null,
+    farm_id:        farmId,
     test_type:      testType,
     recorded_at:    recordedAt || new Date().toISOString(),
     source:         'manual' as const,
@@ -105,27 +122,36 @@ export async function logTestResult(
 
   let saveError;
   if (id) {
-    const { error } = await supabase
-      .from('soil_water_readings')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('soil_water_readings') as any)
       .update(row)
       .eq('id', id);
     saveError = error;
   } else {
-    const { error } = await supabase
-      .from('soil_water_readings')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('soil_water_readings') as any)
       .insert(row);
     saveError = error;
   }
 
-  if (saveError) return { error: saveError.message };
+  if (saveError) {
+    // 23505: the same lab report number is already saved for this block or farm.
+    if ((saveError as { code?: string }).code === '23505') {
+      return {
+        error: `Lab report ${labReference || ''} is already saved for this ${blockId ? 'block' : 'farm'}. Open it in the history to correct it instead of saving it again.`.replace('  ', ' '),
+      };
+    }
+    return { error: saveError.message };
+  }
 
   revalidatePath('/blocks');
   return {};
 }
 
-export async function getLabReadings(blockId: string): Promise<{
+export async function getLabReadings(blockId: string, farmId?: string): Promise<{
   data: {
     id: string;
+    block_id: string | null;
     recorded_at: string;
     test_type: string | null;
     ph: number | null;
@@ -141,19 +167,23 @@ export async function getLabReadings(blockId: string): Promise<{
   error?: string;
 }> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('soil_water_readings')
-    .select('id, recorded_at, test_type, ph, soil_ec, soil_moisture, root_zone_temp, water_deficit, lab_reference, file_url, notes, parameters')
-    .eq('block_id', blockId)
-    .eq('source', 'manual')
-    .order('recorded_at', { ascending: false })
-    .limit(20);
+  // Ids are interpolated into a filter, so accept only plain id characters.
+  const safe = (v: string) => /^[A-Za-z0-9_-]+$/.test(v);
+  if (!safe(blockId) || (farmId && !safe(farmId))) return { data: null, error: 'Invalid id' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q = (supabase.from('soil_water_readings') as any)
+    .select('id, block_id, recorded_at, test_type, ph, soil_ec, soil_moisture, root_zone_temp, water_deficit, lab_reference, file_url, notes, parameters')
+    .eq('source', 'manual');
+  // This block's own tests plus the farm-wide tests of its farm.
+  q = farmId ? q.or(`block_id.eq.${blockId},and(block_id.is.null,farm_id.eq.${farmId})`) : q.eq('block_id', blockId);
+  const { data, error } = await q.order('recorded_at', { ascending: false }).limit(20);
 
   if (error) return { data: null, error: error.message };
   return { data };
 }
 
-export async function getLatestSoilReading(blockId: string | null): Promise<{
+export async function getLatestSoilReading(blockId: string | null, farmId?: string | null): Promise<{
   data: {
     id: string;
     recorded_at: string;
@@ -182,7 +212,8 @@ export async function getLatestSoilReading(blockId: string | null): Promise<{
   if (blockId) {
     query = query.eq('block_id', blockId);
   } else {
-    query = query.is('block_id', null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    query = (query.is('block_id', null) as any).eq('farm_id', farmId ?? '');
   }
 
   const { data, error } = await query.maybeSingle();
@@ -191,7 +222,7 @@ export async function getLatestSoilReading(blockId: string | null): Promise<{
   return { data };
 }
 
-export async function getFarmLabReadings(): Promise<{
+export async function getFarmLabReadings(farmId: string): Promise<{
   data: {
     id: string;
     recorded_at: string;
@@ -209,10 +240,11 @@ export async function getFarmLabReadings(): Promise<{
   error?: string;
 }> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('soil_water_readings')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from('soil_water_readings') as any)
     .select('id, recorded_at, test_type, ph, soil_ec, soil_moisture, root_zone_temp, water_deficit, lab_reference, file_url, notes, parameters')
     .is('block_id', null)
+    .eq('farm_id', farmId)
     .eq('source', 'manual')
     .order('recorded_at', { ascending: false })
     .limit(50);

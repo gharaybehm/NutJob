@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
 import type { BlockFormValues } from '@/app/components/blocks/BlockFormModal';
 import type { Block, LatLng } from '@/app/components/blocks/types';
+import { resolvePlanting } from '@/utils/planting';
 
 /** Generate a unique block ID. */
 function generateBlockId(): string {
@@ -24,6 +25,8 @@ export async function createBlock(
   existingBlocks: Block[],
   farmId: string,
 ): Promise<{ error?: string; id?: string }> {
+  const planting = resolvePlanting(values.plantingDate, values.plantingYear);
+  if (!planting.ok) return { error: planting.error };
   const supabase = await createClient();
 
   const id = generateBlockId();
@@ -49,7 +52,8 @@ export async function createBlock(
     variety:       values.variety,
     area:          Number(values.area) || 0,
     area_unit:     values.areaUnit || 'Dunm',
-    planting_year: Number(values.plantingYear) || new Date().getFullYear(),
+    planting_year: planting.year,
+    planting_date: planting.date,
     rootstock:     values.rootstock || 'Unknown',
     tree_count:    Number(values.treeCount) || 0,
     row_spacing:   Number(values.rowSpacing) || 6,
@@ -73,6 +77,8 @@ export async function updateBlock(
   values: BlockFormValues,
   farmId: string,
 ): Promise<{ error?: string }> {
+  const planting = resolvePlanting(values.plantingDate, values.plantingYear);
+  if (!planting.ok) return { error: planting.error };
   const supabase = await createClient();
 
   let boundary: unknown[] | undefined;
@@ -89,7 +95,8 @@ export async function updateBlock(
     variety:       values.variety,
     area:          Number(values.area) || 0,
     area_unit:     values.areaUnit || 'Dunm',
-    planting_year: Number(values.plantingYear) || new Date().getFullYear(),
+    planting_year: planting.year,
+    planting_date: planting.date,
     rootstock:     values.rootstock || 'Unknown',
     tree_count:    Number(values.treeCount) || 0,
     row_spacing:   Number(values.rowSpacing) || 6,

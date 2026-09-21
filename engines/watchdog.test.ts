@@ -37,6 +37,15 @@ describe('alertsFromSnapshot: frost', () => {
     expect(a.details).toMatchObject({ lt10: -3.46, basis: 'variety_tested', variety: 'Vairo' })
   })
 
+  it('says when a frost hits a block that is not bearing yet', () => {
+    const [a] = alerts({ forecast: forecast([-4]), block: { ...base.block, plantingYear: 2025 }, now: new Date('2026-04-12T12:00:00') })
+    expect(a.message).toMatch(/not bearing yet/)
+    expect(a.message).toMatch(/little or no crop is at risk/)
+    expect(a.details).toMatchObject({ maturity: 'non_bearing' })
+    const [m] = alerts({ forecast: forecast([-4]), block: { ...base.block, plantingYear: 2010 } })
+    expect(m.message).not.toMatch(/not bearing/)
+  })
+
   it('says when the threshold was not measured for the variety', () => {
     const [a] = alerts({ forecast: forecast([-4]), block: { ...base.block, variety: 'Makako' } })
     expect(a.message).toContain('not measured for this variety')

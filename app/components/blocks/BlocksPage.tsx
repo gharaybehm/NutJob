@@ -10,6 +10,7 @@ import BlockSatelliteMap from './BlockSatelliteMap';
 import type { MapHandle } from './BlockSatelliteMap';
 import GoToLocationBar from './GoToLocationBar';
 import dynamic from 'next/dynamic';
+import { resolvePlanting } from '@/utils/planting';
 const BlockDetailPanel = dynamic(() => import('./BlockDetailPanel'), {
   ssr: false,
   loading: () => <div className="h-full animate-pulse rounded-xl bg-tile" />,
@@ -115,6 +116,8 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
   function handleFormSave(values: BlockFormValues) {
     setSaveError(null);
     const boundary = values.boundary ? (JSON.parse(values.boundary) as LatLng[]) : undefined;
+    // The server action refuses a block with neither date nor year; this only mirrors the year locally.
+    const planting = resolvePlanting(values.plantingDate, values.plantingYear);
 
     if (editingBlock) {
       const updatedBlock: Block = {
@@ -124,7 +127,8 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
         variety: values.variety,
         area: Number(values.area) || 0,
         areaUnit: values.areaUnit || 'Dunm',
-        plantingYear: Number(values.plantingYear) || new Date().getFullYear(),
+        plantingYear: planting.ok ? planting.year : editingBlock.plantingYear,
+        plantingDate: values.plantingDate || null,
         rootstock: values.rootstock || 'Unknown',
         treeCount: Number(values.treeCount) || 0,
         rowSpacing: Number(values.rowSpacing) || 6,
@@ -158,7 +162,8 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
         variety: values.variety,
         area: Number(values.area) || 0,
         areaUnit: values.areaUnit || 'Dunm',
-        plantingYear: Number(values.plantingYear) || new Date().getFullYear(),
+        plantingYear: planting.ok ? planting.year : new Date().getFullYear(),
+        plantingDate: values.plantingDate || null,
         rootstock: values.rootstock || 'Unknown',
         treeCount: Number(values.treeCount) || 0,
         rowSpacing: Number(values.rowSpacing) || 6,
@@ -489,9 +494,11 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
         onSave={handleFormSave}
         initialData={editingBlock || undefined}
         initialBoundary={drawnBoundary ?? undefined}
+        existingBlocks={blocks}
       />
 
       <LogTestResultModal
+        farmId={farmId}
         open={testModalOpen}
         onClose={() => { setTestModalOpen(false); setSoilRefreshKey(k => k + 1); }}
         blocks={blocks}

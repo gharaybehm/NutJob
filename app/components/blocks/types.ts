@@ -31,6 +31,8 @@ export interface Block {
   area: number;
   areaUnit: string;
   plantingYear: number;
+  /** YYYY-MM-DD when known; otherwise the year alone is read as Q4 of that year. */
+  plantingDate?: string | null;
   rootstock: string;
   treeCount: number;
   rowSpacing: number;    // metres
@@ -93,6 +95,8 @@ export interface PhenologyDomain {
   estimatedHarvestStart: Date | null;
   estimatedHarvestEnd: Date | null;
   daysToHullSplit: number;
+  /** Set when the trees are not bearing yet: no harvest window applies. */
+  notBearing?: { label: string } | null;
   source: DataSource;
   alerts: BlockAlert[];
 }

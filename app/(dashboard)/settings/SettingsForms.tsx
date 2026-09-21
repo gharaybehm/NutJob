@@ -57,6 +57,7 @@ import type { SensorWithBlock, SensorFormValues, SensorType } from '@/types/sens
 import { SENSOR_TYPE_LABELS } from '@/types/sensors'
 import { POLICY_DEFAULTS, MAX_ROOT_DEPTH_M } from '@/utils/farm-policy'
 import { totalAvailableWaterMm } from '@/engines/irrigation'
+import { assessMaturity } from '@/engines/maturity'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -70,6 +71,8 @@ interface Block {
   field_capacity: number | null
   wilting_point: number | null
   root_depth_m: number | null
+  planting_year: number | null
+  planting_date: string | null
   notes: string | null
 }
 
@@ -509,6 +512,9 @@ function BlockRow({ block }: { block: Block }) {
           <p className="font-semibold text-ink">{block.name}</p>
           <p className="text-xs text-ink-3 mt-0.5">
             {block.crop_type} · {block.variety} · {block.area} {block.area_unit}
+          </p>
+          <p className="text-xs text-ink-3 mt-0.5">
+            {assessMaturity({ plantingDate: block.planting_date, plantingYear: block.planting_year, cropType: block.crop_type }).label}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">

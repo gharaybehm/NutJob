@@ -8,6 +8,8 @@
  * Thresholds are data with a stated source, not prompt text or RAG output.
  */
 
+import { resolveVariety } from './varieties'
+
 export type FrostLevel = 'none' | 'watch' | 'warning' | 'critical'
 export type DamageBand = 'none' | 'lt10' | 'lt50' | 'lt90'
 export type FrostBasis = 'variety_tested' | 'species_mean' | 'species_stage'
@@ -55,7 +57,7 @@ const LAB_CAVEAT =
 /** Engine stage names mapped to the paper's scale (Felipe 1977): bloom = F, fruit_set = G to I. */
 export function frostThresholdFor(stage: string | null, variety: string | null): FrostThreshold | null {
   if (stage === 'bloom') {
-    const key = variety?.trim().toLowerCase() ?? ''
+    const key = resolveVariety(variety).key
     const tested = BLOOM_TESTED[key]
     if (tested) {
       return { ...tested, basis: 'variety_tested', source: CALLE_2025, caveat: LAB_CAVEAT }

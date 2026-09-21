@@ -174,8 +174,8 @@ export default function PhenologyTab({ data, blockId, blockName, farmId, canLog 
         </div>
         <div className="rounded-xl border border-line bg-surface p-4">
           <p className="text-xs text-ink-3 mb-1">Hull Split In</p>
-          <p className="text-2xl font-bold text-amber">{data.daysToHullSplit || '—'}</p>
-          <p className="text-xs text-ink-4 mt-1">days (est.)</p>
+          <p className="text-2xl font-bold text-amber">{data.notBearing ? '—' : data.daysToHullSplit || '—'}</p>
+          <p className="text-xs text-ink-4 mt-1">{data.notBearing ? 'no crop yet' : 'days (est.)'}</p>
         </div>
         <div className="rounded-xl border border-line bg-surface p-4">
           <p className="text-xs text-ink-3 mb-1">Bud Break</p>
@@ -189,6 +189,12 @@ export default function PhenologyTab({ data, blockId, blockName, farmId, canLog 
       </div>
 
       {/* Harvest window */}
+      {data.notBearing ? (
+        <div className="rounded-xl border border-line bg-surface p-4">
+          <h3 className="text-sm font-semibold text-ink-2 mb-1">Harvest Window</h3>
+          <p className="text-sm text-ink-3">{data.notBearing.label}. No harvest window applies until the trees bear. The stage above is the tree&rsquo;s seasonal development, not a crop stage.</p>
+        </div>
+      ) : (
       <div className="rounded-xl border border-line bg-surface p-4">
         <div className="flex items-center justify-between gap-2 mb-2">
           <h3 className="text-sm font-semibold text-ink-2">Estimated Harvest Window</h3>
@@ -233,6 +239,7 @@ export default function PhenologyTab({ data, blockId, blockName, farmId, canLog 
           </p>
         )}
       </div>
+      )}
 
       {/* Observation log */}
       <div className="rounded-xl border border-line bg-surface p-4">

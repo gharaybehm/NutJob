@@ -45,7 +45,10 @@ export function alertsFromSnapshot(s: DailySnapshot, blockHasSensor: boolean): A
       message:
         `Frost ${frost.level === 'critical' ? 'expected' : 'possible'} on ${d.date}: forecast minimum ${round1(d.tMin)} °C ` +
         `(could be ${round1(d.tMinLow)} to ${round1(d.tMinHigh)} °C). Damage starts near ${th.lt10} °C at this stage (${measured}). ` +
-        `Check the block and your frost protection.`,
+        `Check the block and your frost protection.` +
+        (s.maturity.class === 'non_bearing'
+          ? ` This block is not bearing yet (${s.maturity.label.toLowerCase()}), so little or no crop is at risk, but young trees can still be damaged.`
+          : ''),
       details: {
         date: d.date,
         forecastMinC: d.tMin,
@@ -59,6 +62,7 @@ export function alertsFromSnapshot(s: DailySnapshot, blockHasSensor: boolean): A
         caveat: th.caveat,
         stage: s.phenology.stage.value,
         variety: s.variety,
+        maturity: s.maturity.class,
       },
     })
   }

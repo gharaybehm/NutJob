@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildSnapshot, defaultPolicy, type SnapshotInput } from './snapshot'
+import { alertsFromSnapshot } from './watchdog'
 
 const now = new Date('2026-04-12T12:00:00')
 const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000).toISOString()
@@ -112,5 +113,68 @@ describe('buildSnapshot', () => {
     const s = buildSnapshot({ ...base, forecast: [{ date: '2026-04-10', tMax: 30, tMin: -8, rain: 0 }, ...forecast([5])] })
     expect(s.weather.forecastDays).toBe(1)
     expect(s.weather.frost.level).toBe('none')
+  })
+
+  it('reads the planting year as the last quarter and marks the block not bearing', () => {
+    const snap = buildSnapshot({ ...base, now: new Date('2026-09-21T12:00:00'), block: { ...base.block, plantingYear: 2025 } })
+    expect(snap.maturity).toMatchObject({ class: 'non_bearing', leafYear: 1, assumed: true })
+    expect(snap.phenology.notes.join(' ')).toMatch(/no harvest window applies/)
+  })
+
+  it('does not run mature-orchard irrigation advice for a young block on the farm default root depth', () => {
+    const snap = buildSnapshot({
+      ...base,
+      now: new Date('2026-09-21T12:00:00'),
+      block: { ...base.block, rootDepthM: null, plantingYear: 2025 },
+      policy: { ...base.policy, defaultRootDepthM: 1.5 },
+    })
+    expect(snap.water.irrigation.status).toBe('data_required')
+    expect(snap.water.irrigation.dataGaps.join(' ')).toMatch(/set a root depth for this block/)
+  })
+
+  it('scales demand for a young block that has its own root depth', () => {
+    const young = buildSnapshot({ ...base, block: { ...base.block, plantingDate: '2025-11-15' } , now: new Date('2026-04-12T12:00:00') })
+    const mature = buildSnapshot({ ...base, block: { ...base.block, plantingDate: '2015-11-15' }, now: new Date('2026-04-12T12:00:00') })
+    expect(young.maturity.class).toBe('non_bearing')
+    expect((young.water.irrigation.etcMmPerDay ?? 0)).toBeLessThan((mature.water.irrigation.etcMmPerDay ?? 1))
+  })
+
+  it('leaves a block with no planting record as unknown and adds no crop note', () => {
+    const snap = buildSnapshot(base)
+    expect(snap.maturity.class).toBe('unknown')
+    expect(snap.phenology.notes.join(' ')).not.toMatch(/harvest window/)
+  })
+})
+
+describe('buildSnapshot for different crops', () => {
+  const at = new Date('2026-04-12T12:00:00')
+
+  it('gives a crop with no profile no stage, frost or irrigation data, and says so', () => {
+    const s = buildSnapshot({ ...base, now: at, block: { ...base.block, cropType: 'Clementine', variety: 'Clementine' }, forecast: forecast([-6, -6]) })
+    expect(s.crop).toEqual({ name: 'Clementine', profile: null, hasProfile: false })
+    expect(s.weather.frost.applicable).toBe(false)
+    expect(s.weather.frost.level).toBe('none')
+    expect(s.water.irrigation.status).toBe('data_required')
+    expect(s.maturity.label).toMatch(/No tree-age schedule/)
+    expect(s.phenology.notes.join(' ')).toMatch(/No growth-stage, frost or crop-coefficient data is loaded for "Clementine"/)
+  })
+
+  it('never raises a frost alert for a crop with no frost data', () => {
+    const a = alertsFromSnapshot(buildSnapshot({ ...base, now: at, block: { ...base.block, cropType: 'Pistachio' }, forecast: forecast([-8, -8]), forecastFetchedAt: null }), true)
+    expect(a).toEqual([])
+  })
+
+  it('treats almond under any name as almond', () => {
+    const s = buildSnapshot({ ...base, now: at, block: { ...base.block, cropType: 'Badem' }, forecast: forecast([-4]) })
+    expect(s.crop).toMatchObject({ profile: 'almond', hasProfile: true })
+    expect(s.weather.frost.applicable).toBe(true)
+  })
+
+  it('carries rootstock and whether the variety is recognised', () => {
+    const known = buildSnapshot({ ...base, block: { ...base.block, variety: 'Vairo®', rootstock: 'GF 677' } })
+    expect(known).toMatchObject({ varietyRecognised: true, rootstock: 'GF 677' })
+    expect(known.weather.frost.threshold?.basis).toBe('variety_tested') // Vairo® resolves to Vairo
+    const custom = buildSnapshot({ ...base, block: { ...base.block, variety: 'Nurlu', rootstock: 'Unknown' } })
+    expect(custom).toMatchObject({ varietyRecognised: false, rootstock: null })
   })
 })

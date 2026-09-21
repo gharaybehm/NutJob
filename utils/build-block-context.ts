@@ -12,6 +12,10 @@
 // this module so the prompt logic stays in one place.
 
 import { getOrFetchClimateProfile, buildClimateSection } from "@/utils/climate-profile";
+import { pickLabTest, checkLabConsistency, describeLabTest, describeConflict } from "@/utils/lab-tests";
+import { assessMaturity, expectsCrop } from "@/engines/maturity";
+import { resolveVariety } from "@/engines/varieties";
+import { findCrop } from "@/utils/crops";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -47,7 +51,8 @@ Rules:
 - Order by urgency across ALL blocks (priority 1 = most urgent farm-wide).
 - Be specific: cite actual sensor values, dates, and historical norms in the rationale.
 - Confidence: 90–100 = very strong signal, 70–89 = moderate, below 70 = weaker/precautionary.
-- Use tree age and phenological stage to tailor recommendations: young trees (≤5 yr) require lower input rates and more frequent but smaller irrigations; stage-specific actions (e.g. hull-split sprays, bloom-period frost protection) are time-critical.
+- Each block states its tree maturity (leaf year, and whether a crop is expected). Use it: for a block marked NO CROP EXPECTED, never recommend harvest, hull-split, crop-load or yield-based actions, and expect water and fertiliser needs far below a mature orchard's. Use the phenological stage to time stage-specific actions (e.g. bloom-period frost protection) only where the block can bear a crop.
+- Lines starting with [!] are data-quality warnings and [i] lines are assumptions. Do not base a recommendation on a value a [!] line calls suspect, and say so in the rationale. Every recommendation must respect the units shown (P2O5 and K2O are in kg/da, not ppm).
 - If critical slow data (soil lab test) is older than 6 months, include a "scout" or "other" recommendation to re-sample.
 - If daily IoT data is missing or its timestamp is older than 24 hours, note the data gap in the rationale and reduce your confidence score for irrigation/soil recommendations.
 - Each block's data may include a "=== REFERENCE MATERIAL ===" section with excerpts retrieved from trusted agronomic sources (e.g. university cooperative extension manuals) for that block's crop. Where a recommendation is supported by this material, ground your rationale in it and cite the source title/section in "sources". If no reference material was provided, or none of it is relevant to a given recommendation, leave "sources" as an empty array — never fabricate a citation.
@@ -146,12 +151,6 @@ export async function buildAllBlockContexts(
     if (r.block_id && !latestDailySoil.has(r.block_id)) latestDailySoil.set(r.block_id, r);
   });
 
-  // Slow: latest lab test per block
-  const latestLabTest = new Map<string, any>();
-  allLabTests?.forEach((r: any) => {
-    if (r.block_id && !latestLabTest.has(r.block_id)) latestLabTest.set(r.block_id, r);
-  });
-
   // Weekly: weather
   const latestWeather = new Map<string, any>();
   weatherSnapshots?.forEach((r: any) => {
@@ -202,13 +201,14 @@ export async function buildAllBlockContexts(
   );
 
   // ── build per-block context strings ─────────────────────────────────────────
-  const currentYear = today.getFullYear();
-
   const blockContexts = blocks
     .map((block: any) => {
-      const treeAge = block.planting_year ? currentYear - block.planting_year : null;
+      const maturity = assessMaturity({ plantingDate: block.planting_date, plantingYear: block.planting_year, cropType: block.crop_type ?? null, now: today });
       const dailySoil = latestDailySoil.get(block.id);
-      const labTest = latestLabTest.get(block.id);
+      // The block's own latest test, else the whole-farm test of its farm (never another farm's).
+      const soilPick = pickLabTest(allLabTests ?? [], { blockId: block.id, farmId: block.farm_id ?? null, testType: "soil" });
+      const waterPick = pickLabTest(allLabTests ?? [], { blockId: block.id, farmId: block.farm_id ?? null, testType: "water" });
+      const labTest = soilPick.row;
       const weather = latestWeather.get(block.id) ?? globalWeather;
       const activeAlerts = blockAlerts.get(block.id) ?? [];
       const scouting = latestScouting.get(block.id);
@@ -226,8 +226,21 @@ export async function buildAllBlockContexts(
       }
 
       lines.push(
-        `Block: ${block.crop_type} | Variety: ${block.variety} | Planted: ${block.planting_year} (age: ${treeAge ?? "unknown"} yr) | Area: ${block.area} ${block.area_unit} | Trees: ${block.tree_count}`
+        `Block: ${block.crop_type} | Variety: ${block.variety} | Rootstock: ${block.rootstock && String(block.rootstock).toLowerCase() !== "unknown" ? block.rootstock : "not recorded"} | Planted: ${block.planting_date ?? `${block.planting_year} (year only, read as Sep-Dec)`} | Area: ${block.area} ${block.area_unit} | Trees: ${block.tree_count}`
       );
+      lines.push(
+        `Tree maturity: ${maturity.label}${
+          expectsCrop(maturity)
+            ? ""
+            : " — NO CROP EXPECTED: no harvest, hull-split or crop-load actions apply, and water and fertiliser needs are far below a mature orchard's"
+        }`
+      );
+      for (const note of maturity.notes) lines.push(`  [i] ${note}`);
+      if (!findCrop(block.crop_type)) {
+        lines.push(`  [i] No crop-specific engine data (frost thresholds, tree-age schedule, crop coefficients, growth stages) is loaded for "${block.crop_type}": rely on the reference material and the block's own data, and do not apply figures from another crop.`);
+      } else if (!resolveVariety(block.variety, block.crop_type).recognised) {
+        lines.push(`  [i] Variety "${block.variety}" is not on the reference list, so no variety-specific data (for example frost tolerance) is available and general ${findCrop(block.crop_type)!.id} values apply.`);
+      }
       lines.push(
         `Field capacity: ${block.field_capacity ?? "N/A"}% | Wilting point: ${block.wilting_point ?? "N/A"}%`
       );
@@ -235,24 +248,31 @@ export async function buildAllBlockContexts(
       if (labTest) {
         const labAge = ageLabel(labTest.recorded_at, today);
         const labDays = daysBetween(new Date(labTest.recorded_at), today);
-        lines.push(`Last soil lab test: ${formatDate(labTest.recorded_at)} (${labAge})`);
-        const labParams: string[] = [];
-        if (labTest.ph != null) labParams.push(`pH: ${labTest.ph}`);
-        if (labTest.soil_ec != null) labParams.push(`EC: ${labTest.soil_ec} dS/m`);
-        if (labTest.parameters && typeof labTest.parameters === "object") {
-          const p = labTest.parameters as Record<string, unknown>;
-          if (p.organic_matter != null) labParams.push(`OM: ${p.organic_matter}%`);
-          if (p.phosphorus_p2o5 != null) labParams.push(`P: ${p.phosphorus_p2o5} ppm`);
-          if (p.potassium_k2o != null) labParams.push(`K: ${p.potassium_k2o} ppm`);
-          if (p.cec != null) labParams.push(`CEC: ${p.cec} meq`);
-        }
+        const scope = soilPick.scope === "farm" ? "whole-farm sample, not specific to this block" : "this block";
+        lines.push(
+          `Last soil lab test: ${formatDate(labTest.recorded_at)} (${labAge}) | ${scope}${labTest.lab_reference ? ` | lab ref ${labTest.lab_reference}` : ""}`
+        );
+        const labParams = describeLabTest(labTest);
         if (labParams.length > 0) lines.push(`  ${labParams.join(" | ")}`);
+        lines.push(`  Reference bands follow a Turkish lab's units (P2O5 and K2O in kg/da) and are not almond-specific. This test does not measure nitrogen.`);
+        for (const flag of checkLabConsistency(labTest)) lines.push(`  [!] ${flag}`);
+        for (const c of soilPick.conflicts) lines.push(`  [!] ${describeConflict(c)}`);
         if (labDays > 180) {
           lines.push(`  [!] Lab test is ${Math.round(labDays / 30)} months old — consider recommending re-test.`);
         }
       } else {
         lines.push(`Last soil lab test: none on record`);
         lines.push(`  [!] No lab test data — consider recommending initial soil analysis.`);
+      }
+
+      if (waterPick.row) {
+        const w = waterPick.row;
+        const p = (w.parameters ?? {}) as Record<string, unknown>;
+        lines.push(
+          `Last irrigation-water test: ${formatDate(w.recorded_at)} (${ageLabel(w.recorded_at, today)}) | ${
+            p.water_ec_us_cm != null ? `EC ${p.water_ec_us_cm} uS/cm` : "EC not recorded"
+          }${w.ph != null ? ` | pH ${w.ph}` : ""}`
+        );
       }
 
       // ── WEEKLY tier ──────────────────────────────────────────────────────────
