@@ -103,28 +103,8 @@ export interface PhenologyDomain {
 
 // ─── Nutrition Domain ─────────────────────────────────────────────────────────
 
-export interface NutrientLevel {
-  element: string;          // 'N' | 'P' | 'K' | 'Ca' | 'Mg' | 'B'
-  value: number;            // ppm or %
-  unit: string;
-  low: number;              // deficient below
-  optimal: [number, number]; // optimal range
-  high: number;             // excess above
-  status: HealthStatus;
-}
-
-export interface FertigationRecord {
-  date: Date;
-  fertilizerType: string;
-  amountKgPerTree: number;
-  notes?: string;
-}
-
+/** Leaf analyses and the last fertigation are read live by the Nutrition tab; this holds only what the page supplies. */
 export interface NutritionDomain {
-  nutrients: NutrientLevel[];
-  lastFertigation: FertigationRecord;
-  nextFertigation: Date;
-  tissueSampleDate: Date;
   source: DataSource;
   alerts: BlockAlert[];
 }

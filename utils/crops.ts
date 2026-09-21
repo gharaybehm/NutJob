@@ -23,6 +23,8 @@ export interface CropCapabilities {
   cropCoefficients: boolean
   /** Heat-accumulation growth stages (compute-fields job and stage mapping). */
   heatStages: boolean
+  /** Leaf-tissue reference bands and sampling window (nutrition engine). */
+  leafNutrition: boolean
 }
 
 export interface CropProfile {
@@ -57,7 +59,7 @@ export const CROP_PROFILES: CropProfile[] = [
     varieties: ALMOND_VARIETIES,
     // Mediterranean almond and peach-almond hybrid stocks first; they matter on calcareous soil.
     rootstocks: ['GF 677', 'Garnem', 'Monegro', 'Felinem', 'Rootpac 20', 'Rootpac 40', 'Rootpac R', 'Bitter almond seedling', 'Almond seedling'],
-    has: { frost: true, treeAge: true, cropCoefficients: true, heatStages: true },
+    has: { frost: true, treeAge: true, cropCoefficients: true, heatStages: true, leafNutrition: true },
   },
 ]
 

@@ -1,7 +1,7 @@
 import type {
   Block, BlockProfile,
   SoilWaterDomain, PhenologyDomain, NutritionDomain,
-  PestDiseaseDomain, WeatherDomain, NutrientLevel,
+  PestDiseaseDomain, WeatherDomain,
 } from './types';
 
 // ─── Date shorthand ───────────────────────────────────────────────────────────
@@ -15,17 +15,6 @@ function defined<T extends object>(o: Partial<T>): Partial<T> {
     Object.entries(o).filter(([, v]) => v !== undefined)
   ) as Partial<T>;
 }
-
-// ─── Default nutrient reference ranges (almond tissue standards) ──────────────
-
-const DEFAULT_NUTRIENTS: NutrientLevel[] = [
-  { element: 'N',  value: 0, unit: '%',   low: 2.2, optimal: [2.2, 3.0], high: 3.5, status: 'green' },
-  { element: 'P',  value: 0, unit: '%',   low: 0.1, optimal: [0.1, 0.3], high: 0.4, status: 'green' },
-  { element: 'K',  value: 0, unit: '%',   low: 1.0, optimal: [1.0, 2.0], high: 2.5, status: 'green' },
-  { element: 'Ca', value: 0, unit: '%',   low: 1.5, optimal: [1.5, 3.0], high: 3.5, status: 'green' },
-  { element: 'Mg', value: 0, unit: '%',   low: 0.2, optimal: [0.2, 0.6], high: 0.8, status: 'green' },
-  { element: 'B',  value: 0, unit: 'ppm', low: 20,  optimal: [20,  60],  high: 80,  status: 'green' },
-];
 
 // ─── Domain factories (used by makeDefaultProfile & future Supabase adapter) ──
 
@@ -56,10 +45,6 @@ export function makePhenology(o: Partial<PhenologyDomain> = {}): PhenologyDomain
 
 export function makeNutrition(o: Partial<NutritionDomain> = {}): NutritionDomain {
   return {
-    nutrients: DEFAULT_NUTRIENTS,
-    lastFertigation: { date: new Date(), fertilizerType: '—', amountKgPerTree: 0 },
-    nextFertigation: new Date(),
-    tissueSampleDate: new Date(),
     source: 'manual', alerts: [],
     ...defined(o),
   };
