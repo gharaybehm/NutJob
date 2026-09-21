@@ -8,7 +8,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 // weather_snapshot row with block_id = null (farm-level).
 //
 // Trigger options:
-//   - Netlify Scheduled Function  (cron: "0 0,3,6,9,12,15,18,21 * * *")
+//   - Coolify Scheduled Task, cron 0 0,3,6,9,12,15,18,21 * * * (the production scheduler)
 //   - Supabase pg_cron calling this endpoint
 //   - External cron service (e.g. cron-job.org)
 //   - Manual: GET /api/cron/weather?secret=YOUR_CRON_SECRET

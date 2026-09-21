@@ -28,7 +28,7 @@ import { heatModelFor, inferGrowthStage, type HeatModel } from "@/engines/heat-m
 // recorded today so repeated cron runs are safe.
 //
 // Trigger options:
-//   - Netlify Scheduled Function  (netlify/functions/cron-compute-fields.mts)
+//   - Coolify Scheduled Task, daily at 00:00 UTC (the production scheduler)
 //   - Manual: GET /api/cron/compute-fields?secret=YOUR_CRON_SECRET
 
 const OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast";
