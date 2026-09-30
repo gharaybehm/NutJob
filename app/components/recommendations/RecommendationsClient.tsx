@@ -47,7 +47,11 @@ interface Recommendation {
   sources?: RecommendationSource[] | null;
   activity_log_id?: string | null;
   scheduled_event?: { id: string; start_date: string; completed_at: string | null } | null;
+  /** Pending but replaced by a newer batch or past its expiry: shown in History, not actionable. */
+  expired?: boolean;
 }
+
+const isOpen = (r: Recommendation) => r.status === "pending" && !r.expired;
 
 interface Props {
   initialRecommendations: Recommendation[];
@@ -202,13 +206,13 @@ export default function RecommendationsClient({ initialRecommendations, farmId }
   };
 
   const filteredRecommendations = initialRecommendations.filter((rec) => {
-    const matchesStatus = statusFilter === "pending" ? rec.status === "pending" : rec.status !== "pending";
+    const matchesStatus = statusFilter === "pending" ? isOpen(rec) : !isOpen(rec);
     const matchesCategory = categoryFilter === "all" || rec.category === categoryFilter;
     return matchesStatus && matchesCategory;
   });
 
   // Derive batch metadata from the most-recently-generated pending recommendations
-  const pendingRecs = initialRecommendations.filter((r) => r.status === "pending");
+  const pendingRecs = initialRecommendations.filter(isOpen);
   const latestBatchDate = pendingRecs.length > 0
     ? new Date(Math.max(...pendingRecs.map((r) => new Date(r.created_at).getTime())))
     : null;
@@ -316,6 +320,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId }
               sources={rec.sources}
               scheduledEvent={rec.scheduled_event}
               activityLogId={rec.activity_log_id}
+              expired={rec.expired}
               farmId={farmId}
               onAccept={() => openSchedule(rec)}
               onSkip={() => setSkipTarget(rec)}

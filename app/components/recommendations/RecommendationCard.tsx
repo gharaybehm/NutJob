@@ -12,6 +12,7 @@ import {
   BookOpen,
   CalendarClock,
   CalendarCheck,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -42,6 +43,8 @@ interface RecommendationCardProps {
   scheduledEvent?: { start_date: string; completed_at: string | null } | null;
   /** Set once the work was logged as done. */
   activityLogId?: string | null;
+  /** Pending but replaced by a newer batch or past its expiry. */
+  expired?: boolean;
   farmId: string;
   onAccept: (id: string) => void;
   onSkip: (id: string) => void;
@@ -69,6 +72,7 @@ export default function RecommendationCard({
   sources,
   scheduledEvent,
   activityLogId,
+  expired = false,
   farmId,
   onAccept,
   onSkip,
@@ -92,7 +96,9 @@ export default function RecommendationCard({
     new Date(iso).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
   let statusLabel = "";
-  if (status === "skipped") {
+  if (status === "pending" && expired) {
+    statusLabel = t('statusExpired');
+  } else if (status === "skipped") {
     statusLabel = skipReason && ["already_done", "disagree", "no_resources"].includes(skipReason)
       ? `${t('statusSkipped')} · ${t(`skipReasons.${skipReason as "already_done" | "disagree" | "no_resources"}`)}`
       : t('statusSkipped');
@@ -139,7 +145,7 @@ export default function RecommendationCard({
         )}
       </div>
 
-      {status === "pending" ? (
+      {status === "pending" && !expired ? (
         <div className="px-[18px] pt-3 pb-3.5 border-t border-line-soft space-y-2.5">
           {confidencePct !== null && (
             <ConfidenceBar
@@ -179,12 +185,13 @@ export default function RecommendationCard({
             <span className={`text-sm font-medium flex items-center gap-1.5 ${
               isDone ? 'text-green' :
               isScheduled ? 'text-blue-ink' :
-              status === 'skipped' ? 'text-ink-2' :
+              status === 'skipped' || expired ? 'text-ink-2' :
               'text-amber-ink'
             }`}>
               {isDone && <Check className="h-4 w-4" />}
               {isScheduled && <CalendarClock className="h-4 w-4" />}
               {status === 'skipped' && <X className="h-4 w-4" />}
+              {expired && <Clock className="h-4 w-4" />}
               {!isDone && !isScheduled && status === 'edited' && <Edit2 className="h-4 w-4" />}
               {statusLabel}
             </span>

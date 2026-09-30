@@ -297,8 +297,29 @@ export async function generateFarmRecommendations(
     return { count: 0, model: OPENROUTER_MODEL };
   }
 
+  // The cards still open from earlier runs, read before the insert so the new batch is not among them.
+  const { data: openRows } = await admin
+    .from("recommendations")
+    .select("id")
+    .eq("farm_id", farmId)
+    .eq("status", "pending");
+
   const { error: insertError } = await admin.from("recommendations").insert(toInsert);
   if (insertError) throw new Error(`Insert error: ${insertError.message}`);
+
+  // The new batch replaces them. The model saw them as NOT ACTED ON and re-issued
+  // the ones still needed. They are expired, not deleted, so History and the next
+  // run's context keep them. The status check leaves alone any accepted meanwhile.
+  const openIds = ((openRows as { id: string }[] | null) ?? []).map((r) => r.id);
+  if (openIds.length > 0) {
+    const { error: supersedeError } = await admin
+      .from("recommendations")
+      .update({ expires_at: new Date().toISOString() })
+      .in("id", openIds)
+      .eq("status", "pending");
+    // The new batch is already in; a failure here only leaves old cards until their own expiry.
+    if (supersedeError) console.error(`[recommendations] Failed to expire the previous batch: ${supersedeError.message}`);
+  }
 
   return { count: toInsert.length, model: OPENROUTER_MODEL };
 }

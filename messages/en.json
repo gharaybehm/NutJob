@@ -317,6 +317,7 @@
     },
     "statusScheduled": "Scheduled · {date}",
     "statusDone": "Done",
+    "statusExpired": "Expired",
     "logWhatWasDone": "Log what was done",
     "scheduleTitle": "Schedule this work",
     "schedule": "Schedule",

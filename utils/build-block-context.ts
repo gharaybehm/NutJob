@@ -20,6 +20,7 @@ import { toHectares } from "@/utils/area";
 import { heatModelFor } from "@/engines/heat-model";
 import { resolveVariety } from "@/engines/varieties";
 import { findCrop } from "@/utils/crops";
+import { describeBlockHistory, HISTORY_DAYS, type LinkedEvent, type PastActivity, type PastRecommendation } from "@/utils/recommendation-lifecycle";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,13 @@ Rules:
 - Each block states its tree maturity (leaf year, and whether a crop is expected). Use it: for a block marked NO CROP EXPECTED, never recommend harvest, hull-split, crop-load or yield-based actions, and expect water and fertiliser needs far below a mature orchard's. Use the phenological stage to time stage-specific actions (e.g. bloom-period frost protection) only where the block can bear a crop.
 - Lines starting with [!] are data-quality warnings and [i] lines are assumptions. Do not base a recommendation on a value a [!] line calls suspect, and say so in the rationale. Every recommendation must respect the units shown (P2O5 and K2O are in kg/da, not ppm).
 - Leaf tissue results arrive already judged against the reference bands (deficient, marginal, adequate, high). Use those judgements, do not apply nutrient thresholds of your own, and never treat a nutrient marked "not judged" as adequate or deficient. If a caution says the sample was taken outside the July window, the block is not bearing, or the bands are provisional, say so in the rationale and lower the confidence. Each block may also carry a "Nitrogen budget (guide)" line, its seasonal split and the urea already logged this year. You may cite those figures as a guide and say how much of the budget remains, but do not invent a rate of your own or state a different one, and say the agronomist should confirm it. If the budget line is missing or a [!] line says it is unsupported, give no rate.
+- Each block has a "=== RECENT HISTORY ===" section: your earlier recommendations for it, what the manager did with each, and the work logged on the block. Do not repeat yourself:
+  - DONE, or matching work logged: do not recommend the same action again unless the data shows a new need since that date, and name what changed.
+  - SCHEDULED or ACCEPTED: it is already booked, so do not recommend it again.
+  - SKIPPED because the manager says it was already done: treat it as done on the skip date.
+  - SKIPPED because the manager disagreed: do not repeat it unless there is new evidence dated after the skip, and if you do, name that evidence in the rationale.
+  - SKIPPED for lack of resources: you may repeat it if it is still needed, and may offer a lighter alternative, but do not raise its urgency only because it was skipped.
+  - NOT ACTED ON: this run replaces it. Issue it again only if the current data still supports it, keeping the same title when nothing has changed.
 - If critical slow data (soil lab test) is older than 6 months, include a "scout" or "other" recommendation to re-sample.
 - If daily IoT data is missing or its timestamp is older than 24 hours, note the data gap in the rationale and reduce your confidence score for irrigation/soil recommendations.
 - Each block's data may include a "=== REFERENCE MATERIAL ===" section with excerpts retrieved from trusted agronomic sources (e.g. university cooperative extension manuals) for that block's crop. Where a recommendation is supported by this material, ground your rationale in it and cite the source title/section in "sources". If no reference material was provided, or none of it is relevant to a given recommendation, leave "sources" as an empty array — never fabricate a citation.
@@ -232,6 +240,51 @@ export async function buildAllBlockContexts(
     });
     fertByBlock.set(r.block_id, list);
   });
+
+  // ── history: earlier recommendations, their outcome, and the work logged ──────
+  const blockIds = blocks.map((b: any) => b.id as string);
+  const historySince = new Date(today.getTime() - HISTORY_DAYS * 86_400_000).toISOString();
+  const [{ data: pastRecRows }, { data: activityRows }] = await Promise.all([
+    admin
+      .from("recommendations")
+      .select("id, block_id, category, title, status, created_at, acted_at, expires_at, manager_note, activity_log_id")
+      .in("block_id", blockIds)
+      .gte("created_at", historySince),
+    admin
+      .from("activity_log")
+      .select("block_id, activity_type, title, performed_at")
+      .in("block_id", blockIds)
+      .gte("performed_at", historySince),
+  ]);
+  const pastRecsByBlock = new Map<string, PastRecommendation[]>();
+  (pastRecRows as PastRecommendation[] | null)?.forEach((r) => {
+    if (!r.block_id) return;
+    const list = pastRecsByBlock.get(r.block_id) ?? [];
+    list.push(r);
+    pastRecsByBlock.set(r.block_id, list);
+  });
+  const activitiesByBlock = new Map<string, PastActivity[]>();
+  (activityRows as (PastActivity & { block_id: string | null })[] | null)?.forEach((a) => {
+    if (!a.block_id) return;
+    const list = activitiesByBlock.get(a.block_id) ?? [];
+    list.push(a);
+    activitiesByBlock.set(a.block_id, list);
+  });
+  // The calendar event an accepted recommendation booked tells scheduled from done.
+  const eventsByRec = new Map<string, LinkedEvent>();
+  const bookedIds = ((pastRecRows as PastRecommendation[] | null) ?? [])
+    .filter((r) => r.status === "accepted" || r.status === "edited")
+    .map((r) => r.id);
+  if (bookedIds.length > 0) {
+    const { data: eventRows } = await admin
+      .from("calendar_events")
+      .select("start_date, completed_at, details")
+      .in("details->>recommendation_id", bookedIds);
+    (eventRows as any[] | null)?.forEach((e) => {
+      const recId = (e.details as { recommendation_id?: string } | null)?.recommendation_id;
+      if (recId) eventsByRec.set(recId, { start_date: e.start_date, completed_at: e.completed_at });
+    });
+  }
 
   // ── build per-block context strings ─────────────────────────────────────────
   const blockContexts = blocks
@@ -422,14 +475,20 @@ export async function buildAllBlockContexts(
         lines.push(`Active alerts: none`);
       }
 
+      lines.push(
+        ...describeBlockHistory(
+          pastRecsByBlock.get(block.id) ?? [],
+          eventsByRec,
+          activitiesByBlock.get(block.id) ?? [],
+          today,
+        ),
+      );
+
       return lines.join("\n");
     })
     .join("\n\n---\n\n");
 
-  return {
-    blockContexts,
-    blockIds: blocks.map((b: any) => b.id as string),
-  };
+  return { blockContexts, blockIds };
 }
 
 export { type ClimateProfile } from "@/utils/climate-profile";

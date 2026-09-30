@@ -317,6 +317,7 @@
     },
     "statusScheduled": "مجدولة · {date}",
     "statusDone": "منجزة",
+    "statusExpired": "منتهية الصلاحية",
     "logWhatWasDone": "سجّل ما تم تنفيذه",
     "scheduleTitle": "جدولة هذا العمل",
     "schedule": "جدولة",

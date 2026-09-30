@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { getFarmActor, atLeast } from "@/utils/supabase/farm-access";
 import { CATEGORY_STYLES, type Category } from "@/app/components/ui/CategoryChip";
 import { confidenceLevel } from "@/app/components/ui/ConfidenceBar";
+import { notExpiredFilter } from "@/utils/recommendation-lifecycle";
 
 /**
  * One ranked list of what needs doing, replacing the separate Active Alerts
@@ -67,6 +68,7 @@ async function getPlan(farmId: string, includeRecommendations: boolean): Promise
           .select("id, title, rationale, category, confidence, created_at, block_id, blocks(name)")
           .eq("farm_id", farmId)
           .eq("status", "pending")
+          .or(notExpiredFilter(new Date()))
           .order("confidence", { ascending: false, nullsFirst: false })
       : Promise.resolve({ data: [] as never[] }),
   ]);

@@ -13,6 +13,7 @@ import {
   defaultDurationHours,
   type RecommendationCategory,
 } from "@/utils/recommendation-effects";
+import { isExpired } from "@/utils/recommendation-lifecycle";
 
 export async function getRecommendations(farmId: string) {
   const supabase = await createClient();
@@ -40,7 +41,13 @@ export async function getRecommendations(farmId: string) {
     }
   }
 
-  return (data ?? []).map((r) => ({ ...r, scheduled_event: events[r.id] ?? null }));
+  // A pending card replaced by a newer batch, or past its 7 days, is shown in History as expired.
+  const now = new Date();
+  return (data ?? []).map((r) => ({
+    ...r,
+    scheduled_event: events[r.id] ?? null,
+    expired: r.status === "pending" && isExpired(r.expires_at, now),
+  }));
 }
 
 export interface ScheduleInput {
@@ -120,7 +127,7 @@ export async function acceptRecommendation(id: string, farmId: string, schedule:
 
 export type SkipReason = "already_done" | "disagree" | "no_resources";
 
-/** The reason is kept in manager_note so the engine can see why it was skipped. */
+/** The reason is kept in manager_note; the next run's RECENT HISTORY shows it to the AI. */
 export async function skipRecommendation(id: string, farmId: string, reason?: SkipReason) {
   const gate = await requireFarmRole(farmId, "supervisor");
   if (!gate.ok) throw new Error(gate.error);

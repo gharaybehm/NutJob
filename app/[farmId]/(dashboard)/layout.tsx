@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { getFarms } from "@/app/actions/farms";
 import { getDataFreshness } from "@/utils/data-freshness";
+import { notExpiredFilter } from "@/utils/recommendation-lifecycle";
 
 export const dynamic = 'force-dynamic';
 
@@ -110,7 +111,8 @@ export default async function DashboardLayout({
       .from("recommendations")
       .select("*", { count: "exact", head: true })
       .eq("farm_id", farmId)
-      .eq("status", "pending"),
+      .eq("status", "pending")
+      .or(notExpiredFilter(new Date())),
     getDataFreshness(farmId, blockIds),
   ]);
 

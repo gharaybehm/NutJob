@@ -317,6 +317,7 @@
     },
     "statusScheduled": "Planlandı · {date}",
     "statusDone": "Tamamlandı",
+    "statusExpired": "Süresi doldu",
     "logWhatWasDone": "Yapılanı kaydet",
     "scheduleTitle": "Bu işi planla",
     "schedule": "Planla",
