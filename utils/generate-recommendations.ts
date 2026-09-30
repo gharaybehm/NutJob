@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- untyped Supabase admin client shared with build-block-context */
 // Shared AI recommendation generation: retrieval (RAG) + prompt assembly +
 // OpenRouter call + parse/validate/insert. Used by both the weekly
-// Trigger.dev cron (src/trigger/recommendations.ts) and the on-demand server
+// Coolify cron (app/api/cron/generate-recommendations) and the on-demand server
 // action (app/[farmId]/(dashboard)/recommendations/actions.ts) so the
 // generation logic — including grounding recommendations in the
 // crop-appropriate knowledge base — lives in one place.
