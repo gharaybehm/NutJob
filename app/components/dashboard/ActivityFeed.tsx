@@ -100,10 +100,11 @@ export default async function ActivityFeed({ farmId }: { farmId: string }) {
         ) : (
           <div className="flow-root">
             <ul role="list">
-              {activities.slice(0, 4).map((activity, activityIdx) => {
+              {activities.slice(0, 4).map((activity, activityIdx, shown) => {
                 const Icon = getActivityIcon(activity.type);
                 const colorTheme = getActivityColor(activity.type);
                 const locationStr = activity.blockName ? ` ${t('inBlock', { name: activity.blockName })}` : "";
+                const isLast = activityIdx === shown.length - 1;
 
                 return (
                   <li key={activity.id} className="flex gap-3">
@@ -111,23 +112,21 @@ export default async function ActivityFeed({ farmId }: { farmId: string }) {
                       <span className={`h-[30px] w-[30px] shrink-0 rounded-[9px] flex items-center justify-center ${colorTheme}`}>
                         <Icon className="h-4 w-4" aria-hidden="true" />
                       </span>
-                      {activityIdx !== activities.length - 1 && (
+                      {!isLast && (
                         <span className="w-px flex-1 my-1 bg-line-soft" aria-hidden="true" />
                       )}
                     </div>
-                    <div className={`flex min-w-0 flex-1 justify-between gap-4 ${activityIdx !== activities.length - 1 ? 'pb-3.5' : ''}`}>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] text-ink">
-                          <span className="font-semibold">{activity.action}</span>
-                          <span className="text-ink-2">{locationStr}</span>
-                        </p>
-                        <p className="font-mono text-[11px] text-ink-4 mt-0.5">
-                          {t('by', { user: activity.user })}
-                        </p>
-                      </div>
-                      <div className="whitespace-nowrap text-right font-mono text-[11px] text-ink-4">
-                        {relativeTime(activity.performed_at)}
-                      </div>
+                    {/* Time sits on the meta line rather than in its own column: in
+                        the dashboard's narrow right column a side column squeezed
+                        the text to ~110px and wrapped every entry. */}
+                    <div className={`min-w-0 flex-1 ${isLast ? '' : 'pb-3.5'}`}>
+                      <p className="text-[13px] text-ink break-words">
+                        <span className="font-semibold">{activity.action}</span>
+                        <span className="text-ink-2">{locationStr}</span>
+                      </p>
+                      <p className="font-mono text-[11px] text-ink-4 mt-0.5">
+                        {t('by', { user: activity.user })} · {relativeTime(activity.performed_at)}
+                      </p>
                     </div>
                   </li>
                 );

@@ -92,7 +92,9 @@ export default async function KPIGrid({ farmId }: { farmId: string }) {
 
   let nextIrrigationStr: string;
   if (diffHrs === null) {
-    nextIrrigationStr = t('noneScheduled');
+    // A dash in the value slot; the words go in the smaller line below, where
+    // they fit (as the value, "None scheduled" wrapped into its label).
+    nextIrrigationStr = "—";
   } else if (diffHrs <= 0) {
     nextIrrigationStr = t('ongoing');
   } else if (diffHrs < 24) {
@@ -134,7 +136,7 @@ export default async function KPIGrid({ farmId }: { farmId: string }) {
     {
       name: t('nextIrrigation'),
       value: nextIrrigationStr,
-      change: t('scheduledQueue'),
+      change: diffHrs === null ? t('noneScheduled') : t('scheduledQueue'),
       changeType: "neutral",
       icon: Timer,
       color: "text-amber-ink",
@@ -145,7 +147,7 @@ export default async function KPIGrid({ farmId }: { farmId: string }) {
   return (
     // One row per metric: the grid now sits in the dashboard's narrow right
     // column, where four side-by-side cards truncated their labels.
-    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
       {kpis.map((kpi) => (
         <div
           key={kpi.name}

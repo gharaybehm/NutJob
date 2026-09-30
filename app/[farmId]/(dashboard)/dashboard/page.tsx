@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 
 function KPISkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
       {[0, 1, 2, 3].map(i => (
         <div key={i} className="h-[70px] animate-pulse rounded-2xl bg-tile" />
       ))}
@@ -125,8 +125,11 @@ export default async function Dashboard({ params }: { params: Promise<{ farmId: 
       </div>
 
       {/* What to do comes first; farm-wide numbers and the forecast support it. */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="flex flex-col gap-6 lg:col-span-2">
+      {/* Three columns only from xl: at lg (1024px) the side column was ~240px
+          and its labels and activity entries wrapped badly. Below xl the side
+          cards sit under the main column, two across. */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div className="flex flex-col gap-6 xl:col-span-2">
           <Suspense fallback={<CardSkeleton height="h-64" />}>
             <TodayPlan farmId={farmId} />
           </Suspense>
@@ -134,10 +137,12 @@ export default async function Dashboard({ params }: { params: Promise<{ farmId: 
             <BlockStatusGrid farmId={farmId} />
           </Suspense>
         </div>
-        <div className="flex flex-col gap-6">
-          <Suspense fallback={<KPISkeleton />}>
-            <KPIGrid farmId={farmId} />
-          </Suspense>
+        <div className="grid grid-cols-1 content-start gap-6 md:grid-cols-2 xl:grid-cols-1">
+          <div className="md:col-span-2 xl:col-span-1">
+            <Suspense fallback={<KPISkeleton />}>
+              <KPIGrid farmId={farmId} />
+            </Suspense>
+          </div>
           <Suspense fallback={<CardSkeleton height="h-56" />}>
             <UpcomingCalendar farmId={farmId} />
           </Suspense>

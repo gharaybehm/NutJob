@@ -94,7 +94,7 @@ export default async function WeatherStrip({ farmId }: { farmId: string }) {
               </span>
               <span className="font-mono text-[11px] text-ink-3" dir="ltr">{formatMeasurement(day.windKmh, 'km/h', locale)}</span>
               {day.sprayOk && (
-                <span className="mt-1.5 rounded-md bg-green-soft px-1.5 py-0.5 text-[11px] font-semibold text-green">{t('sprayOk')}</span>
+                <span className="mt-1.5 whitespace-nowrap rounded-md bg-green-soft px-1.5 py-0.5 text-[11px] font-semibold text-green">{t('sprayOk')}</span>
               )}
             </div>
           );
