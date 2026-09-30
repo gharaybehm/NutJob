@@ -4,11 +4,13 @@ export const CATEGORY_STYLES: Record<
   Category,
   { bg: string; text: string; dot: string; label: string }
 > = {
-  irrigate:  { bg: "bg-blue-soft",   text: "text-blue",   dot: "bg-blue",   label: "Irrigate" },
-  fertilize: { bg: "bg-gold-soft",   text: "text-gold",   dot: "bg-gold",   label: "Fertilize" },
+  irrigate:  { bg: "bg-blue-soft",   text: "text-blue-ink",   dot: "bg-blue",   label: "Irrigate" },
+  fertilize: { bg: "bg-gold-soft",   text: "text-gold-ink",   dot: "bg-gold",   label: "Fertilize" },
   spray:     { bg: "bg-purple-soft", text: "text-purple", dot: "bg-purple", label: "Spray" },
-  scout:     { bg: "bg-green-soft",  text: "text-green",  dot: "bg-green",  label: "Scout" },
-  prune:     { bg: "bg-teal-soft",   text: "text-teal",   dot: "bg-teal",   label: "Pruning" },
+  // Scout used to share green with the "healthy" status and pruning took teal;
+  // categories now use hues no status uses.
+  scout:     { bg: "bg-teal-soft",   text: "text-teal-ink",   dot: "bg-teal",   label: "Scout" },
+  prune:     { bg: "bg-brown-soft",  text: "text-brown-ink",  dot: "bg-brown",  label: "Pruning" },
 };
 
 /** Maps the DB/calendar activity-type strings onto the 5 design categories. */
@@ -36,7 +38,7 @@ export function CategoryChip({
   const cfg = CATEGORY_STYLES[category];
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 font-mono text-[10px] font-semibold tracking-wide ${cfg.bg} ${cfg.text} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold tracking-wide ${cfg.bg} ${cfg.text} ${className}`}
     >
       {(label ?? cfg.label).toUpperCase()}
     </span>

@@ -16,7 +16,7 @@ export default function ConsumableRow({
   
   const getIcon = () => {
     switch (consumable.category) {
-      case 'fertilizer': return <Leaf className="h-5 w-5 text-gold" />;
+      case 'fertilizer': return <Leaf className="h-5 w-5 text-gold-ink" />;
       case 'pesticide':
       case 'herbicide': return <Droplets className="h-5 w-5 text-purple" />;
       case 'fuel': return <Fuel className="h-5 w-5 text-ink-3" />;
@@ -72,7 +72,7 @@ export default function ConsumableRow({
             />
           </div>
           {consumable.minimumStock !== undefined && (
-            <div className="text-[10px] text-ink-4 text-right">
+            <div className="text-[11px] text-ink-4 text-right">
               Min: {consumable.minimumStock} {consumable.unit}
             </div>
           )}
@@ -94,7 +94,7 @@ export default function ConsumableRow({
           </button>
           <button
             onClick={() => onLogUsage(consumable)}
-            className="rounded-lg bg-blue-soft px-3 py-1.5 text-xs font-medium text-blue hover:brightness-95 transition"
+            className="rounded-lg bg-blue-soft px-3 py-1.5 text-xs font-medium text-blue-ink hover:brightness-95 transition"
           >
             Log Usage
           </button>
@@ -130,7 +130,7 @@ export default function ConsumableRow({
                       <td className="py-2.5 whitespace-nowrap">
                         {log.date.toLocaleDateString('en-GB')}
                         {log.entryType !== 'usage' && (
-                          <span className="ml-1.5 text-[10px] uppercase tracking-wider text-ink-3 font-semibold px-1.5 bg-surface rounded">
+                          <span className="ml-1.5 text-[11px] uppercase tracking-wider text-ink-3 font-semibold px-1.5 bg-surface rounded">
                             {log.entryType}
                           </span>
                         )}

@@ -68,7 +68,7 @@ export default function FarmSwitcher({
         </div>
         <div className="text-start">
           <div className="text-[13px] font-semibold leading-tight text-ink">{current.name}</div>
-          <div className="font-mono text-[9px] tracking-wide text-ink-3">
+          <div className="font-mono text-[11px] tracking-wide text-ink-3">
             {current.userRole.toUpperCase()} · {current.blockCount} BLOCKS
           </div>
         </div>
@@ -77,7 +77,7 @@ export default function FarmSwitcher({
 
       {open && (
         <div className="absolute start-0 top-full z-50 mt-2 w-[280px] rounded-[14px] border border-line bg-surface p-1.5 shadow-[0_22px_50px_-12px_rgba(20,37,27,.4)]">
-          <div className="px-2.5 pb-1 pt-1.5 font-mono text-[9px] tracking-wide text-ink-4">
+          <div className="px-2.5 pb-1 pt-1.5 font-mono text-[11px] tracking-wide text-ink-4">
             SWITCH FARM
           </div>
           {farms.map((farm) => {
@@ -98,7 +98,7 @@ export default function FarmSwitcher({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[13px] font-semibold text-ink">{farm.name}</div>
-                  <div className="font-mono text-[9px] text-ink-3">
+                  <div className="font-mono text-[11px] text-ink-3">
                     {farm.userRole.toUpperCase()} · {farm.blockCount} BLOCKS
                   </div>
                 </div>

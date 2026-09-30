@@ -64,7 +64,7 @@ export default async function ActiveAlerts({ farmId }: { farmId: string }) {
     <div className="flex h-full flex-col rounded-2xl border border-line bg-surface">
       <div className="flex items-center justify-between border-b border-line px-5 py-4">
         <h2 className="font-heading text-base font-semibold text-ink">{t('title')}</h2>
-        <span className={`inline-flex items-center rounded-full px-2.5 py-1 font-mono text-[10px] font-semibold ${
+        <span className={`inline-flex items-center rounded-full px-2.5 py-1 font-mono text-[11px] font-semibold ${
           count > 0 ? 'bg-red-soft text-red' : 'bg-green-soft text-green'
         }`}>
           {(count > 0 ? t('statusActive', { count }) : t('statusClear')).toString().toUpperCase()}
@@ -108,7 +108,7 @@ export default async function ActiveAlerts({ farmId }: { farmId: string }) {
                   <div className="flex-1">
                     <div className="flex items-start gap-2">
                       <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${
-                        isCritical ? 'text-red' : alert.severity === 'warning' ? 'text-amber' : 'text-blue'
+                        isCritical ? 'text-red' : alert.severity === 'warning' ? 'text-amber-ink' : 'text-blue-ink'
                       }`} />
                       <h3 className="text-[13px] font-semibold text-ink">
                         {domainLabel}{blockStr}
@@ -117,7 +117,7 @@ export default async function ActiveAlerts({ farmId }: { farmId: string }) {
                     <p className="mt-1 text-[13px] text-ink-2">
                       {alert.message}
                     </p>
-                    <div className="mt-2 flex items-center gap-2 font-mono text-[10px] text-ink-4">
+                    <div className="mt-2 flex items-center gap-2 font-mono text-[11px] text-ink-4">
                       {(() => {
                         const { diffMins, diffHrs, days } = getRelativeTimeParts(alert.created_at);
                         if (diffHrs >= 24) return days === 1 ? t('timeYesterday') : t('timeDaysAgo', { count: days });

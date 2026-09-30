@@ -20,7 +20,7 @@ function ForecastCard({ hour }: { hour: WeatherHour }) {
       <span className="text-xl">{conditionIcon(hour.condition)}</span>
       <span className="text-sm font-bold text-ink">{hour.temp}°</span>
       <span className="text-xs text-ink-4">{hour.humidity}%</span>
-      {hour.precip > 0 && <span className="text-xs text-blue">{hour.precip}mm</span>}
+      {hour.precip > 0 && <span className="text-xs text-blue-ink">{hour.precip}mm</span>}
     </div>
   );
 }
@@ -61,7 +61,7 @@ export default function WeatherTab({ data }: Props) {
               <span className="ml-2 rounded-full bg-red-soft text-red text-xs font-semibold px-2 py-0.5">Heat Stress</span>
             )}
             {data.frostRisk && (
-              <span className="ml-2 rounded-full bg-blue-soft text-blue text-xs font-semibold px-2 py-0.5">Frost Risk</span>
+              <span className="ml-2 rounded-full bg-blue-soft text-blue-ink text-xs font-semibold px-2 py-0.5">Frost Risk</span>
             )}
           </div>
         </div>

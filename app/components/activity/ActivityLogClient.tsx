@@ -85,12 +85,12 @@ const TYPE_CONFIG: Record<
   ActivityLogEntry["activity_type"],
   { icon: React.ElementType; bg: string; text: string }
 > = {
-  irrigation:      { icon: Droplets,     bg: "bg-blue-soft",   text: "text-blue"   },
-  fertigation:     { icon: Leaf,         bg: "bg-gold-soft",   text: "text-gold"   },
+  irrigation:      { icon: Droplets,     bg: "bg-blue-soft",   text: "text-blue-ink"   },
+  fertigation:     { icon: Leaf,         bg: "bg-gold-soft",   text: "text-gold-ink"   },
   spraying:        { icon: Bug,          bg: "bg-purple-soft", text: "text-purple" },
-  pruning:         { icon: Scissors,     bg: "bg-teal-soft",   text: "text-teal"   },
-  scouting:        { icon: Sprout,       bg: "bg-green-soft",  text: "text-green"  },
-  pollinating:     { icon: Sprout,       bg: "bg-amber-soft",  text: "text-amber"  },
+  pruning:         { icon: Scissors,     bg: "bg-brown-soft",  text: "text-brown-ink"  },
+  scouting:        { icon: Sprout,       bg: "bg-teal-soft",   text: "text-teal-ink"   },
+  pollinating:     { icon: Sprout,       bg: "bg-amber-soft",  text: "text-amber-ink"  },
   tilling:         { icon: Activity,     bg: "bg-tile-2",      text: "text-ink-2"  },
   plowing:         { icon: Activity,     bg: "bg-tile-2",      text: "text-ink-2"  },
   weeding:         { icon: Scissors,     bg: "bg-tile-2",      text: "text-ink-2"  },
@@ -222,14 +222,14 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
     <div className="space-y-4">
       {/* Offline banner */}
       {pendingIds.size > 0 && !syncing && syncedCount === 0 && (
-        <div className="flex items-center gap-3 rounded-xl bg-amber-soft border border-amber/25 px-4 py-3 text-sm text-amber">
+        <div className="flex items-center gap-3 rounded-xl bg-amber-soft border border-amber/25 px-4 py-3 text-sm text-amber-ink">
           <WifiOff className="h-4 w-4 shrink-0" />
           <span className="flex-1">{t('offlineBanner', { count: pendingIds.size })}</span>
         </div>
       )}
 
       {syncing && (
-        <div className="flex items-center gap-3 rounded-xl bg-blue-soft border border-blue/25 px-4 py-3 text-sm text-blue">
+        <div className="flex items-center gap-3 rounded-xl bg-blue-soft border border-blue/25 px-4 py-3 text-sm text-blue-ink">
           <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />
           <span>{t('syncingBanner')}</span>
         </div>
@@ -289,7 +289,7 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
           ? t('loading')
           : total === 1 ? t('entryCount', { count: total }) : t('entryCountPlural', { count: total })}
         {pendingIds.size > 0 && (
-          <span className="ms-2 text-amber">· {t('pendingSync', { count: pendingIds.size })}</span>
+          <span className="ms-2 text-amber-ink">· {t('pendingSync', { count: pendingIds.size })}</span>
         )}
       </p>
 
@@ -321,7 +321,7 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
                       <p className={`text-sm font-medium leading-snug ${isPendingEntry ? "text-ink-3" : "text-ink"}`}>
                         {entry.title}
                       </p>
-                      <time dateTime={entry.performed_at} className="shrink-0 font-mono text-[10px] text-ink-4 mt-0.5">
+                      <time dateTime={entry.performed_at} className="shrink-0 font-mono text-[11px] text-ink-4 mt-0.5">
                         {formatDate(entry.performed_at, locale)}
                       </time>
                     </div>
@@ -333,7 +333,7 @@ export default function ActivityLogClient({ initialEntries, initialTotal, blocks
                         <span className="text-xs text-ink-3">{entry.blocks.name}</span>
                       )}
                       {isPendingEntry && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-soft text-amber">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-soft text-amber-ink">
                           <WifiOff className="h-2.5 w-2.5" />
                           {t('pendingSyncBadge')}
                         </span>

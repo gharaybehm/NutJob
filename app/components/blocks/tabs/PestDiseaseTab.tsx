@@ -8,7 +8,7 @@ function RiskBadge({ level }: { level: 'green' | 'amber' | 'red' }) {
   return (
     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
       level === 'green' ? 'bg-green-soft text-green' :
-      level === 'amber' ? 'bg-amber-soft text-amber' : 'bg-red-soft text-red'
+      level === 'amber' ? 'bg-amber-soft text-amber-ink' : 'bg-red-soft text-red'
     }`}>
       {level === 'green' ? 'Low Risk' : level === 'amber' ? 'Moderate' : 'High Risk'}
     </span>
@@ -38,7 +38,7 @@ function ObservationCard({ obs }: { obs: PestObservation }) {
         )}
         <div className="flex items-center justify-between">
           <span className="text-ink-3">Status</span>
-          <span className={`font-medium ${obs.stage === 'Active' ? 'text-amber' : obs.stage === 'Resolved' ? 'text-green' : 'text-ink-2'}`}>
+          <span className={`font-medium ${obs.stage === 'Active' ? 'text-amber-ink' : obs.stage === 'Resolved' ? 'text-green' : 'text-ink-2'}`}>
             {obs.stage}
           </span>
         </div>
@@ -64,7 +64,7 @@ function ObservationCard({ obs }: { obs: PestObservation }) {
 export default function PestDiseaseTab({ data }: Props) {
   const riskColor =
     data.overallRisk === 'green' ? 'text-green' :
-    data.overallRisk === 'amber' ? 'text-amber' : 'text-red';
+    data.overallRisk === 'amber' ? 'text-amber-ink' : 'text-red';
 
   return (
     <div className="flex flex-col gap-6">

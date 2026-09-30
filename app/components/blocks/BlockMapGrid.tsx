@@ -59,7 +59,7 @@ export default function BlockMapGrid({ blocks, selectedId, onSelect }: Props) {
             <path d="M14 25 L17.5 14 L14 16 L10.5 14 Z"
               fill="currentColor" className="text-slate-300 dark:text-slate-600" />
           </svg>
-          <span className="text-[9px] font-bold tracking-widest text-slate-600 dark:text-slate-400 leading-none">N</span>
+          <span className="text-[11px] font-bold tracking-widest text-slate-600 dark:text-slate-400 leading-none">N</span>
         </div>
 
         {/* Farm map grid */}

@@ -50,12 +50,12 @@ function getActivityIcon(type: string) {
 }
 
 function getActivityColor(type: string) {
-  if (type === 'irrigation') return 'text-blue bg-blue-soft';
-  if (type === 'fertigation') return 'text-gold bg-gold-soft';
+  if (type === 'irrigation') return 'text-blue-ink bg-blue-soft';
+  if (type === 'fertigation') return 'text-gold-ink bg-gold-soft';
   if (type === 'tissue-sample') return 'text-purple bg-purple-soft';
   if (type === 'spraying') return 'text-purple bg-purple-soft';
-  if (type === 'scouting') return 'text-green bg-green-soft';
-  if (type === 'pruning') return 'text-teal bg-teal-soft';
+  if (type === 'scouting') return 'text-teal-ink bg-teal-soft';
+  if (type === 'pruning') return 'text-brown-ink bg-brown-soft';
   return 'text-ink-3 bg-tile';
 }
 
@@ -121,11 +121,11 @@ export default async function ActivityFeed({ farmId }: { farmId: string }) {
                           <span className="font-semibold">{activity.action}</span>
                           <span className="text-ink-2">{locationStr}</span>
                         </p>
-                        <p className="font-mono text-[10px] text-ink-4 mt-0.5">
+                        <p className="font-mono text-[11px] text-ink-4 mt-0.5">
                           {t('by', { user: activity.user })}
                         </p>
                       </div>
-                      <div className="whitespace-nowrap text-right font-mono text-[10px] text-ink-4">
+                      <div className="whitespace-nowrap text-right font-mono text-[11px] text-ink-4">
                         {relativeTime(activity.performed_at)}
                       </div>
                     </div>

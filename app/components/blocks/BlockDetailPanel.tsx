@@ -29,7 +29,7 @@ const TABS: { id: AgroDomain; label: string; icon: string }[] = [
 
 const statusConfig = {
   green: { badge: 'bg-green-soft text-green', dot: 'bg-green', label: 'Healthy' },
-  amber: { badge: 'bg-amber-soft text-amber', dot: 'bg-amber', label: 'Attention' },
+  amber: { badge: 'bg-amber-soft text-amber-ink', dot: 'bg-amber', label: 'Attention' },
   red:   { badge: 'bg-red-soft text-red',     dot: 'bg-red',   label: 'Critical' },
 };
 

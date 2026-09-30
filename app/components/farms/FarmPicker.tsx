@@ -17,7 +17,7 @@ interface Props {
 
 const roleStyles: Record<string, string> = {
   admin:      'bg-green-soft text-green',
-  supervisor: 'bg-amber-soft text-amber',
+  supervisor: 'bg-amber-soft text-amber-ink',
   worker:     'bg-tile-2 text-ink-2',
 };
 
@@ -121,7 +121,7 @@ export default function FarmPicker({ farms, userName, openWizard }: Props) {
                       {farm.name}
                     </h2>
 
-                    <div className="mt-1 flex items-center gap-1.5 font-mono text-[10px] tracking-wide text-ink-3">
+                    <div className="mt-1 flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-ink-3">
                       <Layers className="h-3 w-3 shrink-0" />
                       <span>{farm.blockCount} {farm.blockCount === 1 ? 'BLOCK' : 'BLOCKS'}</span>
                       {farm.total_area && <span>· {farm.total_area} {farm.area_unit?.toUpperCase()}</span>}

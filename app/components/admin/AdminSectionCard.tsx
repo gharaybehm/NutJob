@@ -28,7 +28,7 @@ export default function AdminSectionCard({
 
 const STATUS_STYLES: Record<string, string> = {
   active: "bg-green-soft text-green",
-  trialing: "bg-blue-soft text-blue",
+  trialing: "bg-blue-soft text-blue-ink",
   past_due: "bg-red-soft text-red",
   canceled: "bg-tile text-ink-3",
   incomplete: "bg-tile text-ink-3",

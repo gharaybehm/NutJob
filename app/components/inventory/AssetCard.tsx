@@ -23,7 +23,7 @@ export default function AssetCard({
   const getStatusColor = () => {
     switch (asset.status) {
       case 'operational': return 'bg-green-soft text-green';
-      case 'needs-maintenance': return 'bg-amber-soft text-amber';
+      case 'needs-maintenance': return 'bg-amber-soft text-amber-ink';
       case 'out-of-service': return 'bg-red-soft text-red';
     }
   };
@@ -104,11 +104,11 @@ export default function AssetCard({
                   <div className="absolute w-2 h-2 rounded-full bg-line -left-[5px] top-1.5" />
                   <div className="flex justify-between items-start mb-1">
                     <span className="font-medium text-ink text-xs">{log.date.toLocaleDateString('en-GB')}</span>
-                    <span className="text-[10px] uppercase tracking-wider text-ink-3 font-semibold px-1.5 bg-tile rounded">{log.type}</span>
+                    <span className="text-[11px] uppercase tracking-wider text-ink-3 font-semibold px-1.5 bg-tile rounded">{log.type}</span>
                   </div>
                   <p className="text-xs text-ink-2">{log.description}</p>
                   {(log.cost || log.performedBy || log.loggedByName) && (
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[10px] text-ink-3">
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[11px] text-ink-3">
                       {log.cost && <span>Cost: ${log.cost}</span>}
                       {/* Free text — who did the work, possibly a contractor. */}
                       {log.performedBy && <span>Work by: {log.performedBy}</span>}

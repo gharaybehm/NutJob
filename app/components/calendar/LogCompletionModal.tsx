@@ -47,7 +47,7 @@ export default function LogCompletionModal({ event, onClose, onComplete }: LogCo
   );
 
   const fieldCls = 'w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-green focus:outline-none focus:ring-2 focus:ring-green/20';
-  const labelCls = 'mb-1 block font-mono text-[10px] font-semibold uppercase tracking-wide text-ink-3';
+  const labelCls = 'mb-1 block font-mono text-[11px] font-semibold uppercase tracking-wide text-ink-3';
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -143,7 +143,7 @@ export default function LogCompletionModal({ event, onClose, onComplete }: LogCo
                           <span className="text-xs text-ink-3 w-8">{m.unit}</span>
                         </div>
                         {isOver && (
-                          <p className="text-[10px] text-amber">
+                          <p className="text-[11px] text-amber-ink">
                             Stock: {m.currentBalance} {m.unit}
                           </p>
                         )}

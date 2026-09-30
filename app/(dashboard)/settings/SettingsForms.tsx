@@ -352,7 +352,7 @@ function TeamTab({
     const cfg = role === 'admin'
       ? 'bg-red-soft text-red'
       : role === 'supervisor'
-      ? 'bg-blue-soft text-blue'
+      ? 'bg-blue-soft text-blue-ink'
       : 'bg-green-soft text-green'
     return <span className={`text-xs font-bold tracking-wider uppercase px-2 py-0.5 rounded-md ${cfg}`}>{role}</span>
   }
@@ -381,7 +381,7 @@ function TeamTab({
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-ink">{u.full_name || 'Anonymous'}</span>
-                          {isSelf && <span className="rounded bg-green-soft px-1.5 py-0.5 text-[10px] font-semibold text-green">You</span>}
+                          {isSelf && <span className="rounded bg-green-soft px-1.5 py-0.5 text-[11px] font-semibold text-green">You</span>}
                         </div>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-ink-3">{u.phone || '—'}</td>
@@ -911,7 +911,7 @@ function PushNotificationToggle({ farmId }: { farmId: string }) {
         </button>
       </div>
       {status === 'denied' && (
-        <p className="text-xs text-amber">
+        <p className="text-xs text-amber-ink">
           Click the lock/info icon in your browser address bar, allow Notifications, then refresh.
         </p>
       )}
@@ -953,15 +953,15 @@ function NotificationAlertsTab({ farmId }: { farmId: string }) {
       <div className="space-y-8 max-w-xl">
         <PushNotificationToggle farmId={farmId} />
         <ThresholdSlider id="soil-moisture-low" label="Soil Moisture — Low Alert" description="Alert fires when a block's soil moisture reading falls below this level."
-          icon={Droplets} colorClass="text-blue" value={prefs.soilMoistureLow} onChange={v => update('soilMoistureLow', v)} min={5} max={50} step={1} unit="%" />
+          icon={Droplets} colorClass="text-blue-ink" value={prefs.soilMoistureLow} onChange={v => update('soilMoistureLow', v)} min={5} max={50} step={1} unit="%" />
         <ThresholdSlider id="water-deficit-high" label="Water Deficit — Critical" description="Alert fires when estimated water deficit exceeds this amount."
-          icon={Droplets} colorClass="text-amber" value={prefs.waterDeficitHigh} onChange={v => update('waterDeficitHigh', v)} min={10} max={100} step={5} unit="mm" />
+          icon={Droplets} colorClass="text-amber-ink" value={prefs.waterDeficitHigh} onChange={v => update('waterDeficitHigh', v)} min={10} max={100} step={5} unit="mm" />
         <ThresholdSlider id="temp-heat-stress" label="Heat Stress Temperature" description="Alert fires when the forecast high exceeds this temperature."
           icon={Thermometer} colorClass="text-red" value={prefs.tempHeatStress} onChange={v => update('tempHeatStress', v)} min={28} max={48} step={1} unit="°C" />
         <ThresholdSlider id="rain-skip" label="Rainfall — Skip Irrigation" description="If forecast or recorded rainfall exceeds this, the AI will recommend skipping irrigation."
-          icon={Wind} colorClass="text-teal" value={prefs.rainSkipIrrigation} onChange={v => update('rainSkipIrrigation', v)} min={2} max={30} step={1} unit="mm" />
+          icon={Wind} colorClass="text-teal-ink" value={prefs.rainSkipIrrigation} onChange={v => update('rainSkipIrrigation', v)} min={2} max={30} step={1} unit="mm" />
         <ThresholdSlider id="pest-risk" label="Pest Risk — High Alert" description="Alert fires when AI pest risk score exceeds this confidence threshold."
-          icon={AlertTriangle} colorClass="text-gold" value={prefs.pestRiskHigh} onChange={v => update('pestRiskHigh', v)} min={40} max={95} step={5} unit="%" />
+          icon={AlertTriangle} colorClass="text-gold-ink" value={prefs.pestRiskHigh} onChange={v => update('pestRiskHigh', v)} min={40} max={95} step={5} unit="%" />
 
         <div className="flex items-center gap-3 pt-2">
           <button onClick={handleSave} className="flex items-center gap-2 rounded-xl bg-green px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-105 transition-all">
@@ -1042,7 +1042,7 @@ const BLANK_FORM: SensorFormValues = {
 
 const VERDICT_STYLE: Record<StationVerdict, { badge: string; label: string }> = {
   agree: { badge: 'bg-green-soft text-green', label: 'Agree' },
-  differs: { badge: 'bg-amber-soft text-amber', label: 'Differs' },
+  differs: { badge: 'bg-amber-soft text-amber-ink', label: 'Differs' },
   insufficient: { badge: 'bg-tile text-ink-3', label: 'Not enough data yet' },
 }
 
@@ -1523,7 +1523,7 @@ function SensorConnectionsTab({
             <div key={ep.path} className="rounded-xl border border-line overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 bg-tile border-b border-line">
                 <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-soft text-green">POST</span>
+                  <span className="px-1.5 py-0.5 rounded text-[11px] font-bold bg-green-soft text-green">POST</span>
                   <code className="text-sm font-mono text-ink-2">{webhookBase}{ep.path}</code>
                 </div>
                 <CopyButton text={`${webhookBase}${ep.path}`} />

@@ -51,7 +51,7 @@ export default async function LoginPage({
           </div>
         </div>
 
-        <div className="relative z-10 font-mono text-[10px] tracking-wide text-sidebar-text-muted">
+        <div className="relative z-10 font-mono text-[11px] tracking-wide text-sidebar-text-muted">
           © 2026 ROOTLOOT.AI
         </div>
       </div>
@@ -80,7 +80,7 @@ export default async function LoginPage({
 
             {mode === 'signup' && (
               <div>
-                <label htmlFor="full_name" className="mb-1.5 block font-mono text-[10px] tracking-wide text-ink-3">
+                <label htmlFor="full_name" className="mb-1.5 block font-mono text-[11px] tracking-wide text-ink-3">
                   {t('fullNameLabel').toUpperCase()}
                 </label>
                 <div className="flex items-center gap-2.5 rounded-[11px] border border-line bg-surface px-3.5 py-3">
@@ -95,7 +95,7 @@ export default async function LoginPage({
             )}
 
             <div>
-              <label htmlFor="email" className="mb-1.5 block font-mono text-[10px] tracking-wide text-ink-3">
+              <label htmlFor="email" className="mb-1.5 block font-mono text-[11px] tracking-wide text-ink-3">
                 {t('emailLabel').toUpperCase()}
               </label>
               <div className="flex items-center gap-2.5 rounded-[11px] border border-line bg-surface px-3.5 py-3">
@@ -109,7 +109,7 @@ export default async function LoginPage({
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-1.5 block font-mono text-[10px] tracking-wide text-ink-3">
+              <label htmlFor="password" className="mb-1.5 block font-mono text-[11px] tracking-wide text-ink-3">
                 {t('passwordLabel').toUpperCase()}
               </label>
               <div className="flex items-center gap-2.5 rounded-[11px] border border-line bg-surface px-3.5 py-3">
@@ -150,7 +150,7 @@ export default async function LoginPage({
 
           <div className="my-6 flex items-center gap-3">
             <div className="h-px flex-1 bg-line" />
-            <span className="font-mono text-[10px] text-ink-4">OR</span>
+            <span className="font-mono text-[11px] text-ink-4">OR</span>
             <div className="h-px flex-1 bg-line" />
           </div>
 
@@ -176,7 +176,7 @@ export default async function LoginPage({
             )}
           </div>
 
-          <div className="mt-6 text-center font-mono text-[10px] tracking-wide text-ink-4">
+          <div className="mt-6 text-center font-mono text-[11px] tracking-wide text-ink-4">
             ROLE-BASED ACCESS · ADMIN · SUPERVISOR · WORKER
           </div>
         </div>

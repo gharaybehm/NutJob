@@ -9,8 +9,8 @@ interface AlertBadgeProps {
 }
 
 const severityConfig = {
-  info:     { bar: 'bg-blue',  bg: 'bg-blue-soft',  border: 'border-blue/20',  text: 'text-blue',  icon: '💡', label: 'Info' },
-  warning:  { bar: 'bg-amber', bg: 'bg-amber-soft', border: 'border-amber/20', text: 'text-amber', icon: '⚠️', label: 'Warning' },
+  info:     { bar: 'bg-blue',  bg: 'bg-blue-soft',  border: 'border-blue/20',  text: 'text-blue-ink',  icon: '💡', label: 'Info' },
+  warning:  { bar: 'bg-amber', bg: 'bg-amber-soft', border: 'border-amber/20', text: 'text-amber-ink', icon: '⚠️', label: 'Warning' },
   critical: { bar: 'bg-red',   bg: 'bg-red-soft',   border: 'border-red/20',   text: 'text-red',   icon: '🔴', label: 'Critical' },
 };
 

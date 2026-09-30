@@ -20,9 +20,9 @@ interface Props {
 
 const STATUS_STYLE: Record<LeafStatus, { badge: string; label: string }> = {
   adequate:  { badge: 'bg-green-soft text-green', label: 'Adequate' },
-  marginal:  { badge: 'bg-amber-soft text-amber', label: 'Marginal' },
+  marginal:  { badge: 'bg-amber-soft text-amber-ink', label: 'Marginal' },
   deficient: { badge: 'bg-red-soft text-red',     label: 'Deficient' },
-  high:      { badge: 'bg-amber-soft text-amber', label: 'High' },
+  high:      { badge: 'bg-amber-soft text-amber-ink', label: 'High' },
 };
 
 const fmtDate = (iso: string, withYear = false) =>

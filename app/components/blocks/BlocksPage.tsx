@@ -358,7 +358,7 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
           <div className={`rounded-lg border px-4 py-3 text-sm ${
             awaitingDraw
               ? 'border-green/30 bg-green-soft text-green'
-              : 'border-amber/30 bg-amber-soft text-amber'
+              : 'border-amber/30 bg-amber-soft text-amber-ink'
           }`}>
             {awaitingDraw ? (
               <span className="flex items-center gap-2">

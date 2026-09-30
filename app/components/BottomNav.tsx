@@ -144,7 +144,7 @@ export default function BottomNav({ userRole, farmId, farms = [] }: BottomNavPro
               <Link
                 key={item.id}
                 href={item.href}
-                className={`flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors min-h-[44px] ${
+                className={`flex flex-1 flex-col items-center justify-center gap-1 text-xs font-medium transition-colors min-h-[48px] ${
                   isActive ? "text-green" : "text-ink-3 hover:text-ink-2"
                 }`}
               >
@@ -155,7 +155,7 @@ export default function BottomNav({ userRole, farmId, farms = [] }: BottomNavPro
           })}
           <button
             onClick={() => setDrawerOpen((v) => !v)}
-            className={`flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors min-h-[44px] ${
+            className={`flex flex-1 flex-col items-center justify-center gap-1 text-xs font-medium transition-colors min-h-[48px] ${
               drawerOpen ? "text-green" : "text-ink-3 hover:text-ink-2"
             }`}
           >

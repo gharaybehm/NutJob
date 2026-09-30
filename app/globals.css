@@ -10,15 +10,18 @@
   --color-tile: #FAF8F1;
   --color-tile-2: #F1EDE1;
   --color-ink: #17251C;
-  --color-ink-2: #5F7266;
-  --color-ink-3: #8A968C;
-  --color-ink-4: #A0AAA1;
+  /* ink-2..4 darkened so text passes WCAG AA (4.5:1) on surface, tile and
+     paper. The prototype values (#5F7266 / #8A968C / #A0AAA1) measured
+     5.1 / 3.1 / 2.4 on white. */
+  --color-ink-2: #4F6155;
+  --color-ink-3: #5C6B61;
+  --color-ink-4: #66736A;
 
   /* ── Sidebar (dark) ── */
   --color-sidebar-from: #15281D;
   --color-sidebar-to: #0F1F16;
   --color-sidebar-text: #B9C5BB;
-  --color-sidebar-text-muted: #8C9A8F;
+  --color-sidebar-text-muted: #A7B4AA;
 
   /* ── Brand ── */
   --color-green: #2F7D4F;
@@ -38,6 +41,16 @@
   --color-purple-soft: #F1EAF7;
   --color-teal: #2E8E8E;
   --color-teal-soft: #E4F1F1;
+  --color-brown: #8A6A4F;       /* pruning category */
+  --color-brown-soft: #F1EAE3;
+
+  /* Text-on-light variants. The base hues above are for fills, dots and bars;
+     as text they fall below 4.5:1 (amber 2.3, gold 2.8, blue 4.5, teal 4.0). */
+  --color-amber-ink: #8A6310;
+  --color-gold-ink: #8A6310;
+  --color-blue-ink: #2F6A88;
+  --color-teal-ink: #1F6E6E;
+  --color-brown-ink: #6E5540;
 
   /* ── Fonts ── */
   --font-sans:   var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;

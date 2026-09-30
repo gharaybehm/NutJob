@@ -25,7 +25,7 @@ function BenchmarkBadge({ status, label }: { status: BS; label: string }) {
     red:   'bg-red-100 text-red-700',
   };
   return (
-    <span className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-tight ${cls[status]}`}>
+    <span className={`inline-block rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-tight ${cls[status]}`}>
       {label}
     </span>
   );
@@ -53,7 +53,7 @@ function ParamInput({
           placeholder="—"
           className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-line focus:outline-none focus:ring-2 focus:ring-green"
         />
-        {unit && <span className="text-[10px] text-ink-4 shrink-0 whitespace-nowrap">{unit}</span>}
+        {unit && <span className="text-[11px] text-ink-4 shrink-0 whitespace-nowrap">{unit}</span>}
       </div>
     </div>
   );
@@ -106,11 +106,11 @@ function HChip({ label, value, unit, bk }: { label: string; value: number; unit:
   const dot = s === 'green' ? 'bg-emerald-500' : s === 'amber' ? 'bg-amber-500' : s === 'red' ? 'bg-red-500' : '';
   return (
     <div className={`flex flex-col gap-0.5 rounded-lg border px-2.5 py-1.5 ${bg}`}>
-      <span className="text-[10px] font-medium text-ink-3 leading-tight">{label}</span>
+      <span className="text-[11px] font-medium text-ink-3 leading-tight">{label}</span>
       <div className="flex items-center gap-1">
         {s && <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${dot}`} />}
         <span className="text-xs font-bold text-ink">{value}</span>
-        <span className="text-[10px] text-ink-4">{unit}</span>
+        <span className="text-[11px] text-ink-4">{unit}</span>
       </div>
     </div>
   );
@@ -147,7 +147,7 @@ function HistReadingCard({ r }: { r: HistReading }) {
           </span>
           {r.lab_reference && <span className="ml-2 text-xs text-ink-4">· {r.lab_reference}</span>}
         </div>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${isWater ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-700'}`}>
+        <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${isWater ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-700'}`}>
           {isWater ? 'Water' : 'Soil'}
         </span>
       </div>
@@ -165,7 +165,7 @@ function HistReadingCard({ r }: { r: HistReading }) {
           })}
           {typeof p.texture_class === 'string' && p.texture_class && (
             <div className="col-span-2 flex flex-col gap-0.5 rounded-lg border border-line bg-tile px-2.5 py-1.5">
-              <span className="text-[10px] font-medium text-ink-3">Texture</span>
+              <span className="text-[11px] font-medium text-ink-3">Texture</span>
               <span className="text-xs font-bold text-ink">{p.texture_class}</span>
             </div>
           )}
@@ -430,7 +430,7 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
               <h2 className="text-lg font-semibold text-ink flex items-center gap-2">
                 Lab Test Results
                 {view === 'form' && existingId && (
-                  <span className="rounded bg-green-soft text-green px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider animate-pulse">
+                  <span className="rounded bg-green-soft text-green px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider animate-pulse">
                     Updating Saved
                   </span>
                 )}

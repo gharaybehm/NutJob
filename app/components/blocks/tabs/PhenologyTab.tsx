@@ -175,16 +175,16 @@ export default function PhenologyTab({ data, blockId, blockName, farmId, canLog 
         <div className="rounded-xl border border-line bg-surface p-4">
           <p className="text-xs text-ink-3 mb-1">Cumulative GDD</p>
           <p className="text-2xl font-bold text-ink">{data.cumulativeGDD.toLocaleString()}</p>
-          <p className="text-xs text-teal mt-1">Computed since Jan 1</p>
+          <p className="text-xs text-teal-ink mt-1">Computed since Jan 1</p>
         </div>
         <div className="rounded-xl border border-line bg-surface p-4">
           <p className="text-xs text-ink-3 mb-1">Chill Hours</p>
           <p className="text-2xl font-bold text-ink">{data.chillHours.toLocaleString()}</p>
-          <p className="text-xs text-teal mt-1">Below 7°C since Nov</p>
+          <p className="text-xs text-teal-ink mt-1">Below 7°C since Nov</p>
         </div>
         <div className="rounded-xl border border-line bg-surface p-4">
           <p className="text-xs text-ink-3 mb-1">Hull Split In</p>
-          <p className="text-2xl font-bold text-amber">{data.notBearing ? '—' : data.daysToHullSplit || '—'}</p>
+          <p className="text-2xl font-bold text-amber-ink">{data.notBearing ? '—' : data.daysToHullSplit || '—'}</p>
           <p className="text-xs text-ink-4 mt-1">{data.notBearing ? 'no crop yet' : 'days (est.)'}</p>
         </div>
         <div className="rounded-xl border border-line bg-surface p-4">
@@ -210,7 +210,7 @@ export default function PhenologyTab({ data, blockId, blockName, farmId, canLog 
           <h3 className="text-sm font-semibold text-ink-2">Estimated Harvest Window</h3>
           {(data.estimatedHarvestStart || data.estimatedHarvestEnd) && (
             <span
-              className="rounded-full bg-tile px-2 py-0.5 text-[10px] font-semibold text-ink-3"
+              className="rounded-full bg-tile px-2 py-0.5 text-[11px] font-semibold text-ink-3"
               title="Projected from heat accumulated since the observed anchor date, using uncalibrated default thresholds. Expect the estimate to tighten after a season of observed dates."
             >
               PROVISIONAL
@@ -221,15 +221,15 @@ export default function PhenologyTab({ data, blockId, blockName, farmId, canLog 
           <>
             <div className="flex items-center gap-3">
               <div className="flex-1 rounded-lg bg-amber-soft border border-amber/25 p-3 text-center">
-                <p className="text-xs text-amber font-medium">Starts</p>
-                <p className="text-sm font-bold text-amber mt-0.5">
+                <p className="text-xs text-amber-ink font-medium">Starts</p>
+                <p className="text-sm font-bold text-amber-ink mt-0.5">
                   {formatDate(data.estimatedHarvestStart, { day: 'numeric', month: 'short' })}
                 </p>
               </div>
               <span className="text-ink-4 text-sm">→</span>
               <div className="flex-1 rounded-lg bg-amber-soft border border-amber/25 p-3 text-center">
-                <p className="text-xs text-amber font-medium">Ends</p>
-                <p className="text-sm font-bold text-amber mt-0.5">
+                <p className="text-xs text-amber-ink font-medium">Ends</p>
+                <p className="text-sm font-bold text-amber-ink mt-0.5">
                   {formatDate(data.estimatedHarvestEnd, { day: 'numeric', month: 'short' })}
                 </p>
               </div>

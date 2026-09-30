@@ -1,10 +1,10 @@
 import type { DataSource } from './types';
 
 const sourceConfig: Record<DataSource, { label: string; classes: string }> = {
-  sensor:   { label: 'Sensor',   classes: 'bg-blue-soft text-blue' },
+  sensor:   { label: 'Sensor',   classes: 'bg-blue-soft text-blue-ink' },
   manual:   { label: 'Manual',   classes: 'bg-purple-soft text-purple' },
-  computed: { label: 'Computed', classes: 'bg-teal-soft text-teal' },
-  forecast: { label: 'Forecast', classes: 'bg-gold-soft text-gold' },
+  computed: { label: 'Computed', classes: 'bg-teal-soft text-teal-ink' },
+  forecast: { label: 'Forecast', classes: 'bg-gold-soft text-gold-ink' },
 };
 
 interface SourceBadgeProps {

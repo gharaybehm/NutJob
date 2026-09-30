@@ -51,14 +51,14 @@ interface Props {
 }
 
 const ACTIVITY_TYPES: { id: ActivityType; label: string; icon: React.ElementType; color: string }[] = [
-  { id: "irrigation",    label: "Irrigation",    icon: Droplets,     color: "bg-blue-soft text-blue ring-blue/30" },
-  { id: "fertigation",   label: "Fertigation",   icon: Leaf,         color: "bg-gold-soft text-gold ring-gold/30" },
+  { id: "irrigation",    label: "Irrigation",    icon: Droplets,     color: "bg-blue-soft text-blue-ink ring-blue/30" },
+  { id: "fertigation",   label: "Fertigation",   icon: Leaf,         color: "bg-gold-soft text-gold-ink ring-gold/30" },
   { id: "spraying",      label: "Spraying",      icon: Bug,          color: "bg-purple-soft text-purple ring-purple/30" },
-  { id: "pruning",       label: "Pruning",       icon: Scissors,     color: "bg-teal-soft text-teal ring-teal/30" },
-  { id: "scouting",      label: "Scouting",      icon: Sprout,       color: "bg-green-soft text-green ring-green/30" },
+  { id: "pruning",       label: "Pruning",       icon: Scissors,     color: "bg-brown-soft text-brown-ink ring-brown/30" },
+  { id: "scouting",      label: "Scouting",      icon: Sprout,       color: "bg-teal-soft text-teal-ink ring-teal/30" },
   { id: "tissue-sample", label: "Tissue Sample", icon: FlaskConical, color: "bg-purple-soft text-purple ring-purple/30" },
   { id: "weeding",       label: "Weeding",       icon: Scissors,     color: "bg-tile-2 text-ink-2 ring-ink-4/30" },
-  { id: "pollinating",   label: "Pollinating",   icon: Sprout,       color: "bg-amber-soft text-amber ring-amber/30" },
+  { id: "pollinating",   label: "Pollinating",   icon: Sprout,       color: "bg-amber-soft text-amber-ink ring-amber/30" },
   { id: "tilling",       label: "Tilling",       icon: Activity,     color: "bg-tile-2 text-ink-2 ring-ink-4/30" },
   { id: "plowing",       label: "Plowing",       icon: Activity,     color: "bg-tile-2 text-ink-2 ring-ink-4/30" },
   { id: "other",         label: "Other",         icon: Activity,     color: "bg-tile-2 text-ink-2 ring-ink-4/30" },
@@ -260,7 +260,7 @@ export default function LogActivityModal({ blocks, farmId, onClose, onSaved, onS
 
             {/* Activity type grid */}
             <div>
-              <label className="block font-mono text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-2">
+              <label className="block font-mono text-[11px] font-semibold text-ink-3 uppercase tracking-wider mb-2">
                 Activity Type
               </label>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -288,7 +288,7 @@ export default function LogActivityModal({ blocks, farmId, onClose, onSaved, onS
 
             {/* Title */}
             <div>
-              <label htmlFor="log-title" className="block font-mono text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
+              <label htmlFor="log-title" className="block font-mono text-[11px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
                 Title <span className="text-red">*</span>
               </label>
               <input
@@ -305,7 +305,7 @@ export default function LogActivityModal({ blocks, farmId, onClose, onSaved, onS
             {/* Block + Date row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="log-block" className="block font-mono text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
+                <label htmlFor="log-block" className="block font-mono text-[11px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
                   Block <span className="font-normal normal-case text-ink-4">(optional)</span>
                 </label>
                 <select
@@ -322,7 +322,7 @@ export default function LogActivityModal({ blocks, farmId, onClose, onSaved, onS
               </div>
 
               <div>
-                <label htmlFor="log-date" className="block font-mono text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
+                <label htmlFor="log-date" className="block font-mono text-[11px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
                   Date &amp; Time
                 </label>
                 <input
@@ -337,7 +337,7 @@ export default function LogActivityModal({ blocks, farmId, onClose, onSaved, onS
 
             {/* Notes */}
             <div>
-              <label htmlFor="log-notes" className="block font-mono text-[10px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
+              <label htmlFor="log-notes" className="block font-mono text-[11px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
                 Notes <span className="font-normal normal-case text-ink-4">(optional)</span>
               </label>
               <textarea
@@ -353,7 +353,7 @@ export default function LogActivityModal({ blocks, farmId, onClose, onSaved, onS
             {/* Activity-specific detail fields */}
             {DETAIL_TYPES.has(activityType) && (
               <div className="border-t border-line-soft pt-4 space-y-3">
-                <p className="font-mono text-[10px] font-semibold text-ink-3 uppercase tracking-wider">Details</p>
+                <p className="font-mono text-[11px] font-semibold text-ink-3 uppercase tracking-wider">Details</p>
 
                 {/* IRRIGATION */}
                 {activityType === "irrigation" && (
@@ -469,7 +469,7 @@ export default function LogActivityModal({ blocks, farmId, onClose, onSaved, onS
                       <div className="flex gap-2 mt-1">
                         {([
                           { value: "green" as const, label: "Low",    cls: "text-green bg-green-soft ring-green/30" },
-                          { value: "amber" as const, label: "Medium", cls: "text-amber bg-amber-soft ring-amber/30" },
+                          { value: "amber" as const, label: "Medium", cls: "text-amber-ink bg-amber-soft ring-amber/30" },
                           { value: "red"   as const, label: "High",   cls: "text-red bg-red-soft ring-red/30" },
                         ]).map((opt) => (
                           <button key={opt.value} type="button"
@@ -520,7 +520,7 @@ export default function LogActivityModal({ blocks, farmId, onClose, onSaved, onS
                             onClick={() => setPruneIntensity(level)}
                             className={`flex-1 py-2 rounded-lg text-xs font-medium ring-1 transition-all ${
                               pruneIntensity === level
-                                ? "bg-amber-soft text-amber ring-amber/30 ring-2 scale-[1.03]"
+                                ? "bg-amber-soft text-amber-ink ring-amber/30 ring-2 scale-[1.03]"
                                 : "bg-tile text-ink-2 ring-line"
                             }`}>
                             {level}

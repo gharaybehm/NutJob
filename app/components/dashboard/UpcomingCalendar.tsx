@@ -35,11 +35,11 @@ function getEventIcon(type: string) {
 }
 
 function getEventTheme(type: string) {
-  if (type === 'irrigation') return 'bg-blue-soft text-blue';
-  if (type === 'fertigation') return 'bg-gold-soft text-gold';
+  if (type === 'irrigation') return 'bg-blue-soft text-blue-ink';
+  if (type === 'fertigation') return 'bg-gold-soft text-gold-ink';
   if (type === 'spraying') return 'bg-purple-soft text-purple';
-  if (type === 'scouting') return 'bg-green-soft text-green';
-  if (type === 'pruning') return 'bg-teal-soft text-teal';
+  if (type === 'scouting') return 'bg-teal-soft text-teal-ink';
+  if (type === 'pruning') return 'bg-brown-soft text-brown-ink';
   return 'bg-tile text-ink-3';
 }
 
@@ -94,7 +94,7 @@ export default async function UpcomingCalendar({ farmId }: { farmId: string }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-semibold text-ink truncate">{event.title}</p>
-                    <p className="font-mono text-[10px] text-ink-3">{formatEventTime(event.startDate)}</p>
+                    <p className="font-mono text-[11px] text-ink-3">{formatEventTime(event.startDate)}</p>
                   </div>
                 </li>
               );

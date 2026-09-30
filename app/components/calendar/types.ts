@@ -19,12 +19,12 @@ export const ACTIVITY_COLORS: Record<
   ActivityType,
   { bg: string; text: string; ring: string; dot: string }
 > = {
-  irrigation:      { bg: 'bg-blue-soft',   text: 'text-blue',   ring: 'ring-blue/20',   dot: 'bg-blue' },
-  fertigation:     { bg: 'bg-gold-soft',   text: 'text-gold',   ring: 'ring-gold/20',   dot: 'bg-gold' },
+  irrigation:      { bg: 'bg-blue-soft',   text: 'text-blue-ink',   ring: 'ring-blue/20',   dot: 'bg-blue' },
+  fertigation:     { bg: 'bg-gold-soft',   text: 'text-gold-ink',   ring: 'ring-gold/20',   dot: 'bg-gold' },
   spraying:        { bg: 'bg-purple-soft', text: 'text-purple', ring: 'ring-purple/20', dot: 'bg-purple' },
-  pruning:         { bg: 'bg-teal-soft',   text: 'text-teal',   ring: 'ring-teal/20',   dot: 'bg-teal' },
-  scouting:        { bg: 'bg-green-soft',  text: 'text-green',  ring: 'ring-green/20',  dot: 'bg-green' },
-  pollinating:     { bg: 'bg-amber-soft',  text: 'text-amber',  ring: 'ring-amber/20',  dot: 'bg-amber' },
+  pruning:         { bg: 'bg-brown-soft',  text: 'text-brown-ink', ring: 'ring-brown/20', dot: 'bg-brown' },
+  scouting:        { bg: 'bg-teal-soft',   text: 'text-teal-ink', ring: 'ring-teal/20',  dot: 'bg-teal' },
+  pollinating:     { bg: 'bg-amber-soft',  text: 'text-amber-ink',  ring: 'ring-amber/20',  dot: 'bg-amber' },
   tilling:         { bg: 'bg-tile-2',      text: 'text-ink-2',  ring: 'ring-ink-4/20',  dot: 'bg-ink-3' },
   plowing:         { bg: 'bg-tile-2',      text: 'text-ink-2',  ring: 'ring-ink-4/20',  dot: 'bg-ink-3' },
   weeding:         { bg: 'bg-tile-2',      text: 'text-ink-2',  ring: 'ring-ink-4/20',  dot: 'bg-ink-3' },

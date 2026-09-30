@@ -79,7 +79,7 @@ export default function LogUsageModal({
                 onChange={(e) => setQuantity(e.target.value)}
                 className="w-full rounded-lg border-line bg-surface px-3 py-2 text-sm text-ink focus:border-green focus:ring-green"
               />
-              <p className="mt-1 text-[10px] text-ink-3">
+              <p className="mt-1 text-[11px] text-ink-3">
                 Available: {consumable.currentBalance} {consumable.unit}
               </p>
             </div>

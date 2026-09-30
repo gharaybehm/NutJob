@@ -63,7 +63,7 @@ export default function WeekView({ currentDate, events, onEventClick }: WeekView
           const isToday = isSameDay(day, today);
           return (
             <div key={i} className="border-r border-line-soft py-3 text-center last:border-r-0">
-              <p className="font-mono text-[10px] font-medium uppercase tracking-wide text-ink-4">
+              <p className="font-mono text-[11px] font-medium uppercase tracking-wide text-ink-4">
                 {DAY_LABELS[day.getDay()]}
               </p>
               <p className={`mt-0.5 font-heading text-xl font-semibold ${isToday ? 'text-green' : 'text-ink'}`}>

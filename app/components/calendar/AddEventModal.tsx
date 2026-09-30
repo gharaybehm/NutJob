@@ -62,7 +62,7 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
   const [pickedQty, setPickedQty]         = useState('');
 
   const fieldCls = 'w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:border-green focus:outline-none focus:ring-2 focus:ring-green/20';
-  const labelCls = 'mb-1 block font-mono text-[10px] font-semibold uppercase tracking-wide text-ink-3';
+  const labelCls = 'mb-1 block font-mono text-[11px] font-semibold uppercase tracking-wide text-ink-3';
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -170,7 +170,7 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
 
           {type === 'irrigation' && (
             <div className="rounded-xl bg-blue-soft p-4 border border-blue/15 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue">{t('irrigationDetails')}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-ink">{t('irrigationDetails')}</p>
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className={labelCls}>{t('durationHrs')}</label>
@@ -190,7 +190,7 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
 
           {type === 'fertigation' && (
             <div className="rounded-xl bg-gold-soft p-4 border border-gold/15 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gold">{t('fertigationDetails')}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gold-ink">{t('fertigationDetails')}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>{t('fertilizerType')}</label>
@@ -296,7 +296,7 @@ export default function AddEventModal({ defaultDate, consumables = [], onClose, 
 
           {type === 'pruning' && (
             <div className="rounded-xl bg-teal-soft p-4 border border-teal/15 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-teal">{t('pruningDetails')}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-teal-ink">{t('pruningDetails')}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>{t('pruningType')}</label>

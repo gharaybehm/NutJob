@@ -276,7 +276,7 @@ export default function InventoryPage({
         <div className="rounded-xl border border-line bg-surface p-4">
           <p className="text-xs font-medium text-ink-3 uppercase tracking-wider">{t('stats.needsMaintenance')}</p>
           <div className="mt-1 flex items-baseline gap-2">
-            <p className={`text-2xl font-semibold ${assetsNeedingMaint > 0 ? 'text-amber' : 'text-ink'}`}>
+            <p className={`text-2xl font-semibold ${assetsNeedingMaint > 0 ? 'text-amber-ink' : 'text-ink'}`}>
               {assetsNeedingMaint}
             </p>
           </div>
@@ -321,7 +321,7 @@ export default function InventoryPage({
           >
             {t('tabs.consumables')}
             {lowStockCount > 0 && (
-              <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-soft text-[10px] font-bold text-red">
+              <span className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-soft text-[11px] font-bold text-red">
                 {lowStockCount}
               </span>
             )}

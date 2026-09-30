@@ -148,11 +148,11 @@ function ParamChip({ label, value, unit, benchKey }: { label: string; value: num
            : 'bg-tile border-line';
   return (
     <div className={`flex flex-col gap-0.5 rounded-lg border px-2.5 py-1.5 ${bg}`}>
-      <span className="text-[10px] font-medium text-ink-3 leading-tight">{label}</span>
+      <span className="text-[11px] font-medium text-ink-3 leading-tight">{label}</span>
       <div className="flex items-center gap-1">
         {s && <StatusDot k={benchKey!} v={value} />}
         <span className="text-xs font-bold text-ink">{value}</span>
-        <span className="text-[10px] text-ink-4">{unit}</span>
+        <span className="text-[11px] text-ink-4">{unit}</span>
       </div>
     </div>
   );
@@ -192,13 +192,13 @@ function ReadingCard({ r }: { r: ManualReading }) {
             {new Date(r.recorded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
           {r.block_id === null && (
-            <span className="ml-2 rounded-full bg-tile px-2 py-0.5 text-[10px] font-semibold text-ink-3" title="Saved for the whole farm, so it applies to every block that has no test of its own">Whole farm</span>
+            <span className="ml-2 rounded-full bg-tile px-2 py-0.5 text-[11px] font-semibold text-ink-3" title="Saved for the whole farm, so it applies to every block that has no test of its own">Whole farm</span>
           )}
           {r.lab_reference && (
             <span className="ml-2 text-xs text-ink-4">· {r.lab_reference}</span>
           )}
         </div>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${isWater ? 'bg-blue-soft text-blue' : 'bg-green-soft text-green'}`}>
+        <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${isWater ? 'bg-blue-soft text-blue-ink' : 'bg-green-soft text-green'}`}>
           {isWater ? 'Water' : 'Soil'}
         </span>
       </div>
@@ -229,7 +229,7 @@ function ReadingCard({ r }: { r: ManualReading }) {
           })}
           {p.texture_class && (
             <div className="col-span-2 flex flex-col gap-0.5 rounded-lg border border-line bg-tile px-2.5 py-1.5">
-              <span className="text-[10px] font-medium text-ink-3">Texture</span>
+              <span className="text-[11px] font-medium text-ink-3">Texture</span>
               <span className="text-xs font-bold text-ink">{p.texture_class as string}</span>
             </div>
           )}
@@ -265,7 +265,7 @@ export default function SoilWaterTab({ data, blockId, farmId, sensorCount = 0, r
 
   const moistureStatus =
     data.soilMoisture < data.wiltingPoint ? 'text-red' :
-    data.soilMoisture < data.wiltingPoint + 5 ? 'text-amber' :
+    data.soilMoisture < data.wiltingPoint + 5 ? 'text-amber-ink' :
     'text-green';
 
   return (
@@ -286,7 +286,7 @@ export default function SoilWaterTab({ data, blockId, farmId, sensorCount = 0, r
           <SourceBadge source={data.source} />
         </div>
         {sensorCount > 0 ? (
-          <p className="text-xs text-blue flex items-center gap-1 mb-3">
+          <p className="text-xs text-blue-ink flex items-center gap-1 mb-3">
             <Wifi className="h-3 w-3" />
             {sensorCount} sensor{sensorCount > 1 ? 's' : ''} monitoring
             {data.lastReadingAt && ` · updated ${formatRelativeTime(data.lastReadingAt)}`}
@@ -316,14 +316,14 @@ export default function SoilWaterTab({ data, blockId, farmId, sensorCount = 0, r
         <div className="rounded-xl border border-line bg-surface p-4">
           <p className="text-xs text-ink-3 mb-1">ETo (daily)</p>
           <p className="text-2xl font-bold text-ink">{data.eto} <span className="text-sm font-normal text-ink-4">mm/day</span></p>
-          <p className="text-xs text-teal mt-1">Computed</p>
+          <p className="text-xs text-teal-ink mt-1">Computed</p>
         </div>
         <div className={`rounded-xl border p-4 ${data.waterDeficit > 40 ? 'border-red/25 bg-red-soft' : 'border-line bg-surface'}`}>
           <p className="text-xs text-ink-3 mb-1">Water Deficit</p>
           <p className={`text-2xl font-bold ${data.waterDeficit > 40 ? 'text-red' : 'text-ink'}`}>
             {data.waterDeficit} <span className="text-sm font-normal text-ink-4">mm</span>
           </p>
-          <p className="text-xs text-teal mt-1">Computed</p>
+          <p className="text-xs text-teal-ink mt-1">Computed</p>
         </div>
       </div>
 

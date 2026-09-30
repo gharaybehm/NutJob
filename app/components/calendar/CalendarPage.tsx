@@ -274,7 +274,7 @@ export default function CalendarPage({
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 font-mono text-[10px] tracking-wide text-ink-2">
+      <div className="flex flex-wrap items-center gap-4 font-mono text-[11px] tracking-wide text-ink-2">
         {LEGEND_TYPES.map((type) => (
           <div key={type} className="flex items-center gap-1.5">
             <span className={`h-2 w-2 rounded-[2px] ${ACTIVITY_COLORS[type].dot}`} />

@@ -55,7 +55,7 @@ export default function MonthView({ currentDate, events, onDayClick, onEventClic
         {DAY_NAMES.map((d) => (
           <div
             key={d}
-            className="py-3 text-center font-mono text-[10px] font-semibold uppercase tracking-wide text-ink-3"
+            className="py-3 text-center font-mono text-[11px] font-semibold uppercase tracking-wide text-ink-3"
           >
             {d}
           </div>
