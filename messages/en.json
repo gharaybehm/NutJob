@@ -12,7 +12,17 @@
     "signOut": "Sign Out",
     "goBack": "Go back",
     "farms": "My Farms",
-    "current": "Current"
+    "current": "Current",
+    "freshness": {
+      "title": "Data freshness",
+      "sensors": "Soil sensors",
+      "weather": "Weather",
+      "irrigationLog": "Irrigation log",
+      "never": "none",
+      "minutes": "{count} min",
+      "hours": "{count} h",
+      "days": "{count} d"
+    }
   },
   "topNav": {
     "viewNotifications": "View notifications",
@@ -32,7 +42,11 @@
       "ongoing": "Ongoing",
       "inHours": "In {hours}h",
       "inDays": "In {days}d",
-      "unresolved": "{count} unresolved"
+      "unresolved": "{count} unresolved",
+      "soilMoisture": "Soil moisture",
+      "driestBlock": "Driest: {block}",
+      "moistureSpread": "Median {median} · max {max}",
+      "liveSensorReading": "Latest sensor reading"
     },
     "alerts": {
       "title": "Active Alerts",
@@ -63,7 +77,10 @@
       "noBlocks": "No blocks configured yet",
       "goToBlocks": "Go to Blocks page to configure",
       "moisture": "Moisture: {value}",
-      "issue": "Issue: {text}"
+      "issue": "Issue: {text}",
+      "healthy": "Healthy",
+      "watch": "Watch",
+      "critical": "Critical"
     },
     "activityFeed": {
       "title": "Recent Activity",
@@ -81,7 +98,8 @@
     },
     "weather": {
       "title": "7-Day Weather Forecast",
-      "failedToLoad": "Failed to load weather data."
+      "failedToLoad": "Failed to load weather data.",
+      "sprayOk": "Spray OK"
     },
     "upcomingCalendar": {
       "title": "Upcoming Events",
@@ -103,6 +121,24 @@
         "calendar": { "title": "Schedule your first event", "desc": "Add irrigation, spraying, or scouting events to the farm calendar." },
         "sensors": { "title": "Connect sensors", "desc": "Link IoT soil moisture and weather sensors for live data feeds." }
       }
+    },
+    "plan": {
+      "title": "Today's plan",
+      "subtitle": "Alerts and AI recommendations, most urgent first",
+      "viewAll": "All {count} →",
+      "emptyTitle": "Nothing needs action",
+      "emptyDescription": "No open alerts or pending recommendations for this farm.",
+      "actToday": "Act today",
+      "watch": "Watch",
+      "confidence": "Confidence {level} · {value}%",
+      "source": "Source: {source}",
+      "level": {
+        "high": "high",
+        "medium": "medium",
+        "low": "low"
+      },
+      "review": "Review",
+      "openBlock": "Open block"
     }
   },
   "blocks": {
@@ -270,7 +306,31 @@
     "managerNoteOptional": "(optional)",
     "managerNotePlaceholder": "Add context, adjustments, or reasons for the change…",
     "cancel": "Cancel",
-    "acceptWithChanges": "Accept with changes"
+    "acceptWithChanges": "Accept with changes",
+    "skipEllipsis": "Skip…",
+    "acceptAndSchedule": "Accept & schedule",
+    "confidence": "Confidence",
+    "confidenceLevel": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "statusScheduled": "Scheduled · {date}",
+    "statusDone": "Done",
+    "logWhatWasDone": "Log what was done",
+    "scheduleTitle": "Schedule this work",
+    "schedule": "Schedule",
+    "scheduleHint": "This adds the work to the calendar. Block data updates when it is logged as done there.",
+    "startTime": "Start",
+    "durationHours": "Hours",
+    "skipTitle": "Skip recommendation",
+    "skipQuestion": "Why are you skipping it? This helps future recommendations.",
+    "skipReasons": {
+      "already_done": "Already done",
+      "disagree": "I disagree",
+      "no_resources": "No water or crew"
+    },
+    "skipNoReason": "Skip without a reason"
   },
   "activity": {
     "title": "Activity Log",

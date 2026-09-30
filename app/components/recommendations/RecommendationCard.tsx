@@ -9,11 +9,14 @@ import {
   Check,
   X,
   Edit2,
-  BookOpen
+  BookOpen,
+  CalendarClock,
+  CalendarCheck,
 } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CATEGORY_STYLES, type Category } from "@/app/components/ui/CategoryChip";
-import { ConfidenceBar } from "@/app/components/ui/ConfidenceBar";
+import { ConfidenceBar, confidenceLevel } from "@/app/components/ui/ConfidenceBar";
 
 type Status = "pending" | "accepted" | "edited" | "skipped";
 type CardCategory = Category | "other";
@@ -35,6 +38,11 @@ interface RecommendationCardProps {
   blockName?: string;
   managerNote?: string | null;
   sources?: RecommendationSource[] | null;
+  /** The calendar event an accepted recommendation booked, if any. */
+  scheduledEvent?: { start_date: string; completed_at: string | null } | null;
+  /** Set once the work was logged as done. */
+  activityLogId?: string | null;
+  farmId: string;
   onAccept: (id: string) => void;
   onSkip: (id: string) => void;
   onEdit: (id: string) => void;
@@ -59,6 +67,9 @@ export default function RecommendationCard({
   blockName,
   managerNote,
   sources,
+  scheduledEvent,
+  activityLogId,
+  farmId,
   onAccept,
   onSkip,
   onEdit,
@@ -70,12 +81,30 @@ export default function RecommendationCard({
   const icon = category in CATEGORY_ICONS ? CATEGORY_ICONS[category as Category] : <Lightbulb className="h-5 w-5" />;
   const confidencePct = confidence !== null ? Math.round(confidence * 100) : null;
 
-  const STATUS_LABEL: Record<Status, string> = {
-    accepted: t('statusAccepted'),
-    skipped:  t('statusSkipped'),
-    edited:   t('statusEdited'),
-    pending:  '',
-  };
+  const isDone = Boolean(activityLogId || scheduledEvent?.completed_at);
+  const isScheduled = (status === "accepted" || status === "edited") && !isDone && Boolean(scheduledEvent);
+  const skipReason = status === "skipped" && managerNote?.startsWith("skip_reason:")
+    ? managerNote.slice("skip_reason:".length)
+    : null;
+  const visibleNote = skipReason ? null : managerNote;
+
+  const formatWhen = (iso: string) =>
+    new Date(iso).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  let statusLabel = "";
+  if (status === "skipped") {
+    statusLabel = skipReason && ["already_done", "disagree", "no_resources"].includes(skipReason)
+      ? `${t('statusSkipped')} · ${t(`skipReasons.${skipReason as "already_done" | "disagree" | "no_resources"}`)}`
+      : t('statusSkipped');
+  } else if (isDone) {
+    statusLabel = t('statusDone');
+  } else if (isScheduled && scheduledEvent) {
+    statusLabel = t('statusScheduled', { date: formatWhen(scheduledEvent.start_date) });
+  } else if (status === "accepted") {
+    statusLabel = t('statusAccepted');
+  } else if (status === "edited") {
+    statusLabel = t('statusEdited');
+  }
 
   return (
     <div className="bg-surface rounded-2xl border border-line overflow-hidden flex flex-col transition-all hover:border-ink-4">
@@ -86,11 +115,11 @@ export default function RecommendationCard({
               {icon}
             </div>
             {blockName && (
-              <span className="font-mono text-[10px] text-ink-3">{blockName.toUpperCase()}</span>
+              <span className="font-heading text-[13px] font-bold text-ink">{blockName}</span>
             )}
           </div>
-          <span className={`inline-flex items-center rounded-md px-2 py-0.5 font-mono text-[9.5px] font-semibold tracking-wide ${cfg.bg} ${cfg.text}`}>
-            {cfg.label.toUpperCase()}
+          <span className={`inline-flex items-center rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold tracking-wide ${cfg.bg} ${cfg.text}`}>
+            {(category in CATEGORY_STYLES ? t(`categories.${category as Category}`) : cfg.label).toUpperCase()}
           </span>
         </div>
 
@@ -99,7 +128,7 @@ export default function RecommendationCard({
         <p className="text-[12.5px] text-ink-2 line-clamp-3 leading-relaxed">{rationale}</p>
 
         {sources && sources.length > 0 && (
-          <p className="mt-1.5 text-[10.5px] text-ink-4 flex items-center gap-1">
+          <p className="mt-1.5 text-[11px] text-ink-4 flex items-center gap-1">
             <BookOpen className="h-3 w-3 shrink-0" />
             <span className="truncate">
               {sources[0].title}
@@ -112,50 +141,62 @@ export default function RecommendationCard({
 
       {status === "pending" ? (
         <div className="px-[18px] pt-3 pb-3.5 border-t border-line-soft space-y-2.5">
-          {confidencePct !== null && <ConfidenceBar value={confidencePct} />}
+          {confidencePct !== null && (
+            <ConfidenceBar
+              value={confidencePct}
+              label={t('confidence')}
+              levelLabel={t(`confidenceLevel.${confidenceLevel(confidencePct)}`)}
+            />
+          )}
           <div className="flex items-center justify-end gap-1.5">
             <button
               onClick={() => onSkip(id)}
               disabled={isProcessing}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-3 hover:bg-tile-2 transition-colors disabled:opacity-50"
+              className="px-3 py-2 rounded-lg text-[13px] font-semibold text-ink-2 hover:bg-tile-2 transition-colors disabled:opacity-50"
             >
-              {t('skip')}
+              {t('skipEllipsis')}
             </button>
             <button
               onClick={() => onEdit(id)}
               disabled={isProcessing}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-ink border border-line hover:border-ink-4 transition-colors disabled:opacity-50"
+              className="px-3 py-2 rounded-lg text-[13px] font-semibold text-ink border border-line hover:border-ink-4 transition-colors disabled:opacity-50"
             >
               {t('edit')}
             </button>
             <button
               onClick={() => onAccept(id)}
               disabled={isProcessing}
-              className="flex items-center gap-1.5 bg-green hover:brightness-105 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition disabled:opacity-50"
+              className="flex items-center gap-1.5 bg-green hover:brightness-105 text-white px-3 py-2 rounded-lg text-[13px] font-semibold transition disabled:opacity-50"
             >
-              <Check className="h-[15px] w-[15px]" />
-              {t('accept')}
+              <CalendarCheck className="h-[15px] w-[15px]" />
+              {t('acceptAndSchedule')}
             </button>
           </div>
         </div>
       ) : (
         <div className="px-[18px] py-3.5 border-t border-line-soft space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <span className={`text-sm font-medium flex items-center gap-1.5 ${
-              status === 'accepted' ? 'text-green' :
-              status === 'skipped' ? 'text-ink-3' :
-              'text-amber'
+              isDone ? 'text-green' :
+              isScheduled ? 'text-blue-ink' :
+              status === 'skipped' ? 'text-ink-2' :
+              'text-amber-ink'
             }`}>
-              {status === 'accepted' && <Check className="h-4 w-4" />}
+              {isDone && <Check className="h-4 w-4" />}
+              {isScheduled && <CalendarClock className="h-4 w-4" />}
               {status === 'skipped' && <X className="h-4 w-4" />}
-              {status === 'edited' && <Edit2 className="h-4 w-4" />}
-              {STATUS_LABEL[status]}
+              {!isDone && !isScheduled && status === 'edited' && <Edit2 className="h-4 w-4" />}
+              {statusLabel}
             </span>
-            <span className="text-xs text-ink-4">{t('logged')}</span>
+            {isScheduled && (
+              <Link href={`/${farmId}/calendar`} className="text-[13px] font-semibold text-green hover:underline shrink-0">
+                {t('logWhatWasDone')}
+              </Link>
+            )}
           </div>
-          {managerNote && (
+          {visibleNote && (
             <p className="text-xs text-ink-2 italic border-s-2 border-line ps-2">
-              &quot;{managerNote}&quot;
+              &quot;{visibleNote}&quot;
             </p>
           )}
         </div>

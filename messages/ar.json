@@ -12,7 +12,17 @@
     "signOut": "تسجيل الخروج",
     "goBack": "رجوع",
     "farms": "مزارعي",
-    "current": "الحالية"
+    "current": "الحالية",
+    "freshness": {
+      "title": "حداثة البيانات",
+      "sensors": "حساسات التربة",
+      "weather": "الطقس",
+      "irrigationLog": "سجل الري",
+      "never": "لا يوجد",
+      "minutes": "{count} د",
+      "hours": "{count} س",
+      "days": "{count} ي"
+    }
   },
   "topNav": {
     "viewNotifications": "عرض الإشعارات",
@@ -32,7 +42,11 @@
       "ongoing": "جارٍ الآن",
       "inHours": "خلال {hours} ساعة",
       "inDays": "خلال {days} يوم",
-      "unresolved": "{count} غير محلول"
+      "unresolved": "{count} غير محلول",
+      "soilMoisture": "رطوبة التربة",
+      "driestBlock": "الأكثر جفافاً: {block}",
+      "moistureSpread": "الوسيط {median} · الأعلى {max}",
+      "liveSensorReading": "آخر قراءة للحساس"
     },
     "alerts": {
       "title": "التنبيهات النشطة",
@@ -63,7 +77,10 @@
       "noBlocks": "لم يتم إعداد أي قطع بعد",
       "goToBlocks": "انتقل إلى صفحة القطع للإعداد",
       "moisture": "الرطوبة: {value}",
-      "issue": "مشكلة: {text}"
+      "issue": "مشكلة: {text}",
+      "healthy": "سليم",
+      "watch": "مراقبة",
+      "critical": "حرج"
     },
     "activityFeed": {
       "title": "النشاط الأخير",
@@ -81,7 +98,8 @@
     },
     "weather": {
       "title": "توقعات الطقس (7 أيام)",
-      "failedToLoad": "فشل تحميل بيانات الطقس."
+      "failedToLoad": "فشل تحميل بيانات الطقس.",
+      "sprayOk": "مناسب للرش"
     },
     "upcomingCalendar": {
       "title": "المهام القادمة",
@@ -103,6 +121,24 @@
         "calendar": { "title": "جدول أول حدث", "desc": "أضف أحداث ري أو رش أو مسح ميداني إلى تقويم المزرعة." },
         "sensors": { "title": "ربط المستشعرات", "desc": "اربط مستشعرات رطوبة التربة والطقس للحصول على بيانات حية." }
       }
+    },
+    "plan": {
+      "title": "خطة اليوم",
+      "subtitle": "التنبيهات وتوصيات الذكاء الاصطناعي، الأكثر إلحاحاً أولاً",
+      "viewAll": "الكل ({count}) ←",
+      "emptyTitle": "لا شيء يحتاج إلى إجراء",
+      "emptyDescription": "لا توجد تنبيهات مفتوحة أو توصيات معلقة لهذه المزرعة.",
+      "actToday": "نفّذ اليوم",
+      "watch": "مراقبة",
+      "confidence": "الثقة {level} · {value}%",
+      "source": "المصدر: {source}",
+      "level": {
+        "high": "عالية",
+        "medium": "متوسطة",
+        "low": "منخفضة"
+      },
+      "review": "مراجعة",
+      "openBlock": "فتح القطعة"
     }
   },
   "blocks": {
@@ -270,7 +306,31 @@
     "managerNoteOptional": "(اختياري)",
     "managerNotePlaceholder": "أضف سياقاً أو تعديلات أو أسباب التغيير…",
     "cancel": "إلغاء",
-    "acceptWithChanges": "قبول مع التعديلات"
+    "acceptWithChanges": "قبول مع التعديلات",
+    "skipEllipsis": "تخطي…",
+    "acceptAndSchedule": "قبول وجدولة",
+    "confidence": "الثقة",
+    "confidenceLevel": {
+      "high": "عالية",
+      "medium": "متوسطة",
+      "low": "منخفضة"
+    },
+    "statusScheduled": "مجدولة · {date}",
+    "statusDone": "منجزة",
+    "logWhatWasDone": "سجّل ما تم تنفيذه",
+    "scheduleTitle": "جدولة هذا العمل",
+    "schedule": "جدولة",
+    "scheduleHint": "يُضاف العمل إلى التقويم. تُحدَّث بيانات القطعة عند تسجيله كمنجز هناك.",
+    "startTime": "البدء",
+    "durationHours": "الساعات",
+    "skipTitle": "تخطي التوصية",
+    "skipQuestion": "لماذا تتخطاها؟ يساعد ذلك في تحسين التوصيات القادمة.",
+    "skipReasons": {
+      "already_done": "تم تنفيذها مسبقاً",
+      "disagree": "لا أوافق",
+      "no_resources": "لا يتوفر ماء أو عمال"
+    },
+    "skipNoReason": "تخطٍّ دون سبب"
   },
   "activity": {
     "title": "سجل الأنشطة",

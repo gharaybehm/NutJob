@@ -14,6 +14,7 @@ import {
   Warehouse,
 } from "lucide-react";
 import SignOutButton from "./auth/SignOutButton";
+import { STALE_AFTER_MIN, type DataFreshness } from "@/utils/data-freshness-shared";
 
 interface SidebarProps {
   userEmail?: string;
@@ -21,6 +22,7 @@ interface SidebarProps {
   userRole?: "admin" | "supervisor" | "worker";
   farmId: string;
   pendingRecommendationCount?: number;
+  freshness?: DataFreshness;
 }
 
 export default function Sidebar({
@@ -29,9 +31,26 @@ export default function Sidebar({
   userRole,
   farmId,
   pendingRecommendationCount = 0,
+  freshness,
 }: SidebarProps) {
   const pathname = usePathname();
   const t = useTranslations("nav");
+  const tf = useTranslations("nav.freshness");
+
+  const formatAge = (min: number | null) => {
+    if (min === null) return tf("never");
+    if (min < 60) return tf("minutes", { count: min });
+    if (min < 48 * 60) return tf("hours", { count: Math.round(min / 60) });
+    return tf("days", { count: Math.round(min / 1440) });
+  };
+
+  const freshnessRows = freshness
+    ? [
+        { key: "sensors", label: tf("sensors"), min: freshness.sensorsMin, staleAfter: STALE_AFTER_MIN.sensors },
+        { key: "weather", label: tf("weather"), min: freshness.weatherMin, staleAfter: STALE_AFTER_MIN.weather },
+        { key: "irrigation", label: tf("irrigationLog"), min: freshness.irrigationLogMin, staleAfter: STALE_AFTER_MIN.irrigationLog },
+      ]
+    : [];
 
   const opsNav = [
     { id: "dashboard", name: t("dashboard"), href: `/${farmId}/dashboard`, icon: LayoutDashboard },
@@ -84,7 +103,7 @@ export default function Sidebar({
           {item.name}
         </span>
         {item.badge !== undefined && (
-          <span className="rounded-full bg-gold-bright px-[7px] py-[1px] font-mono text-[10px] font-semibold text-[#13241B]">
+          <span className="rounded-full bg-gold-bright px-[7px] py-[1px] font-mono text-[11px] font-semibold text-[#13241B]">
             {item.badge}
           </span>
         )}
@@ -98,7 +117,7 @@ export default function Sidebar({
         <Image src="/logo-dark-transparent.png" alt="RootLoot" width={400} height={128} className="h-[80px] w-auto object-contain mix-blend-screen brightness-125" unoptimized />
       </div>
 
-      <div className="px-2.5 pb-2 font-mono text-[9px] tracking-[1.5px] text-sidebar-text-muted">
+      <div className="px-2.5 pb-2 font-mono text-[11px] tracking-[1.5px] text-sidebar-text-muted">
         OPERATIONS
       </div>
       <nav>
@@ -107,7 +126,7 @@ export default function Sidebar({
         ))}
       </nav>
 
-      <div className="px-2.5 pb-2 pt-4 font-mono text-[9px] tracking-[1.5px] text-sidebar-text-muted">
+      <div className="px-2.5 pb-2 pt-4 font-mono text-[11px] tracking-[1.5px] text-sidebar-text-muted">
         RECORDS
       </div>
       <nav>
@@ -118,13 +137,26 @@ export default function Sidebar({
 
       <div className="flex-1" />
 
-      <div className="mb-3 flex items-center gap-[9px] rounded-[11px] border border-[rgba(143,224,168,.18)] bg-[rgba(47,125,79,.16)] px-3 py-2.5">
-        <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-[#8FE0A8]" />
-        <div className="flex-1">
-          <div className="text-[11.5px] font-semibold text-[#DCE9DE]">AI engine active</div>
-          <div className="font-mono text-[9px] tracking-[.5px] text-[#7E9184]">Synced live</div>
+      {freshnessRows.length > 0 && (
+        <div className="mb-3 flex flex-col gap-2 rounded-[11px] border border-white/10 bg-white/[.04] px-3 py-2.5">
+          <div className="font-mono text-[11px] tracking-[1px] text-sidebar-text-muted">{tf("title").toUpperCase()}</div>
+          {freshnessRows.map((row) => {
+            const stale = row.min === null || row.min > row.staleAfter;
+            return (
+              <div key={row.key} className="flex items-center gap-2">
+                <span
+                  aria-hidden="true"
+                  className={`h-2 w-2 shrink-0 ${stale ? "rounded-[2px] bg-gold-bright" : "rounded-full bg-[#8FE0A8]"}`}
+                />
+                <span className="flex-1 truncate text-[12.5px] text-[#DCE6DE]">{row.label}</span>
+                <span className={`font-mono text-[11px] ${stale ? "text-gold-bright" : "text-sidebar-text-muted"}`}>
+                  {formatAge(row.min)}
+                </span>
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
 
       <div className="flex items-center gap-2.5 rounded-[10px] px-1.5 py-2">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-blue to-green font-heading text-[13px] font-semibold text-white">
@@ -132,7 +164,7 @@ export default function Sidebar({
         </div>
         <div className="min-w-0 flex-1">
           <div className="truncate text-[12.5px] font-semibold text-white">{userName || "Farm Manager"}</div>
-          <div className="font-mono text-[9px] tracking-[1px] text-[#7E9184]">
+          <div className="font-mono text-[11px] tracking-[1px] text-sidebar-text-muted">
             {userRole ? `FARM ${userRole.toUpperCase()}` : userEmail}
           </div>
         </div>

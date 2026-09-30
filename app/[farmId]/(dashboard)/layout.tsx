@@ -4,6 +4,7 @@ import BottomNav from "@/app/components/BottomNav";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { getFarms } from "@/app/actions/farms";
+import { getDataFreshness } from "@/utils/data-freshness";
 
 export const dynamic = 'force-dynamic';
 
@@ -102,11 +103,16 @@ export default async function DashboardLayout({
   // All farms for the farm switcher
   const allFarms = await getFarms();
 
-  // Count pending recommendations for the sidebar badge
-  const { count: pendingRecommendationCount } = await db
-    .from("recommendations")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "pending");
+  // Count pending recommendations for the sidebar badge. Scoped to this farm:
+  // without the filter a member of several farms saw the total across all.
+  const [{ count: pendingRecommendationCount }, freshness] = await Promise.all([
+    db
+      .from("recommendations")
+      .select("*", { count: "exact", head: true })
+      .eq("farm_id", farmId)
+      .eq("status", "pending"),
+    getDataFreshness(farmId, blockIds),
+  ]);
 
   return (
     <>
@@ -116,6 +122,7 @@ export default async function DashboardLayout({
         userRole={effectiveRole}
         farmId={farmId}
         pendingRecommendationCount={pendingRecommendationCount ?? 0}
+        freshness={freshness}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopNav farmId={farmId} alertCount={unresolvedAlertCount} farms={allFarms} />

@@ -5,6 +5,7 @@ import { createAdminClient } from '@/utils/supabase/admin';
 import { requireFarmRole } from '@/utils/supabase/farm-access';
 import { revalidatePath } from 'next/cache';
 import { Database } from '@/utils/supabase/types';
+import { applyCompletedRecommendationEffects, type RecommendationCategory } from '@/utils/recommendation-effects';
 
 type InsertEvent = Database['public']['Tables']['calendar_events']['Insert'];
 
@@ -119,20 +120,48 @@ export async function logEventCompletion(
       ? (existing.type as ActivityType)
       : 'other';
 
+    const recommendationId = (existing.details as { recommendation_id?: string } | null)?.recommendation_id;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- farm_id predates the generated types
-    const { error: logError } = await (admin.from('activity_log') as any).insert({
+    const { data: logRow, error: logError } = await (admin.from('activity_log') as any).insert({
       farm_id: farmId,
       title: existing.title,
       activity_type: activityType,
       block_id: existing.block_id ?? null,
       description: notes || null,
+      details: {
+        actual_start: actualStart.toISOString(),
+        actual_end: actualEnd.toISOString(),
+        ...(recommendationId ? { source: 'recommendation', recommendation_id: recommendationId } : {}),
+      },
       performed_at: actualEnd.toISOString(),
       performed_by: user.id,
       calendar_event_id: eventId,
-    });
+    })
+      .select('id')
+      .single();
 
     if (logError) {
       console.error('[Calendar] Failed to write activity_log:', logError.message);
+    }
+
+    // Closing the loop: the event came from an accepted recommendation, so the
+    // work is now done. Link the log entry and apply the block-state effects.
+    if (recommendationId) {
+      const { data: rec } = await admin
+        .from('recommendations')
+        .select('category, block_id')
+        .eq('id', recommendationId)
+        .eq('farm_id', farmId)
+        .maybeSingle();
+      if (rec) {
+        if (logRow?.id) {
+          await admin.from('recommendations').update({ activity_log_id: logRow.id }).eq('id', recommendationId);
+        }
+        await applyCompletedRecommendationEffects(rec.category as RecommendationCategory, rec.block_id);
+        revalidatePath(`/${farmId}/recommendations`);
+        revalidatePath(`/${farmId}/dashboard`);
+      }
     }
   }
 

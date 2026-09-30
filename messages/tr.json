@@ -12,7 +12,17 @@
     "signOut": "Çıkış Yap",
     "goBack": "Geri",
     "farms": "Çiftliklerim",
-    "current": "Mevcut"
+    "current": "Mevcut",
+    "freshness": {
+      "title": "Veri güncelliği",
+      "sensors": "Toprak sensörleri",
+      "weather": "Hava durumu",
+      "irrigationLog": "Sulama kaydı",
+      "never": "yok",
+      "minutes": "{count} dk",
+      "hours": "{count} sa",
+      "days": "{count} g"
+    }
   },
   "topNav": {
     "viewNotifications": "Bildirimleri görüntüle",
@@ -32,7 +42,11 @@
       "ongoing": "Devam ediyor",
       "inHours": "{hours} saat içinde",
       "inDays": "{days} gün içinde",
-      "unresolved": "{count} çözülmemiş"
+      "unresolved": "{count} çözülmemiş",
+      "soilMoisture": "Toprak nemi",
+      "driestBlock": "En kuru: {block}",
+      "moistureSpread": "Medyan {median} · en yüksek {max}",
+      "liveSensorReading": "Son sensör okuması"
     },
     "alerts": {
       "title": "Aktif Uyarılar",
@@ -63,7 +77,10 @@
       "noBlocks": "Henüz blok yapılandırılmamış",
       "goToBlocks": "Yapılandırmak için Bloklar sayfasına gidin",
       "moisture": "Nem: {value}",
-      "issue": "Sorun: {text}"
+      "issue": "Sorun: {text}",
+      "healthy": "Sağlıklı",
+      "watch": "İzle",
+      "critical": "Kritik"
     },
     "activityFeed": {
       "title": "Son Aktiviteler",
@@ -81,7 +98,8 @@
     },
     "weather": {
       "title": "7 Günlük Hava Tahmini",
-      "failedToLoad": "Hava durumu verileri yüklenemedi."
+      "failedToLoad": "Hava durumu verileri yüklenemedi.",
+      "sprayOk": "İlaçlamaya uygun"
     },
     "upcomingCalendar": {
       "title": "Yaklaşan Etkinlikler",
@@ -103,6 +121,24 @@
         "calendar": { "title": "İlk etkinliğinizi planlayın", "desc": "Çiftlik takvimine sulama, ilaçlama veya saha tarama etkinlikleri ekleyin." },
         "sensors": { "title": "Sensörleri bağlayın", "desc": "Canlı veri akışları için IoT toprak nemi ve hava sensörlerini bağlayın." }
       }
+    },
+    "plan": {
+      "title": "Bugünün planı",
+      "subtitle": "Uyarılar ve yapay zekâ önerileri, en acil olan önce",
+      "viewAll": "Tümü ({count}) →",
+      "emptyTitle": "İşlem gerektiren bir şey yok",
+      "emptyDescription": "Bu çiftlik için açık uyarı veya bekleyen öneri yok.",
+      "actToday": "Bugün yap",
+      "watch": "İzle",
+      "confidence": "Güven {level} · %{value}",
+      "source": "Kaynak: {source}",
+      "level": {
+        "high": "yüksek",
+        "medium": "orta",
+        "low": "düşük"
+      },
+      "review": "İncele",
+      "openBlock": "Bloğu aç"
     }
   },
   "blocks": {
@@ -270,7 +306,31 @@
     "managerNoteOptional": "(isteğe bağlı)",
     "managerNotePlaceholder": "Bağlam, düzeltmeler veya değişiklik nedenleri ekleyin…",
     "cancel": "İptal",
-    "acceptWithChanges": "Değişikliklerle Kabul Et"
+    "acceptWithChanges": "Değişikliklerle Kabul Et",
+    "skipEllipsis": "Atla…",
+    "acceptAndSchedule": "Kabul et ve planla",
+    "confidence": "Güven",
+    "confidenceLevel": {
+      "high": "Yüksek",
+      "medium": "Orta",
+      "low": "Düşük"
+    },
+    "statusScheduled": "Planlandı · {date}",
+    "statusDone": "Tamamlandı",
+    "logWhatWasDone": "Yapılanı kaydet",
+    "scheduleTitle": "Bu işi planla",
+    "schedule": "Planla",
+    "scheduleHint": "İş takvime eklenir. Blok verileri, iş orada tamamlandı olarak kaydedildiğinde güncellenir.",
+    "startTime": "Başlangıç",
+    "durationHours": "Saat",
+    "skipTitle": "Öneriyi atla",
+    "skipQuestion": "Neden atlıyorsunuz? Bu, sonraki önerileri iyileştirir.",
+    "skipReasons": {
+      "already_done": "Zaten yapıldı",
+      "disagree": "Katılmıyorum",
+      "no_resources": "Su veya ekip yok"
+    },
+    "skipNoReason": "Sebep belirtmeden atla"
   },
   "activity": {
     "title": "Aktivite Günlüğü",

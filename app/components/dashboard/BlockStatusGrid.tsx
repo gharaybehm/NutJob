@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { getTranslations, getLocale } from "next-intl/server";
+import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { formatPercent } from "@/utils/format";
 
 interface BlockStatusItem {
@@ -26,7 +27,7 @@ async function getBlocks(farmId: string): Promise<BlockStatusItem[]> {
     supabase.from("block_alerts").select("id, severity, message, block_id").eq("resolved", false),
   ]);
 
-  return (dbBlocks ?? []).map((b: { id: string; name: string; variety: string; area: number; area_unit: string }) => {
+  const blocks: BlockStatusItem[] = (dbBlocks ?? []).map((b: { id: string; name: string; variety: string; area: number; area_unit: string }) => {
     const moistureRow = (soilLatest ?? []).find(s => s.block_id === b.id);
     const moisture = moistureRow?.soil_moisture != null ? moistureRow.soil_moisture : null;
     const blockAlerts = (activeAlerts ?? []).filter((a: { block_id: string; severity: string; message: string }) => a.block_id === b.id);
@@ -41,6 +42,10 @@ async function getBlocks(farmId: string): Promise<BlockStatusItem[]> {
     }
     return { id: b.id, name: b.name, variety: b.variety, area: Number(b.area), areaUnit: b.area_unit || "Dunm", status, moisture, issue };
   });
+
+  // Worst first, so the blocks that need attention are the first thing seen.
+  const rank = { red: 0, amber: 1, green: 2 } as const;
+  return blocks.sort((x, y) => rank[x.status] - rank[y.status] || x.name.localeCompare(y.name));
 }
 
 export default async function BlockStatusGrid({ farmId }: { farmId: string }) {
@@ -48,14 +53,16 @@ export default async function BlockStatusGrid({ farmId }: { farmId: string }) {
   const count = blocks.length;
   const blocksHref = `/${farmId}/blocks`;
 
-  const STATUS_DOT: Record<BlockStatusItem['status'], string> = {
-    green: 'bg-green shadow-[0_0_0_3px_var(--color-green-soft)]',
-    amber: 'bg-amber shadow-[0_0_0_3px_var(--color-amber-soft)]',
-    red: 'bg-red shadow-[0_0_0_3px_var(--color-red-soft)]',
+  // Status is a word plus an icon, never colour alone: the old dot was
+  // red/green only, which is unreadable with red-green colour blindness.
+  const STATUS_BADGE: Record<BlockStatusItem['status'], { icon: typeof CheckCircle2; className: string; label: string }> = {
+    green: { icon: CheckCircle2, className: 'text-green', label: t('healthy') },
+    amber: { icon: AlertTriangle, className: 'text-amber-ink', label: t('watch') },
+    red: { icon: AlertCircle, className: 'text-red', label: t('critical') },
   };
   const STATUS_BORDER: Record<BlockStatusItem['status'], string> = {
     green: 'border-line hover:border-green',
-    amber: 'border-line hover:border-amber',
+    amber: 'border-[#EEE3C9] bg-[#FDFAF2] hover:border-amber',
     red: 'border-[#F0DCD6] bg-[#FDF7F5] hover:border-red',
   };
 
@@ -87,9 +94,17 @@ export default async function BlockStatusGrid({ farmId }: { farmId: string }) {
                 href={blocksHref}
                 className={`relative flex flex-col rounded-[13px] border p-[13px] transition-all cursor-pointer ${STATUS_BORDER[block.status]}`}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-heading text-[15px] font-bold text-ink">{block.name}</span>
-                  <span className={`h-[11px] w-[11px] rounded-full ${STATUS_DOT[block.status]}`}></span>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="font-heading text-[15px] font-bold text-ink truncate">{block.name}</span>
+                  {(() => {
+                    const badge = STATUS_BADGE[block.status];
+                    return (
+                      <span className={`inline-flex shrink-0 items-center gap-1 font-mono text-[11px] font-semibold ${badge.className}`}>
+                        <badge.icon className="h-3.5 w-3.5" aria-hidden="true" />
+                        {badge.label.toUpperCase()}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <div className="text-xs text-ink-2">
                   {block.variety} · {block.area} {block.areaUnit}
@@ -99,7 +114,7 @@ export default async function BlockStatusGrid({ farmId }: { farmId: string }) {
                 </div>
                 {block.issue && (
                   <div className={`mt-2 text-xs font-medium truncate ${
-                    block.status === 'red' ? 'text-red' : 'text-amber'
+                    block.status === 'red' ? 'text-red' : 'text-amber-ink'
                   }`} title={block.issue}>
                     {t('issue', { text: block.issue })}
                   </div>

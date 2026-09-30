@@ -9,8 +9,11 @@ async function getKPIData(farmId: string) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: farmBlocks } = await (supabase.from("blocks") as any)
-    .select("id")
+    .select("id, name")
     .eq("farm_id", farmId);
+  const blockNames = new Map<string, string>(
+    (farmBlocks ?? []).map((b: { id: string; name: string }) => [b.id, b.name]),
+  );
   const blockIds: string[] = (farmBlocks ?? []).map((b: { id: string }) => b.id);
 
   const blockFilter = blockIds.length > 0 ? blockIds : ["__none__"];
@@ -39,11 +42,21 @@ async function getKPIData(farmId: string) {
       .limit(1),
   ]);
 
-  const validMoisture = (soilLatest ?? [])
-    .map(r => r.soil_moisture)
-    .filter((v): v is number => v !== null);
-  const avgSoilMoisture = validMoisture.length > 0
-    ? Math.round(validMoisture.reduce((sum, v) => sum + v, 0) / validMoisture.length)
+  // A farm average hides the block that needs water (64% average with one
+  // block at 34%), so report the driest block and the spread instead.
+  const readings = (soilLatest ?? [])
+    .filter((r): r is { soil_moisture: number; block_id: string } => r.soil_moisture !== null && r.block_id !== null)
+    .map(r => ({ value: Number(r.soil_moisture), blockId: r.block_id }))
+    .sort((x, y) => x.value - y.value);
+  const driest = readings[0] ?? null;
+  const moisture = driest
+    ? {
+        min: Math.round(driest.value),
+        max: Math.round(readings[readings.length - 1].value),
+        median: Math.round(readings[Math.floor(readings.length / 2)].value),
+        driestBlock: blockNames.get(driest.blockId) ?? null,
+        count: readings.length,
+      }
     : null;
 
   let rainForecastMm = 0;
@@ -70,12 +83,12 @@ async function getKPIData(farmId: string) {
     ? Math.round((new Date(nextIrrig.start_date).getTime() - Date.now()) / 3_600_000)
     : null;
 
-  return { avgSoilMoisture, rainForecastMm, activeAlertsCount: alertCount ?? 0, diffHrs };
+  return { moisture, rainForecastMm, activeAlertsCount: alertCount ?? 0, diffHrs };
 }
 
 export default async function KPIGrid({ farmId }: { farmId: string }) {
   const [t, locale] = await Promise.all([getTranslations('dashboard.kpi'), getLocale()]);
-  const { avgSoilMoisture, rainForecastMm, activeAlertsCount, diffHrs } = await getKPIData(farmId);
+  const { moisture, rainForecastMm, activeAlertsCount, diffHrs } = await getKPIData(farmId);
 
   let nextIrrigationStr: string;
   if (diffHrs === null) {
@@ -90,12 +103,14 @@ export default async function KPIGrid({ farmId }: { farmId: string }) {
 
   const kpis = [
     {
-      name: t('avgSoilMoisture'),
-      value: avgSoilMoisture !== null ? formatPercent(avgSoilMoisture, locale) : "N/A",
-      change: t('liveSensorAverage'),
+      name: moisture?.driestBlock ? t('driestBlock', { block: moisture.driestBlock }) : t('soilMoisture'),
+      value: moisture ? formatPercent(moisture.min, locale) : "N/A",
+      change: moisture && moisture.count > 1
+        ? t('moistureSpread', { median: formatPercent(moisture.median, locale), max: formatPercent(moisture.max, locale) })
+        : t('liveSensorReading'),
       changeType: "neutral",
       icon: Droplets,
-      color: "text-blue",
+      color: "text-blue-ink",
       bg: "bg-blue-soft",
     },
     {
@@ -122,42 +137,42 @@ export default async function KPIGrid({ farmId }: { farmId: string }) {
       change: t('scheduledQueue'),
       changeType: "neutral",
       icon: Timer,
-      color: "text-amber",
+      color: "text-amber-ink",
       bg: "bg-amber-soft",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    // One row per metric: the grid now sits in the dashboard's narrow right
+    // column, where four side-by-side cards truncated their labels.
+    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
       {kpis.map((kpi) => (
         <div
           key={kpi.name}
-          className="rounded-2xl border border-line bg-surface p-[18px]"
+          className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5"
         >
-          <div className="flex items-center gap-2">
-            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${kpi.bg}`}>
-              <kpi.icon className={`h-[18px] w-[18px] ${kpi.color}`} aria-hidden="true" />
-            </div>
-            <p className="truncate font-mono text-[10px] tracking-wide text-ink-3">
-              {kpi.name.toUpperCase()}
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${kpi.bg}`}>
+            <kpi.icon className={`h-5 w-5 ${kpi.color}`} aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-[11px] tracking-wide text-ink-3">{kpi.name.toUpperCase()}</p>
+            <p
+              className={`mt-0.5 text-xs font-semibold ${
+                kpi.changeType === "positive"
+                  ? "text-green"
+                  : kpi.changeType === "negative"
+                  ? "text-red"
+                  : "text-ink-3"
+              }`}
+            >
+              {kpi.change}
             </p>
           </div>
-          <p className="mt-3 font-heading text-[34px] font-bold leading-none tracking-tight text-ink">
+          <p className="max-w-[45%] text-end font-heading text-xl font-bold leading-tight tracking-tight text-ink">
             {kpi.value}
-          </p>
-          <p
-            className={`mt-2 text-xs font-semibold ${
-              kpi.changeType === "positive"
-                ? "text-green"
-                : kpi.changeType === "negative"
-                ? "text-red"
-                : "text-ink-3"
-            }`}
-          >
-            {kpi.change}
           </p>
         </div>
       ))}
-    </div>
+    </section>
   );
 }
