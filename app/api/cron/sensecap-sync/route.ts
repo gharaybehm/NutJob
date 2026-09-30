@@ -22,7 +22,8 @@ import {
 // the latest point, which is the older behaviour.
 //
 // Trigger options (all call the same endpoint):
-//   - Trigger.dev schedule (src/trigger/sensecap-sync.ts)  ← recommended
+//   - Coolify Scheduled Task, cron 0 * * * * (the production scheduler since
+//     2026-09-30; it replaced the Trigger.dev schedule)
 //   - External cron service (e.g. cron-job.org)
 //   - Manual: GET /api/cron/sensecap-sync?secret=YOUR_CRON_SECRET
 
