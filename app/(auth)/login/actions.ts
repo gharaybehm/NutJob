@@ -81,6 +81,10 @@ export async function signInWithGoogle() {
     provider: 'google',
     options: {
       redirectTo,
+      // Always show Google's account chooser. Without it Google signs in silently
+      // with whichever account the browser has open, so someone with two Google
+      // accounts cannot pick one. Consent is still asked only the first time.
+      queryParams: { prompt: 'select_account' },
     },
   })
 

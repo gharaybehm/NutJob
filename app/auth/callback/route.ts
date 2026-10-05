@@ -5,7 +5,10 @@ import { createAdminClient } from '@/utils/supabase/admin'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/farms'
+  // Only a path on this site: the value is appended to the host below, so
+  // "@other.site" or "//other.site" would send the user somewhere else.
+  const requested = searchParams.get('next')
+  const next = requested && /^\/(?![/\\])/.test(requested) ? requested : '/farms'
 
   if (code) {
     const supabase = await createClient()
