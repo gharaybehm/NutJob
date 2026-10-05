@@ -45,6 +45,7 @@ interface Recommendation {
   created_at: string;
   expires_at: string | null;
   sources?: RecommendationSource[] | null;
+  reference_status?: string | null;
   activity_log_id?: string | null;
   scheduled_event?: { id: string; start_date: string; completed_at: string | null } | null;
   /** Pending but replaced by a newer batch or past its expiry: shown in History, not actionable. */
@@ -318,6 +319,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId }
               blockName={rec.blocks?.name}
               managerNote={rec.manager_note}
               sources={rec.sources}
+              referenceStatus={rec.reference_status}
               scheduledEvent={rec.scheduled_event}
               activityLogId={rec.activity_log_id}
               expired={rec.expired}

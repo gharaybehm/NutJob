@@ -33,6 +33,13 @@ describe('knowledgeBaseCrop', () => {
     expect(knowledgeBaseCrop('  Sweet Cherry ')).toBe('sweet cherry')
     expect(knowledgeBaseCrop('')).toBeNull()
   })
+
+  it('sends the other names of a crop with no profile to that crop\'s documents', () => {
+    for (const name of ['Apple', 'apples', 'ELMA', 'Manzano']) expect(knowledgeBaseCrop(name), name).toBe('apple')
+    for (const name of ['Apricots', 'Kayısı', 'albaricoque']) expect(knowledgeBaseCrop(name), name).toBe('apricot')
+    expect(knowledgeBaseCrop('Şeftali')).toBe('peach')
+    expect(knowledgeBaseCrop('Dragon fruit')).toBe('dragon fruit')
+  })
 })
 
 describe('suggestions', () => {
@@ -44,6 +51,7 @@ describe('suggestions', () => {
   it('still suggests varieties for crops that have no profile, and none for an unknown crop', () => {
     expect(varietiesFor('Pistachio')).toContain('Kerman')
     expect(varietiesFor('Sweet Cherry')).toContain('Bing')
+    expect(varietiesFor('Elma')).toContain('Gala')
     expect(varietiesFor('Dragon fruit')).toEqual([])
   })
 

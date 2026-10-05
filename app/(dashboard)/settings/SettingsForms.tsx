@@ -49,6 +49,7 @@ import {
   Trash2,
   RotateCcw,
   X,
+  BookOpen,
 } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter } from 'next/navigation'
@@ -61,6 +62,8 @@ import { checkStationsAgainstOpenMeteo, type StationCheckResult } from '@/app/ac
 import type { MetricCheck, RainCheck, StationVerdict } from '@/engines/station-check'
 import { totalAvailableWaterMm } from '@/engines/irrigation'
 import { assessMaturity } from '@/engines/maturity'
+import { knowledgeCoverage, type KnowledgeDocument } from '@/utils/kb-coverage'
+import { findCrop } from '@/utils/crops'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -106,6 +109,8 @@ interface SettingsFormsProps {
   }[]
   blocks?: Block[]
   farmPolicy?: FarmPolicyRow | null
+  /** Documents in the knowledge base. Null when they could not be read. */
+  knowledgeDocs?: KnowledgeDocument[] | null
   farmId?: string
   farmName?: string
   farmAddress?: string
@@ -755,7 +760,67 @@ function FarmPolicyCard({ farmId, policy }: { farmId: string; policy: FarmPolicy
   )
 }
 
-function BlockConfigTab({ blocks, farmId, farmPolicy }: { blocks: Block[]; farmId: string; farmPolicy: FarmPolicyRow | null }) {
+/** Which crops and varieties on the farm have guides loaded in the knowledge base. */
+function KnowledgeCoverageCard({ blocks, docs }: { blocks: Block[]; docs: KnowledgeDocument[] | null }) {
+  const crops = docs ? knowledgeCoverage(blocks, docs) : []
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+  return (
+    <div className="rounded-xl border border-line p-5 space-y-4 mb-6">
+      <div>
+        <p className="font-semibold text-ink flex items-center gap-2"><BookOpen className="h-4 w-4 text-green" />Knowledge base coverage</p>
+        <p className="text-xs text-ink-3 mt-0.5">
+          The guides the AI can cite for each crop and variety on this farm. Where none is loaded, recommendations still appear but are not source-backed. Guides are added by your administrator.
+        </p>
+      </div>
+      {docs === null ? (
+        <p className="text-sm text-amber-ink flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />Coverage could not be read. This says nothing about what is loaded.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {crops.map(c => {
+            const covered = c.documents.length > 0
+            const noCropData = c.crop !== '' && findCrop(c.crop) === null
+            return (
+              <div key={c.crop} className="rounded-lg bg-tile px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-sm font-semibold text-ink">
+                    {c.crop || 'No crop set'} <span className="font-normal text-ink-3">· {plural(c.blocks, 'block')}</span>
+                  </p>
+                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${covered ? 'bg-green-soft text-green' : 'bg-amber-soft text-amber-ink'}`}>
+                    {covered ? `${plural(c.documents.length, 'guide')} loaded` : 'No guides loaded'}
+                  </span>
+                </div>
+                {covered && (
+                  <p className="mt-1 text-[11px] text-ink-4">{c.documents.join(' · ')}</p>
+                )}
+                {noCropData && (
+                  <p className="mt-1 text-xs text-ink-3">
+                    No crop data is loaded either (frost limits, water use by stage, growth stages, leaf nutrient bands), so those calculations are off for this crop.
+                  </p>
+                )}
+                {covered && c.varieties.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {c.varieties.map(v => (
+                      <li key={v.variety} className="text-xs text-ink-2">
+                        <span className="font-medium text-ink">{v.variety}</span>
+                        {v.documents.length > 0
+                          ? `: ${plural(v.documents.length, 'guide')} on this variety (${v.documents.join(' · ')})`
+                          : `: no guide on this variety, the general ${c.crop} guides apply`}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function BlockConfigTab({ blocks, farmId, farmPolicy, knowledgeDocs }: { blocks: Block[]; farmId: string; farmPolicy: FarmPolicyRow | null; knowledgeDocs: KnowledgeDocument[] | null }) {
   if (blocks.length === 0) {
     return (
       <SectionCard title="Block Configuration" icon={Layers} description="Set water thresholds and notes for each block. These values are used by the AI recommendation engine.">
@@ -770,6 +835,7 @@ function BlockConfigTab({ blocks, farmId, farmPolicy }: { blocks: Block[]; farmI
     <SectionCard title="Block Configuration" icon={Layers}
       description="Set field capacity, wilting point and root depth per block. These size the water reserve the irrigation advice works from.">
       <FarmPolicyCard farmId={farmId} policy={farmPolicy} />
+      <KnowledgeCoverageCard blocks={blocks} docs={knowledgeDocs} />
       <div className="space-y-4">
         {blocks.map(b => <BlockRow key={b.id} block={b} />)}
       </div>
@@ -1833,6 +1899,7 @@ export default function SettingsForms({
   allUsers = [],
   blocks = [],
   farmPolicy = null,
+  knowledgeDocs = null,
   farmId,
   farmName,
   farmAddress,
@@ -1878,7 +1945,7 @@ export default function SettingsForms({
       {/* Tab content */}
       {activeTab === 'profile'  && <AccountTab initialProfile={initialProfile} />}
       {activeTab === 'team'     && <TeamTab userRole={userRole} currentUserId={currentUserId} allUsers={allUsers} farmId={farmId ?? ''} farmName={farmName} />}
-      {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} farmId={farmId ?? ''} farmPolicy={farmPolicy} />}
+      {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} farmId={farmId ?? ''} farmPolicy={farmPolicy} knowledgeDocs={knowledgeDocs} />}
       {activeTab === 'alerts'   && <NotificationAlertsTab farmId={farmId ?? ''} />}
       {activeTab === 'sensors'  && <SensorConnectionsTab initialSensors={sensors} blocks={blocks} farmId={farmId ?? ''} initialSensecapApiId={initialSensecapApiId} initialSensecapAccessKey={initialSensecapAccessKey} />}
       {activeTab === 'weather'  && <WeatherAPITab farmId={farmId} farmName={farmName} farmAddress={farmAddress} initialLat={farmGpsLat} initialLng={farmGpsLng} />}

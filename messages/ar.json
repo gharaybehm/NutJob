@@ -302,6 +302,12 @@
     "actionTitle": "عنوان الإجراء",
     "aiRationale": "مسوّغ الذكاء الاصطناعي",
     "aiSources": "المصادر",
+    "notSourceBacked": "غير مستند إلى مصدر",
+    "referenceReasons": {
+      "none_loaded": "لا توجد أدلة محمّلة لهذا المحصول",
+      "no_match": "لا يغطي أي من الأدلة المحمّلة هذا الموضوع",
+      "error": "تعذّرت قراءة قاعدة المعرفة في هذا التشغيل"
+    },
     "managerNote": "ملاحظتك",
     "managerNoteOptional": "(اختياري)",
     "managerNotePlaceholder": "أضف سياقاً أو تعديلات أو أسباب التغيير…",

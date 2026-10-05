@@ -23,6 +23,11 @@ export function optionKey(name: string | null | undefined): string {
 
 const PLACEHOLDERS = new Set(['', 'unknown', 'none', 'n a', 'na'])
 
+/** True for an empty name or a stand-in such as "Unknown" or "N/A". */
+export function isPlaceholder(name: string | null | undefined): boolean {
+  return PLACEHOLDERS.has(optionKey(name))
+}
+
 /** Lists joined in order, without repeats (compared by optionKey) and without placeholders. */
 export function mergeOptions(...lists: (string[] | null | undefined)[]): string[] {
   const seen = new Set<string>()

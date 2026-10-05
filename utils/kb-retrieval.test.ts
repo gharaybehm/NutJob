@@ -52,6 +52,30 @@ describe('selectChunks', () => {
     expect(out).toHaveLength(3)
   })
 
+  describe('with the block\'s variety', () => {
+    const v = (id: string, similarity: number, variety_applicability: string[] | null) =>
+      ({ id, similarity, country: 'ES', keyword_hit: false, rrf_score: similarity, variety_applicability })
+    const rows = [v('general1', 0.9, ['all']), v('general2', 0.85, null), v('makako', 0.8, ['Makako']), v('vairo', 0.6, ['Vairo', 'Marinada'])]
+
+    it('leaves out a document about other varieties only', () => {
+      expect(selectChunks(rows, 4, 0.5, false, 'Vairo').map(x => x.id)).not.toContain('makako')
+      expect(selectChunks(rows, 4, 0.5, false, 'Nonpareil').map(x => x.id).sort()).toEqual(['general1', 'general2'])
+    })
+
+    it('gives the variety\'s own document a slot even when general text scores higher', () => {
+      expect(selectChunks(rows, 2, 0.5, false, 'Vairo').map(x => x.id)).toEqual(['general1', 'vairo'])
+    })
+
+    it('does not let a variety document in below the relevance bar', () => {
+      expect(selectChunks([v('general1', 0.9, ['all']), v('vairo', 0.3, ['Vairo'])], 4, 0.5, false, 'Vairo').map(x => x.id)).toEqual(['general1'])
+    })
+
+    it('leaves nothing out when the block has no variety', () => {
+      expect(selectChunks(rows, 4, 0.5).map(x => x.id)).toContain('makako')
+      expect(selectChunks(rows, 4, 0.5, false, 'Unknown').map(x => x.id)).toContain('makako')
+    })
+  })
+
   it('never returns more than k and keeps fused-score order', () => {
     const rows = [c('a', 0.9, 'US', false, 0.03), c('b', 0.8, 'US', false, 0.02), c('c', 0.7, 'ES', false, 0.01)]
     const out = selectChunks(rows, 2, 0.5)

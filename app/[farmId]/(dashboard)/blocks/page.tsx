@@ -5,6 +5,7 @@ import { makeSoilWater, makeNutrition, makePestDisease, makeWeather, makePhenolo
 import { redirect } from 'next/navigation';
 import { assessMaturity, expectsCrop } from '@/engines/maturity';
 import { heatModelFor } from '@/engines/heat-model';
+import { fetchKnowledgeDocuments } from '@/utils/kb-coverage';
 
 export const metadata = {
   title: 'Blocks — RootLoot',
@@ -212,6 +213,9 @@ export default async function BlocksRoute({ params }: { params: Promise<{ farmId
     }
   }
 
+  // Documents loaded in the knowledge base, for the per-block coverage note (null when they cannot be read)
+  const knowledgeDocs = await fetchKnowledgeDocuments(supabase);
+
   return (
     <BlocksPage
       initialBlocks={initialBlocks}
@@ -219,6 +223,7 @@ export default async function BlocksRoute({ params }: { params: Promise<{ farmId
       userRole={effectiveRole || 'worker'}
       farmId={farmId}
       farmCenter={farmCenter}
+      knowledgeDocs={knowledgeDocs}
     />
   );
 }

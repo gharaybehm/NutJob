@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { assessMaturity } from '@/engines/maturity';
 import type { BlockProfile, AgroDomain } from './types';
+import { coverageFor, type KnowledgeDocument } from '@/utils/kb-coverage';
+import { isPlaceholder } from '@/utils/plant-catalog';
 import AlertBadge from './AlertBadge';
 import SoilWaterTab from './tabs/SoilWaterTab';
 import PhenologyTab from './tabs/PhenologyTab';
@@ -17,6 +19,8 @@ interface Props {
   soilRefreshKey?: number;
   farmId: string;
   canLogObservations?: boolean;
+  /** Documents in the knowledge base. Null when they could not be read, and then no note is shown. */
+  knowledgeDocs?: KnowledgeDocument[] | null;
 }
 
 const TABS: { id: AgroDomain; label: string; icon: string }[] = [
@@ -44,12 +48,13 @@ function alertCountForDomain(profile: BlockProfile, domain: AgroDomain): number 
 }
 
 export default function BlockDetailPanel({
-  profile, onEdit, onDelete, soilRefreshKey, farmId, canLogObservations = false,
+  profile, onEdit, onDelete, soilRefreshKey, farmId, canLogObservations = false, knowledgeDocs = null,
 }: Props) {
   const [activeTab, setActiveTab] = useState<AgroDomain>('soil-water');
   const { block } = profile;
   const cfg = statusConfig[block.status];
   const allAlerts = block.alerts;
+  const coverage = knowledgeDocs ? coverageFor(block.cropType, block.variety, knowledgeDocs) : null;
   const plantingLabel = assessMaturity({ plantingDate: block.plantingDate, plantingYear: block.plantingYear, cropType: block.cropType }).label;
 
   return (
@@ -95,6 +100,18 @@ export default function BlockDetailPanel({
               <AlertBadge key={a.id} severity={a.severity} message={a.message} source={a.source} timestamp={a.timestamp} compact />
             ))}
           </div>
+        )}
+
+        {/* Knowledge-base coverage for this block's crop and variety */}
+        {coverage && coverage.cropDocuments.length === 0 && (
+          <p className="mt-3 rounded-lg bg-amber-soft px-3 py-2 text-xs text-amber-ink">
+            No guides are loaded for {block.cropType || 'this crop'}: AI recommendations for this block are not source-backed.
+          </p>
+        )}
+        {coverage && coverage.cropDocuments.length > 0 && coverage.varietyDocuments.length === 0 && !isPlaceholder(block.variety) && (
+          <p className="mt-2 text-xs text-ink-4">
+            No guide on {block.variety} is loaded; the general {block.cropType} guides apply.
+          </p>
         )}
       </div>
 

@@ -88,6 +88,32 @@ const CURATED_VARIETIES: Record<string, string[]> = {
   mandarin:    ['Clementine', 'W. Murcott', 'Tango', 'Gold Nugget', 'Satsuma', 'Owari'],
 }
 
+/**
+ * Other names for crops that have no profile yet (plural, Turkish, Spanish), so
+ * "Apples", "Elma" and "Manzano" reach the documents stored under `apple`. A
+ * crop that gets a profile moves its names there. To be reviewed by the agronomist.
+ */
+const CROP_ALIASES: Record<string, string[]> = {
+  pistachio:   ['pistachios', 'antep fıstığı', 'fıstık', 'pistacho', 'pistachero'],
+  cherry:      ['cherries', 'kiraz', 'cereza', 'cerezo'],
+  walnut:      ['walnuts', 'ceviz', 'nogal', 'nuez'],
+  fig:         ['figs', 'incir', 'higo', 'higuera'],
+  grape:       ['grapes', 'grapevine', 'üzüm', 'uva', 'vid'],
+  apricot:     ['apricots', 'kayısı', 'albaricoque', 'albaricoquero'],
+  apple:       ['apples', 'elma', 'manzana', 'manzano'],
+  peach:       ['peaches', 'şeftali', 'melocotón', 'melocotonero'],
+  pear:        ['pears', 'armut', 'pera', 'peral'],
+  olive:       ['olives', 'zeytin', 'olivo', 'aceituna'],
+  pomegranate: ['pomegranates', 'nar', 'granada', 'granado'],
+  date:        ['dates', 'date palm', 'hurma', 'dátil'],
+  plum:        ['plums', 'erik', 'ciruela', 'ciruelo'],
+  nectarine:   ['nectarines', 'nektarin', 'nectarina'],
+  avocado:     ['avocados', 'avokado', 'aguacate'],
+  lemon:       ['lemons', 'limon', 'limonero'],
+  orange:      ['oranges', 'portakal', 'naranja', 'naranjo'],
+  mandarin:    ['mandarins', 'mandalina', 'mandarina'],
+}
+
 /** The profile for a crop typed or picked by the user, or null when the crop has none yet. */
 export function findCrop(name: string | null | undefined): CropProfile | null {
   const key = optionKey(name)
@@ -97,14 +123,17 @@ export function findCrop(name: string | null | undefined): CropProfile | null {
 
 /**
  * The `crop_type` value a crop's knowledge-base documents are stored under: the
- * profile id when the crop has one (so "Badem" finds the almond documents),
- * otherwise the normalised name typed.
+ * profile id when the crop has one (so "Badem" finds the almond documents), a
+ * known crop's own name for its other names (so "Elma" finds the apple
+ * documents), otherwise the normalised name typed.
  */
 export function knowledgeBaseCrop(name: string | null | undefined): string | null {
   const profile = findCrop(name)
   if (profile) return profile.id
   const key = optionKey(name)
-  return key || null
+  if (!key) return null
+  const alias = Object.entries(CROP_ALIASES).find(([, names]) => names.some(n => optionKey(n) === key))
+  return alias?.[0] ?? key
 }
 
 /** Whether an engine may apply crop-specific data to this crop. Unknown crops get none. */
@@ -116,7 +145,7 @@ export function cropSupports(name: string | null | undefined, capability: keyof 
 export function varietiesFor(cropName: string | null | undefined): string[] {
   const profile = findCrop(cropName)
   if (profile) return profile.varieties
-  const key = optionKey(cropName)
+  const key = knowledgeBaseCrop(cropName)
   if (!key) return []
   const hit = Object.entries(CURATED_VARIETIES).find(([k]) => key.includes(k) || (key.length >= 3 && k.includes(key)))
   return hit?.[1] ?? []

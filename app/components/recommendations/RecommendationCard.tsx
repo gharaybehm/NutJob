@@ -10,6 +10,7 @@ import {
   X,
   Edit2,
   BookOpen,
+  BookDashed,
   CalendarClock,
   CalendarCheck,
   Clock,
@@ -39,6 +40,8 @@ interface RecommendationCardProps {
   blockName?: string;
   managerNote?: string | null;
   sources?: RecommendationSource[] | null;
+  /** What the knowledge-base lookup found when this was generated. Null on older cards. */
+  referenceStatus?: string | null;
   /** The calendar event an accepted recommendation booked, if any. */
   scheduledEvent?: { start_date: string; completed_at: string | null } | null;
   /** Set once the work was logged as done. */
@@ -70,6 +73,7 @@ export default function RecommendationCard({
   blockName,
   managerNote,
   sources,
+  referenceStatus,
   scheduledEvent,
   activityLogId,
   expired = false,
@@ -140,6 +144,21 @@ export default function RecommendationCard({
               {sources[0].title}
               {sources[0].section ? ` — ${sources[0].section}` : ""}
               {sources.length > 1 ? ` +${sources.length - 1} more` : ""}
+            </span>
+          </p>
+        )}
+        {(!sources || sources.length === 0) && (
+          <p className={`mt-1.5 text-[11px] flex items-center gap-1 ${
+            referenceStatus === "none_loaded" || referenceStatus === "error" ? "text-amber-ink" : "text-ink-4"
+          }`}>
+            <BookDashed className="h-3 w-3 shrink-0" />
+            <span>
+              {t('notSourceBacked')}
+              {referenceStatus === "none_loaded" || referenceStatus === "error"
+                ? `: ${t(`referenceReasons.${referenceStatus}`)}`
+                : referenceStatus === "no_match" || referenceStatus === "found"
+                  ? `: ${t('referenceReasons.no_match')}`
+                  : ""}
             </span>
           </p>
         )}

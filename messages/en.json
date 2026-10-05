@@ -302,6 +302,12 @@
     "actionTitle": "Action title",
     "aiRationale": "AI rationale",
     "aiSources": "Sources",
+    "notSourceBacked": "Not source-backed",
+    "referenceReasons": {
+      "none_loaded": "no guides are loaded for this crop",
+      "no_match": "none of the loaded guides covered this",
+      "error": "the knowledge base could not be read for this run"
+    },
     "managerNote": "Your note",
     "managerNoteOptional": "(optional)",
     "managerNotePlaceholder": "Add context, adjustments, or reasons for the change…",

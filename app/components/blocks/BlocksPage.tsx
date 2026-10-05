@@ -11,6 +11,7 @@ import type { MapHandle } from './BlockSatelliteMap';
 import GoToLocationBar from './GoToLocationBar';
 import dynamic from 'next/dynamic';
 import { resolvePlanting } from '@/utils/planting';
+import type { KnowledgeDocument } from '@/utils/kb-coverage';
 const BlockDetailPanel = dynamic(() => import('./BlockDetailPanel'), {
   ssr: false,
   loading: () => <div className="h-full animate-pulse rounded-xl bg-tile" />,
@@ -24,9 +25,11 @@ interface Props {
   userRole?: "admin" | "supervisor" | "worker";
   farmId: string;
   farmCenter?: { lat: number; lng: number; zoom?: number };
+  /** Documents in the knowledge base. Null when they could not be read. */
+  knowledgeDocs?: KnowledgeDocument[] | null;
 }
 
-export default function BlocksPage({ initialBlocks, initialProfiles, userRole = "worker", farmId, farmCenter }: Props) {
+export default function BlocksPage({ initialBlocks, initialProfiles, userRole = "worker", farmId, farmCenter, knowledgeDocs = null }: Props) {
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks ?? []);
   const [profiles, setProfiles] = useState<Record<string, BlockProfile>>(() => {
     const seed: Record<string, BlockProfile> = { ...(initialProfiles ?? BLOCK_PROFILES) };
@@ -479,6 +482,7 @@ export default function BlocksPage({ initialBlocks, initialProfiles, userRole = 
             soilRefreshKey={soilRefreshKey}
             farmId={farmId}
             canLogObservations={userRole !== "worker"}
+            knowledgeDocs={knowledgeDocs}
           />
         ) : (
           <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-line text-ink-4 text-sm">

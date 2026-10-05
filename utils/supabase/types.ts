@@ -559,6 +559,7 @@ export type Database = {
           llm_prompt_hash: string | null
           manager_note: string | null
           rationale: string
+          reference_status: string | null
           sources: Json | null
           status: Database["public"]["Enums"]["recommendation_status"]
           title: string
@@ -578,6 +579,7 @@ export type Database = {
           llm_prompt_hash?: string | null
           manager_note?: string | null
           rationale: string
+          reference_status?: string | null
           sources?: Json | null
           status?: Database["public"]["Enums"]["recommendation_status"]
           title: string
@@ -597,6 +599,7 @@ export type Database = {
           llm_prompt_hash?: string | null
           manager_note?: string | null
           rationale?: string
+          reference_status?: string | null
           sources?: Json | null
           status?: Database["public"]["Enums"]["recommendation_status"]
           title?: string

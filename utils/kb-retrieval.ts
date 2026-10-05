@@ -8,6 +8,8 @@
  * terms for embedding, and the specific names are also passed as keywords for
  * an exact-match search (see match_knowledge_base_hybrid).
  */
+import { varietyScope } from './kb-coverage'
+import { isPlaceholder } from './plant-catalog'
 
 interface GlossaryEntry {
   /** Triggers on English terms or the Latin name in the query. */
@@ -70,6 +72,7 @@ export interface ScoredChunk {
   keyword_hit?: boolean | null
   rrf_score?: number | null
   country?: string | null
+  variety_applicability?: string[] | null
 }
 
 /**
@@ -81,6 +84,9 @@ export interface ScoredChunk {
  *   on frost, yet frost queries scored ~0.58 against unrelated Spanish text).
  * - Each country present gets at least one slot, so English UC text cannot
  *   crowd out the Spanish guide (or the reverse).
+ * - When the block's `variety` is known, a document about other varieties only
+ *   (another cultivar's datasheet) is left out, and the best relevant passage
+ *   that names this variety gets a slot. With no variety nothing is left out.
  */
 export const VECTOR_ONLY_MARGIN = 0.1
 
@@ -89,11 +95,18 @@ export function selectChunks<T extends ScoredChunk>(
   k: number,
   minSimilarity: number,
   hasKeywords = false,
+  variety: string | null = null,
 ): T[] {
   const vectorOnlyBar = hasKeywords ? minSimilarity + VECTOR_ONLY_MARGIN : minSimilarity
-  const relevant = rows.filter(r => r.keyword_hit || r.similarity >= vectorOnlyBar)
+  const scoped = isPlaceholder(variety) ? rows : rows.filter(r => varietyScope(r.variety_applicability, variety) !== 'other')
+  const relevant = scoped.filter(r => r.keyword_hit || r.similarity >= vectorOnlyBar)
   const chosen: T[] = []
   const seen = new Set<string>()
+  const own = isPlaceholder(variety) ? undefined : relevant.find(r => varietyScope(r.variety_applicability, variety) === 'specific')
+  if (own && k > 0) {
+    chosen.push(own)
+    seen.add(own.country ?? 'none')
+  }
   for (const r of relevant) {
     const key = r.country ?? 'none'
     if (chosen.length < k && !seen.has(key)) {

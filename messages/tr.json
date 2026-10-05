@@ -302,6 +302,12 @@
     "actionTitle": "İşlem başlığı",
     "aiRationale": "Yapay zeka gerekçesi",
     "aiSources": "Kaynaklar",
+    "notSourceBacked": "Kaynağa dayanmıyor",
+    "referenceReasons": {
+      "none_loaded": "bu ürün için yüklenmiş kılavuz yok",
+      "no_match": "yüklü kılavuzların hiçbiri bu konuyu kapsamıyor",
+      "error": "bu çalıştırmada bilgi tabanı okunamadı"
+    },
     "managerNote": "Notunuz",
     "managerNoteOptional": "(isteğe bağlı)",
     "managerNotePlaceholder": "Bağlam, düzeltmeler veya değişiklik nedenleri ekleyin…",
