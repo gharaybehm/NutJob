@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { fetchKnowledgeDocuments } from '@/utils/kb-coverage'
+import { fetchFarmKnowledgeRequests } from '@/utils/kb-requests'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — SettingsForms lives in the old route group; its internal action imports resolve correctly
 import SettingsForms from '@/app/(dashboard)/settings/SettingsForms'
@@ -107,6 +108,8 @@ export default async function SettingsPage({
 
   // Documents loaded in the knowledge base, for the coverage card (null when they cannot be read)
   const knowledgeDocs = await fetchKnowledgeDocuments(supabase)
+  // The farm's requests for guides (null when they cannot be read)
+  const knowledgeRequests = await fetchFarmKnowledgeRequests(supabase, farmId)
 
   const t = await getTranslations('settings');
 
@@ -129,6 +132,7 @@ export default async function SettingsPage({
         blocks={blocks as { id: string; name: string; crop_type: string; variety: string; area: number; area_unit: string; field_capacity: number | null; wilting_point: number | null; root_depth_m: number | null; planting_year: number | null; planting_date: string | null; notes: string | null }[]}
         farmPolicy={policyRow ?? null}
         knowledgeDocs={knowledgeDocs}
+        knowledgeRequests={knowledgeRequests}
         farmId={farmId}
         farmName={farmData?.name ?? ''}
         farmAddress={farmData?.address ?? ''}

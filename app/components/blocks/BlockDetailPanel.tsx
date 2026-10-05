@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { assessMaturity } from '@/engines/maturity';
 import type { BlockProfile, AgroDomain } from './types';
-import { coverageFor, type KnowledgeDocument } from '@/utils/kb-coverage';
-import { isPlaceholder } from '@/utils/plant-catalog';
+import type { KnowledgeDocument } from '@/utils/kb-coverage';
+import { findRequest, gapFor, type KnowledgeRequest } from '@/utils/kb-requests';
+import RequestGuides from '@/app/components/knowledge/RequestGuides';
 import AlertBadge from './AlertBadge';
 import SoilWaterTab from './tabs/SoilWaterTab';
 import PhenologyTab from './tabs/PhenologyTab';
@@ -21,6 +22,8 @@ interface Props {
   canLogObservations?: boolean;
   /** Documents in the knowledge base. Null when they could not be read, and then no note is shown. */
   knowledgeDocs?: KnowledgeDocument[] | null;
+  /** The farm's requests for guides. Null hides the request (not readable, or the viewer may not ask). */
+  knowledgeRequests?: KnowledgeRequest[] | null;
 }
 
 const TABS: { id: AgroDomain; label: string; icon: string }[] = [
@@ -48,13 +51,13 @@ function alertCountForDomain(profile: BlockProfile, domain: AgroDomain): number 
 }
 
 export default function BlockDetailPanel({
-  profile, onEdit, onDelete, soilRefreshKey, farmId, canLogObservations = false, knowledgeDocs = null,
+  profile, onEdit, onDelete, soilRefreshKey, farmId, canLogObservations = false, knowledgeDocs = null, knowledgeRequests = null,
 }: Props) {
   const [activeTab, setActiveTab] = useState<AgroDomain>('soil-water');
   const { block } = profile;
   const cfg = statusConfig[block.status];
   const allAlerts = block.alerts;
-  const coverage = knowledgeDocs ? coverageFor(block.cropType, block.variety, knowledgeDocs) : null;
+  const gap = knowledgeDocs ? gapFor(block.cropType, block.variety, knowledgeDocs) : null;
   const plantingLabel = assessMaturity({ plantingDate: block.plantingDate, plantingYear: block.plantingYear, cropType: block.cropType }).label;
 
   return (
@@ -103,15 +106,19 @@ export default function BlockDetailPanel({
         )}
 
         {/* Knowledge-base coverage for this block's crop and variety */}
-        {coverage && coverage.cropDocuments.length === 0 && (
+        {gap === 'crop' && (
           <p className="mt-3 rounded-lg bg-amber-soft px-3 py-2 text-xs text-amber-ink">
-            No guides are loaded for {block.cropType || 'this crop'}: AI recommendations for this block are not source-backed.
+            No guides are loaded for {block.cropType}: AI recommendations for this block are not source-backed.
           </p>
         )}
-        {coverage && coverage.cropDocuments.length > 0 && coverage.varietyDocuments.length === 0 && !isPlaceholder(block.variety) && (
+        {gap === 'variety' && (
           <p className="mt-2 text-xs text-ink-4">
             No guide on {block.variety} is loaded; the general {block.cropType} guides apply.
           </p>
+        )}
+        {gap && knowledgeRequests && (
+          <RequestGuides key={`${block.id}-${gap}`} farmId={farmId} cropType={block.cropType} variety={block.variety} kind={gap}
+            existing={findRequest(knowledgeRequests, block.cropType, block.variety, gap)} />
         )}
       </div>
 

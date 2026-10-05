@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { assessMaturity, expectsCrop } from '@/engines/maturity';
 import { heatModelFor } from '@/engines/heat-model';
 import { fetchKnowledgeDocuments } from '@/utils/kb-coverage';
+import { fetchFarmKnowledgeRequests } from '@/utils/kb-requests';
 
 export const metadata = {
   title: 'Blocks — RootLoot',
@@ -215,6 +216,8 @@ export default async function BlocksRoute({ params }: { params: Promise<{ farmId
 
   // Documents loaded in the knowledge base, for the per-block coverage note (null when they cannot be read)
   const knowledgeDocs = await fetchKnowledgeDocuments(supabase);
+  // The farm's requests for guides (null when they cannot be read)
+  const knowledgeRequests = await fetchFarmKnowledgeRequests(supabase, farmId);
 
   return (
     <BlocksPage
@@ -224,6 +227,7 @@ export default async function BlocksRoute({ params }: { params: Promise<{ farmId
       farmId={farmId}
       farmCenter={farmCenter}
       knowledgeDocs={knowledgeDocs}
+      knowledgeRequests={knowledgeRequests}
     />
   );
 }

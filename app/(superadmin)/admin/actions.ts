@@ -2,7 +2,10 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/utils/supabase/admin';
+import { fetchKnowledgeDocuments } from '@/utils/kb-coverage';
+import { knowledgeGaps, type KnowledgeGap, type KnowledgeRequest, type KnowledgeRequestStatus } from '@/utils/kb-requests';
 
 async function requireSuperAdmin() {
   const supabase = await createClient();
@@ -201,4 +204,71 @@ export async function getSubscriberDetail(orgId: string): Promise<{ subscriber?:
       })),
     },
   };
+}
+
+export interface KnowledgeQueue {
+  gaps: KnowledgeGap[];
+  /** Display name of each requester, keyed by user id. */
+  requesterNames: Record<string, string>;
+}
+
+/**
+ * Every crop and variety on any farm that has no guides, with the requests
+ * farms made for them. Gaps are listed whether or not anyone asked.
+ */
+export async function getKnowledgeQueue(): Promise<{ queue?: KnowledgeQueue; error?: string }> {
+  const { error: authError } = await requireSuperAdmin();
+  if (authError) return { error: authError };
+
+  const admin = createAdminClient();
+
+  const docs = await fetchKnowledgeDocuments(admin);
+  if (docs === null) return { error: 'The knowledge base documents could not be read (is migration 20261005000000 applied?).' };
+
+  const { data: requests, error: requestsError } = await (admin as any).from('knowledge_requests').select('*').order('created_at');
+  if (requestsError) return { error: `The requests could not be read (is migration 20261005000100 applied?): ${requestsError.message}` };
+
+  const { data: blocks, error: blocksError } = await (admin as any).from('blocks').select('farm_id, crop_type, variety');
+  if (blocksError) return { error: blocksError.message };
+
+  const { data: farms } = await (admin as any).from('farms').select('id, name');
+  const farmNames = new Map<string, string>(((farms ?? []) as { id: string; name: string }[]).map((f) => [f.id, f.name]));
+
+  const requesterIds = [...new Set(((requests ?? []) as KnowledgeRequest[]).map((r) => r.requested_by).filter(Boolean))] as string[];
+  const { data: profiles } = requesterIds.length
+    ? await (admin as any).from('user_profiles').select('id, full_name').in('id', requesterIds)
+    : { data: [] };
+  const requesterNames: Record<string, string> = {};
+  ((profiles ?? []) as { id: string; full_name: string | null }[]).forEach((p) => {
+    requesterNames[p.id] = p.full_name?.trim() || 'Unknown user';
+  });
+
+  return { queue: { gaps: knowledgeGaps(blocks ?? [], farmNames, docs, (requests ?? []) as KnowledgeRequest[]), requesterNames } };
+}
+
+const REQUEST_STATUSES: KnowledgeRequestStatus[] = ['open', 'in_progress', 'done', 'declined'];
+
+/** The platform admin's answer to a request: where it stands, and a reply the farm can read. */
+export async function updateKnowledgeRequest(
+  id: string,
+  input: { status: KnowledgeRequestStatus; adminNote: string },
+): Promise<{ error?: string }> {
+  const { error: authError } = await requireSuperAdmin();
+  if (authError) return { error: authError };
+  if (!REQUEST_STATUSES.includes(input.status)) return { error: 'Unknown status.' };
+
+  const admin = createAdminClient();
+  const { data, error } = await (admin as any)
+    .from('knowledge_requests')
+    .update({ status: input.status, admin_note: input.adminNote.trim().slice(0, 1000) || null })
+    .eq('id', id)
+    .select('farm_id')
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!data) return { error: 'Request not found.' };
+
+  revalidatePath('/admin/knowledge');
+  revalidatePath(`/${data.farm_id}/settings`);
+  revalidatePath(`/${data.farm_id}/blocks`);
+  return {};
 }

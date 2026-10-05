@@ -64,6 +64,8 @@ import { totalAvailableWaterMm } from '@/engines/irrigation'
 import { assessMaturity } from '@/engines/maturity'
 import { knowledgeCoverage, type KnowledgeDocument } from '@/utils/kb-coverage'
 import { findCrop } from '@/utils/crops'
+import { findRequest, type KnowledgeRequest } from '@/utils/kb-requests'
+import RequestGuides from '@/app/components/knowledge/RequestGuides'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -111,6 +113,8 @@ interface SettingsFormsProps {
   farmPolicy?: FarmPolicyRow | null
   /** Documents in the knowledge base. Null when they could not be read. */
   knowledgeDocs?: KnowledgeDocument[] | null
+  /** The farm's requests for guides. Null when they could not be read, and then no request is offered. */
+  knowledgeRequests?: KnowledgeRequest[] | null
   farmId?: string
   farmName?: string
   farmAddress?: string
@@ -761,7 +765,7 @@ function FarmPolicyCard({ farmId, policy }: { farmId: string; policy: FarmPolicy
 }
 
 /** Which crops and varieties on the farm have guides loaded in the knowledge base. */
-function KnowledgeCoverageCard({ blocks, docs }: { blocks: Block[]; docs: KnowledgeDocument[] | null }) {
+function KnowledgeCoverageCard({ blocks, docs, requests, farmId }: { blocks: Block[]; docs: KnowledgeDocument[] | null; requests: KnowledgeRequest[] | null; farmId: string }) {
   const crops = docs ? knowledgeCoverage(blocks, docs) : []
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
   return (
@@ -769,7 +773,7 @@ function KnowledgeCoverageCard({ blocks, docs }: { blocks: Block[]; docs: Knowle
       <div>
         <p className="font-semibold text-ink flex items-center gap-2"><BookOpen className="h-4 w-4 text-green" />Knowledge base coverage</p>
         <p className="text-xs text-ink-3 mt-0.5">
-          The guides the AI can cite for each crop and variety on this farm. Where none is loaded, recommendations still appear but are not source-backed. Guides are added by your administrator.
+          The guides the AI can cite for each crop and variety on this farm. Where none is loaded, recommendations still appear but are not source-backed. Guides are added by the RootLoot administrator, and you can ask for them here.
         </p>
       </div>
       {docs === null ? (
@@ -799,6 +803,10 @@ function KnowledgeCoverageCard({ blocks, docs }: { blocks: Block[]; docs: Knowle
                     No crop data is loaded either (frost limits, water use by stage, growth stages, leaf nutrient bands), so those calculations are off for this crop.
                   </p>
                 )}
+                {!covered && c.crop !== '' && requests && (
+                  <RequestGuides key={c.crop} farmId={farmId} cropType={c.crop} variety={null} kind="crop"
+                    existing={findRequest(requests, c.crop, null, 'crop')} />
+                )}
                 {covered && c.varieties.length > 0 && (
                   <ul className="mt-2 space-y-1">
                     {c.varieties.map(v => (
@@ -807,6 +815,10 @@ function KnowledgeCoverageCard({ blocks, docs }: { blocks: Block[]; docs: Knowle
                         {v.documents.length > 0
                           ? `: ${plural(v.documents.length, 'guide')} on this variety (${v.documents.join(' · ')})`
                           : `: no guide on this variety, the general ${c.crop} guides apply`}
+                        {v.documents.length === 0 && requests && (
+                          <RequestGuides key={v.variety} farmId={farmId} cropType={c.crop} variety={v.variety} kind="variety"
+                            existing={findRequest(requests, c.crop, v.variety, 'variety')} />
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -820,7 +832,7 @@ function KnowledgeCoverageCard({ blocks, docs }: { blocks: Block[]; docs: Knowle
   )
 }
 
-function BlockConfigTab({ blocks, farmId, farmPolicy, knowledgeDocs }: { blocks: Block[]; farmId: string; farmPolicy: FarmPolicyRow | null; knowledgeDocs: KnowledgeDocument[] | null }) {
+function BlockConfigTab({ blocks, farmId, farmPolicy, knowledgeDocs, knowledgeRequests }: { blocks: Block[]; farmId: string; farmPolicy: FarmPolicyRow | null; knowledgeDocs: KnowledgeDocument[] | null; knowledgeRequests: KnowledgeRequest[] | null }) {
   if (blocks.length === 0) {
     return (
       <SectionCard title="Block Configuration" icon={Layers} description="Set water thresholds and notes for each block. These values are used by the AI recommendation engine.">
@@ -835,7 +847,7 @@ function BlockConfigTab({ blocks, farmId, farmPolicy, knowledgeDocs }: { blocks:
     <SectionCard title="Block Configuration" icon={Layers}
       description="Set field capacity, wilting point and root depth per block. These size the water reserve the irrigation advice works from.">
       <FarmPolicyCard farmId={farmId} policy={farmPolicy} />
-      <KnowledgeCoverageCard blocks={blocks} docs={knowledgeDocs} />
+      <KnowledgeCoverageCard blocks={blocks} docs={knowledgeDocs} requests={knowledgeRequests} farmId={farmId} />
       <div className="space-y-4">
         {blocks.map(b => <BlockRow key={b.id} block={b} />)}
       </div>
@@ -1900,6 +1912,7 @@ export default function SettingsForms({
   blocks = [],
   farmPolicy = null,
   knowledgeDocs = null,
+  knowledgeRequests = null,
   farmId,
   farmName,
   farmAddress,
@@ -1945,7 +1958,7 @@ export default function SettingsForms({
       {/* Tab content */}
       {activeTab === 'profile'  && <AccountTab initialProfile={initialProfile} />}
       {activeTab === 'team'     && <TeamTab userRole={userRole} currentUserId={currentUserId} allUsers={allUsers} farmId={farmId ?? ''} farmName={farmName} />}
-      {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} farmId={farmId ?? ''} farmPolicy={farmPolicy} knowledgeDocs={knowledgeDocs} />}
+      {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} farmId={farmId ?? ''} farmPolicy={farmPolicy} knowledgeDocs={knowledgeDocs} knowledgeRequests={knowledgeRequests} />}
       {activeTab === 'alerts'   && <NotificationAlertsTab farmId={farmId ?? ''} />}
       {activeTab === 'sensors'  && <SensorConnectionsTab initialSensors={sensors} blocks={blocks} farmId={farmId ?? ''} initialSensecapApiId={initialSensecapApiId} initialSensecapAccessKey={initialSensecapAccessKey} />}
       {activeTab === 'weather'  && <WeatherAPITab farmId={farmId} farmName={farmName} farmAddress={farmAddress} initialLat={farmGpsLat} initialLng={farmGpsLng} />}

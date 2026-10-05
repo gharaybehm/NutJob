@@ -48,7 +48,33 @@ export async function sendPushToFarm(farmId: string, payload: PushPayload): Prom
     .select('id, endpoint, p256dh, auth')
     .eq('farm_id', farmId)
 
-  if (!subs || subs.length === 0) return
+  await sendToSubscriptions((subs ?? []) as PushSubRow[], payload)
+}
+
+/**
+ * Sends to named users on every device they subscribed from, whichever farm
+ * they were viewing at the time (a platform admin is not tied to one farm).
+ */
+export async function sendPushToUsers(userIds: string[], payload: PushPayload): Promise<void> {
+  if (userIds.length === 0 || !ensureVapid()) return
+
+  const admin = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: subs } = await (admin as any)
+    .from('push_subscriptions')
+    .select('id, endpoint, p256dh, auth')
+    .in('user_id', userIds)
+
+  // The same browser subscribed under two farms has two rows: notify it once.
+  const byEndpoint = new Map<string, PushSubRow>()
+  for (const sub of (subs ?? []) as PushSubRow[]) byEndpoint.set(sub.endpoint, sub)
+  await sendToSubscriptions([...byEndpoint.values()], payload)
+}
+
+async function sendToSubscriptions(subs: PushSubRow[], payload: PushPayload): Promise<void> {
+  if (subs.length === 0) return
+
+  const admin = createAdminClient()
 
   const notification = JSON.stringify({
     title: payload.title,
@@ -62,7 +88,7 @@ export async function sendPushToFarm(farmId: string, payload: PushPayload): Prom
   const staleIds: string[] = []
 
   await Promise.allSettled(
-    (subs as PushSubRow[]).map(async (sub) => {
+    subs.map(async (sub) => {
       try {
         await webPush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Building2, ShieldAlert } from "lucide-react";
+import { LayoutGrid, Building2, ShieldAlert, BookOpen } from "lucide-react";
 import SignOutButton from "@/app/components/auth/SignOutButton";
 
 interface AdminNavProps {
@@ -13,6 +13,7 @@ interface AdminNavProps {
 const navItems = [
   { id: "overview", name: "Cross-Farm Overview", href: "/admin/overview", icon: LayoutGrid },
   { id: "subscribers", name: "Subscribers", href: "/admin/subscribers", icon: Building2 },
+  { id: "knowledge", name: "Knowledge Requests", href: "/admin/knowledge", icon: BookOpen },
 ];
 
 export default function AdminNav({ userEmail, userName }: AdminNavProps) {
