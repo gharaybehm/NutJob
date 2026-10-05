@@ -31,7 +31,7 @@ export default function AdminNav({ userEmail, userName }: AdminNavProps) {
 
   return (
     <aside className="flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-text">
-      <div className="flex items-center gap-2 px-5 py-6">
+      <div className="flex shrink-0 items-center gap-2 px-5 py-6">
         <ShieldAlert className="h-6 w-6 text-gold-bright" strokeWidth={2.25} />
         <div>
           <p className="text-sm font-semibold tracking-wide text-white">Super Admin</p>
@@ -39,7 +39,7 @@ export default function AdminNav({ userEmail, userName }: AdminNavProps) {
         </div>
       </div>
 
-      <nav className="flex-1 px-3">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
@@ -62,7 +62,7 @@ export default function AdminNav({ userEmail, userName }: AdminNavProps) {
         })}
       </nav>
 
-      <div className="flex items-center gap-2 border-t border-white/10 px-3 py-4">
+      <div className="flex shrink-0 items-center gap-2 border-t border-white/10 px-3 py-4">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gold-bright/20 text-xs font-semibold text-gold-bright">
           {getInitials()}
         </div>

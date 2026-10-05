@@ -113,52 +113,57 @@ export default function Sidebar({
 
   return (
     <div className="hidden h-full w-[238px] shrink-0 flex-col bg-gradient-to-b from-sidebar-from to-sidebar-to px-4 py-[22px] md:flex">
-      <div className="mb-3 px-2">
+      <div className="mb-3 shrink-0 px-2">
         <Image src="/logo-dark-transparent.png" alt="RootLoot" width={400} height={128} className="h-[80px] w-auto object-contain mix-blend-screen brightness-125" unoptimized />
       </div>
 
-      <div className="px-2.5 pb-2 font-mono text-[11px] tracking-[1.5px] text-sidebar-text-muted">
-        OPERATIONS
-      </div>
-      <nav>
-        {opsNav.map((item) => (
-          <NavRow key={item.id} item={item} />
-        ))}
-      </nav>
-
-      <div className="px-2.5 pb-2 pt-4 font-mono text-[11px] tracking-[1.5px] text-sidebar-text-muted">
-        RECORDS
-      </div>
-      <nav>
-        {recordsNav.map((item) => (
-          <NavRow key={item.id} item={item} />
-        ))}
-      </nav>
-
-      <div className="flex-1" />
-
-      {freshnessRows.length > 0 && (
-        <div className="mb-3 flex flex-col gap-2 rounded-[11px] border border-white/10 bg-white/[.04] px-3 py-2.5">
-          <div className="font-mono text-[11px] tracking-[1px] text-sidebar-text-muted">{tf("title").toUpperCase()}</div>
-          {freshnessRows.map((row) => {
-            const stale = row.min === null || row.min > row.staleAfter;
-            return (
-              <div key={row.key} className="flex items-center gap-2">
-                <span
-                  aria-hidden="true"
-                  className={`h-2 w-2 shrink-0 ${stale ? "rounded-[2px] bg-gold-bright" : "rounded-full bg-[#8FE0A8]"}`}
-                />
-                <span className="flex-1 truncate text-[12.5px] text-[#DCE6DE]">{row.label}</span>
-                <span className={`font-mono text-[11px] ${stale ? "text-gold-bright" : "text-sidebar-text-muted"}`}>
-                  {formatAge(row.min)}
-                </span>
-              </div>
-            );
-          })}
+      {/* The logo and the user row stay put; this part scrolls when the window is too short
+          (a small laptop, or the browser zoomed in). Without it the sidebar grew taller than
+          the screen, which let the whole page slide up and cut off the top bar. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto [scrollbar-color:rgba(255,255,255,.25)_transparent] [scrollbar-width:thin]">
+        <div className="px-2.5 pb-2 font-mono text-[11px] tracking-[1.5px] text-sidebar-text-muted">
+          OPERATIONS
         </div>
-      )}
+        <nav>
+          {opsNav.map((item) => (
+            <NavRow key={item.id} item={item} />
+          ))}
+        </nav>
 
-      <div className="flex items-center gap-2.5 rounded-[10px] px-1.5 py-2">
+        <div className="px-2.5 pb-2 pt-4 font-mono text-[11px] tracking-[1.5px] text-sidebar-text-muted">
+          RECORDS
+        </div>
+        <nav>
+          {recordsNav.map((item) => (
+            <NavRow key={item.id} item={item} />
+          ))}
+        </nav>
+
+        <div className="min-h-3 flex-1" />
+
+        {freshnessRows.length > 0 && (
+          <div className="mb-3 flex flex-col gap-2 rounded-[11px] border border-white/10 bg-white/[.04] px-3 py-2.5">
+            <div className="font-mono text-[11px] tracking-[1px] text-sidebar-text-muted">{tf("title").toUpperCase()}</div>
+            {freshnessRows.map((row) => {
+              const stale = row.min === null || row.min > row.staleAfter;
+              return (
+                <div key={row.key} className="flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className={`h-2 w-2 shrink-0 ${stale ? "rounded-[2px] bg-gold-bright" : "rounded-full bg-[#8FE0A8]"}`}
+                  />
+                  <span className="flex-1 truncate text-[12.5px] text-[#DCE6DE]">{row.label}</span>
+                  <span className={`font-mono text-[11px] ${stale ? "text-gold-bright" : "text-sidebar-text-muted"}`}>
+                    {formatAge(row.min)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2.5 rounded-[10px] px-1.5 py-2">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-blue to-green font-heading text-[13px] font-semibold text-white">
           {getInitials()}
         </div>
