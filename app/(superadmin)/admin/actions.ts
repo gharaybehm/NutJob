@@ -6,6 +6,8 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { fetchKnowledgeDocuments } from '@/utils/kb-coverage';
 import { knowledgeGaps, type KnowledgeGap, type KnowledgeRequest, type KnowledgeRequestStatus } from '@/utils/kb-requests';
+import type { FarmHealth } from '@/utils/farm-health';
+import { loadFarmHealth, type FarmHealthReport } from './farm-health';
 
 async function requireSuperAdmin() {
   const supabase = await createClient();
@@ -27,6 +29,11 @@ export interface FarmOverviewRow {
   memberCount: number;
   blockCount: number;
   createdAt: string;
+  health: FarmHealth;
+  /** The last time someone logged work or acted on a recommendation. */
+  lastActivity: string | null;
+  openAlerts: number;
+  pendingRecommendations: number;
 }
 
 export async function getCrossFarmOverview(): Promise<{ farms?: FarmOverviewRow[]; error?: string }> {
@@ -37,7 +44,7 @@ export async function getCrossFarmOverview(): Promise<{ farms?: FarmOverviewRow[
 
   const { data: farms, error } = await (admin as any)
     .from('farms')
-    .select('id, name, created_by, created_at, organization_id, organizations(name, subscription_status), farm_members(user_id, role)')
+    .select('id, name, gps_lat, gps_lng, created_by, created_at, organization_id, organizations(name, subscription_status), farm_members(user_id, role)')
     .order('created_at', { ascending: false });
   if (error) return { error: error.message };
 
@@ -67,7 +74,16 @@ export async function getCrossFarmOverview(): Promise<{ farms?: FarmOverviewRow[
     });
   }
 
-  const rows: FarmOverviewRow[] = (farms ?? []).map((f: any) => ({
+  // One set of small queries per farm: fine for the number of farms on the platform today.
+  const now = new Date();
+  const docs = await fetchKnowledgeDocuments(admin);
+  const reports = await Promise.all((farms ?? []).map((f: any) => loadFarmHealth(admin, f, docs, now)));
+
+  const rows: FarmOverviewRow[] = (farms ?? []).map((f: any, i: number) => ({
+    health: reports[i].health,
+    lastActivity: reports[i].signals.lastActivity,
+    openAlerts: reports[i].signals.openAlerts.critical + reports[i].signals.openAlerts.warning + reports[i].signals.openAlerts.info,
+    pendingRecommendations: reports[i].signals.pendingRecommendations,
     id: f.id,
     name: f.name,
     ownerName: ownerNameById[f.created_by] ?? null,
@@ -271,4 +287,72 @@ export async function updateKnowledgeRequest(
   revalidatePath(`/${data.farm_id}/settings`);
   revalidatePath(`/${data.farm_id}/blocks`);
   return {};
+}
+
+export interface FarmHealthDetail {
+  farm: { id: string; name: string; createdAt: string; organizationName: string | null; subscriptionStatus: string | null };
+  report: FarmHealthReport;
+  members: { id: string; name: string | null; email: string | null; role: string; lastSignInAt: string | null }[];
+  /** When the figures were read (ISO), so ages on the page are measured from one moment. */
+  checkedAt: string;
+}
+
+/**
+ * One farm's health for the platform admin: setup, job freshness, sensors,
+ * alerts, recommendation outcomes, knowledge gaps and who has signed in.
+ * Read-only, and limited to counts, times and configuration.
+ */
+export async function getFarmHealthDetail(farmId: string): Promise<{ detail?: FarmHealthDetail; error?: string }> {
+  const { error: authError } = await requireSuperAdmin();
+  if (authError) return { error: authError };
+
+  const admin = createAdminClient();
+
+  const { data: farm, error } = await (admin as any)
+    .from('farms')
+    .select('id, name, gps_lat, gps_lng, created_at, organizations(name, subscription_status), farm_members(user_id, role)')
+    .eq('id', farmId)
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!farm) return { error: 'Farm not found' };
+
+  const now = new Date();
+  const report = await loadFarmHealth(admin, farm, await fetchKnowledgeDocuments(admin), now);
+
+  const memberRows = (farm.farm_members ?? []) as { user_id: string; role: string }[];
+  const memberIds = memberRows.map((m) => m.user_id);
+  const { data: profiles } = memberIds.length
+    ? await (admin as any).from('user_profiles').select('id, full_name').in('id', memberIds)
+    : { data: [] };
+  const nameById: Record<string, string | null> = {};
+  ((profiles ?? []) as { id: string; full_name: string | null }[]).forEach((p) => { nameById[p.id] = p.full_name; });
+
+  const authById: Record<string, { email: string | null; lastSignInAt: string | null }> = {};
+  if (memberIds.length) {
+    const { data: authUsers } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    (authUsers?.users ?? []).forEach((u) => {
+      if (memberIds.includes(u.id)) authById[u.id] = { email: u.email ?? null, lastSignInAt: u.last_sign_in_at ?? null };
+    });
+  }
+
+  return {
+    detail: {
+      farm: {
+        id: farm.id,
+        name: farm.name,
+        createdAt: farm.created_at,
+        organizationName: farm.organizations?.name ?? null,
+        subscriptionStatus: farm.organizations?.subscription_status ?? null,
+      },
+      report,
+      members: memberRows.map((m) => ({
+        id: m.user_id,
+        name: nameById[m.user_id] ?? null,
+        email: authById[m.user_id]?.email ?? null,
+        role: m.role,
+        lastSignInAt: authById[m.user_id]?.lastSignInAt ?? null,
+      })),
+      checkedAt: now.toISOString(),
+    },
+  };
 }
