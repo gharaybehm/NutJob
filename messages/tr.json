@@ -297,7 +297,6 @@
     "noHistory": "Henüz geçmiş yok",
     "pendingDesc": "Yapay zeka motoru şu an bloklarınız için yeni bir öneri üretmedi.",
     "historyDesc": "Henüz hiçbir öneriyi kabul etmediniz veya atlamadınız.",
-    "generateMock": "Test Verisi Oluştur",
     "editTitle": "Öneriyi Düzenle",
     "actionTitle": "İşlem başlığı",
     "aiRationale": "Yapay zeka gerekçesi",

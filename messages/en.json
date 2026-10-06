@@ -297,7 +297,6 @@
     "noHistory": "No history yet",
     "pendingDesc": "The AI engine hasn't generated any new actionable insights for your blocks at this time.",
     "historyDesc": "You haven't accepted or skipped any recommendations yet.",
-    "generateMock": "Generate Mock Insights",
     "editTitle": "Edit Recommendation",
     "actionTitle": "Action title",
     "aiRationale": "AI rationale",

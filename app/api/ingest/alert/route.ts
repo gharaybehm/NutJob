@@ -30,6 +30,16 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient()
+
+  // A sensor may only raise alerts on blocks of its own farm.
+  const { data: block } = await (admin as any)
+    .from('blocks')
+    .select('farm_id, name')
+    .eq('id', body.block_id)
+    .eq('farm_id', sensor.farm_id)
+    .maybeSingle()
+  if (!block) return NextResponse.json({ error: 'block_id is not on this sensor\'s farm' }, { status: 403 })
+
   const { error: insertError } = await (admin as any).from('block_alerts').insert({
     block_id: body.block_id,
     domain: body.domain,
@@ -43,28 +53,20 @@ export async function POST(request: Request) {
 
   // Fire push notification + email for warning/critical alerts (non-blocking)
   if (severity === 'warning' || severity === 'critical') {
-    const { data: block } = await (admin as any)
-      .from('blocks')
-      .select('farm_id, name')
-      .eq('id', body.block_id)
-      .single()
+    import('@/utils/push').then(({ sendPushToFarm }) => {
+      sendPushToFarm(block.farm_id, {
+        title: severity === 'critical' ? 'Critical Farm Alert' : 'Farm Alert',
+        body: body.message,
+        url: `/${block.farm_id}/dashboard`,
+        tag: `alert-${body.block_id}-${body.domain}`,
+      }).catch((e: unknown) => console.error('[Push] Alert push failed:', e))
+    })
 
-    if (block?.farm_id) {
-      import('@/utils/push').then(({ sendPushToFarm }) => {
-        sendPushToFarm(block.farm_id, {
-          title: severity === 'critical' ? 'Critical Farm Alert' : 'Farm Alert',
-          body: body.message,
-          url: `/${block.farm_id}/dashboard`,
-          tag: `alert-${body.block_id}-${body.domain}`,
-        }).catch((e: unknown) => console.error('[Push] Alert push failed:', e))
-      })
-
-      notifyAdminsByEmail(admin, block.farm_id, {
-        severity: severity as 'warning' | 'critical',
-        message: body.message,
-        blockName: block.name,
-      }).catch((e: unknown) => console.error('[Email] Alert email failed:', e))
-    }
+    notifyAdminsByEmail(admin, block.farm_id, {
+      severity: severity as 'warning' | 'critical',
+      message: body.message,
+      blockName: block.name,
+    }).catch((e: unknown) => console.error('[Email] Alert email failed:', e))
   }
 
   await updateSensorHeartbeat(sensor.id)

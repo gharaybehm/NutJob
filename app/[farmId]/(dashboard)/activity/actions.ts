@@ -111,6 +111,15 @@ export async function logActivity(
   const gate = await requireFarmRole(farmId, "worker");
   if (!gate.ok) throw new Error(gate.error);
 
+  // For the same reason the block has to be checked against the farm: the
+  // side-writes below key on block_id alone.
+  if (params.block_id) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- farm_id predates the generated types
+    const { data: block } = await (admin.from("blocks") as any)
+      .select("id").eq("id", params.block_id).eq("farm_id", farmId).maybeSingle();
+    if (!block) throw new Error("That block is not on this farm.");
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- farm_id predates the generated types
   const { data, error } = await (admin.from("activity_log") as any)
     .insert({

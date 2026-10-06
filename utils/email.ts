@@ -3,6 +3,17 @@ import { Resend } from 'resend'
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const FROM = process.env.EMAIL_FROM || 'hello@rootloot.ai'
 
+// Farm names, block names and sensor alert text are user-supplied, so they are
+// escaped before going into the HTML body.
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export interface EmailPayload {
   to: string | string[]
   subject: string
@@ -30,11 +41,11 @@ export async function sendInviteEmail(
 ): Promise<void> {
   const { farmName, email, password, appUrl } = opts
   const text = `You've been added to the ${farmName} team on NutJob. Log in at ${appUrl} with:\nEmail: ${email}\nTemporary password: ${password}\nPlease log in and change your password.`
-  const html = `<p>You've been added to the <strong>${farmName}</strong> team on NutJob.</p>
-<p>Log in at <a href="${appUrl}">${appUrl}</a> with:</p>
+  const html = `<p>You've been added to the <strong>${escapeHtml(farmName)}</strong> team on NutJob.</p>
+<p>Log in at <a href="${escapeHtml(appUrl)}">${escapeHtml(appUrl)}</a> with:</p>
 <ul>
-  <li>Email: ${email}</li>
-  <li>Temporary password: ${password}</li>
+  <li>Email: ${escapeHtml(email)}</li>
+  <li>Temporary password: ${escapeHtml(password)}</li>
 </ul>
 <p>Please log in and change your password.</p>`
 
@@ -52,9 +63,9 @@ export async function sendAlertEmail(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const url = `${appUrl}/${farmId}/dashboard`
   const text = `${label} Alert — ${blockName}\n\n${message}\n\nView farm: ${url}`
-  const html = `<p><strong>${label} Alert — ${blockName}</strong></p>
-<p>${message}</p>
-<p><a href="${url}">View farm dashboard</a></p>`
+  const html = `<p><strong>${label} Alert — ${escapeHtml(blockName)}</strong></p>
+<p>${escapeHtml(message)}</p>
+<p><a href="${escapeHtml(url)}">View farm dashboard</a></p>`
 
   await sendEmail({ to, subject: `[NutJob] ${label} Alert — ${blockName}`, html, text })
 }

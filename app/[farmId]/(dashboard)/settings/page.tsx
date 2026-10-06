@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { fetchKnowledgeDocuments } from '@/utils/kb-coverage'
@@ -89,22 +90,39 @@ export default async function SettingsPage({
 
   // Fetch farm details for the Farm Identity and Weather sections
   const { data: farmData } = await db.from('farms')
-    .select('name, address, gps_lat, gps_lng, sensecap_api_id, sensecap_access_key')
+    .select('name, address, gps_lat, gps_lng')
     .eq('id', farmId)
     .single()
 
-  // Fetch sensors with their assigned block name
-  const { data: sensorsRaw } = await db
-    .from('sensors')
-    .select('*, block:blocks(name)')
-    .eq('farm_id', farmId)
-    .order('created_at', { ascending: false })
+  // Sensor ingest keys and the SenseCAP credentials are secrets that only a
+  // farm admin manages, so they are read (with the service-role client) and
+  // sent to the browser only for a confirmed admin of this farm. The profile
+  // role fallback in effectiveRole is deliberately not enough here.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sensors = ((sensorsRaw ?? []) as any[]).map((s: any) => ({
-    ...s,
-    block_name: s.block?.name ?? null,
-    block: undefined,
-  }))
+  let sensors: any[] = []
+  let sensecap: { sensecap_api_id: string | null; sensecap_access_key: string | null } | null = null
+  if (membership?.role === 'admin') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const admin = createAdminClient() as any
+    const [{ data: sensecapRow }, { data: sensorsRaw }] = await Promise.all([
+      admin.from('farms')
+        .select('sensecap_api_id, sensecap_access_key')
+        .eq('id', farmId)
+        .single(),
+      // Sensors with their assigned block name
+      admin.from('sensors')
+        .select('*, block:blocks(name)')
+        .eq('farm_id', farmId)
+        .order('created_at', { ascending: false }),
+    ])
+    sensecap = sensecapRow ?? null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    sensors = ((sensorsRaw ?? []) as any[]).map((s: any) => ({
+      ...s,
+      block_name: s.block?.name ?? null,
+      block: undefined,
+    }))
+  }
 
   // Documents loaded in the knowledge base, for the coverage card (null when they cannot be read)
   const knowledgeDocs = await fetchKnowledgeDocuments(supabase)
@@ -139,8 +157,8 @@ export default async function SettingsPage({
         farmGpsLat={farmData?.gps_lat ?? null}
         farmGpsLng={farmData?.gps_lng ?? null}
         sensors={sensors}
-        initialSensecapApiId={farmData?.sensecap_api_id ?? null}
-        initialSensecapAccessKey={farmData?.sensecap_access_key ?? null}
+        initialSensecapApiId={sensecap?.sensecap_api_id ?? null}
+        initialSensecapAccessKey={sensecap?.sensecap_access_key ?? null}
       />
     </div>
   )

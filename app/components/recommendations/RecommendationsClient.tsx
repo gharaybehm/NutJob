@@ -10,10 +10,8 @@ import {
   editRecommendation,
   type SkipReason,
   generateAIRecommendations,
-  generateMockRecommendations,
 } from "@/app/[farmId]/(dashboard)/recommendations/actions";
 import {
-  Sparkles,
   Filter,
   CheckCircle2,
   Clock,
@@ -193,19 +191,6 @@ export default function RecommendationsClient({ initialRecommendations, farmId }
     }
   };
 
-  const handleGenerateMock = async () => {
-    setProcessingIds((prev) => new Set(prev).add("generate"));
-    try {
-      await generateMockRecommendations(farmId);
-      startTransition(() => { router.refresh(); });
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      alert(`Failed to generate mock data: ${msg}`);
-    } finally {
-      setProcessingIds((prev) => { const next = new Set(prev); next.delete("generate"); return next; });
-    }
-  };
-
   const filteredRecommendations = initialRecommendations.filter((rec) => {
     const matchesStatus = statusFilter === "pending" ? isOpen(rec) : !isOpen(rec);
     const matchesCategory = categoryFilter === "all" || rec.category === categoryFilter;
@@ -339,21 +324,9 @@ export default function RecommendationsClient({ initialRecommendations, farmId }
           <h3 className="font-heading text-xl font-semibold text-ink mb-2">
             {statusFilter === "pending" ? t('noPending') : t('noHistory')}
           </h3>
-          <p className="text-ink-2 max-w-md mx-auto mb-8 leading-relaxed">
+          <p className="text-ink-2 max-w-md mx-auto leading-relaxed">
             {statusFilter === "pending" ? t('pendingDesc') : t('historyDesc')}
           </p>
-          <button
-            onClick={handleGenerateMock}
-            disabled={processingIds.has("generate") || isPending}
-            className="bg-ink text-white hover:brightness-110 px-6 py-3 rounded-lg font-medium shadow-sm transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {processingIds.has("generate") ? (
-              <div className="h-5 w-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Sparkles className="h-5 w-5" />
-            )}
-            {t('generateMock')}
-          </button>
         </div>
       )}
 

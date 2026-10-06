@@ -97,6 +97,9 @@ export async function updateUserRole(farmId: string, userId: string, role: 'admi
   if (curMembership?.role !== 'admin') {
     return { error: 'Only admins can change user roles' }
   }
+  if (!['admin', 'supervisor', 'worker'].includes(role)) {
+    return { error: 'Invalid role' }
+  }
 
   const adminClient = createAdminClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -215,10 +218,20 @@ export async function createWorker(farmId: string, formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const fullName = formData.get('full_name') as string
-  const role = formData.get('role') as 'supervisor' | 'worker'
+  const role = formData.get('role')
 
   if (!email || !fullName || !role) {
     return { error: 'All fields are required' }
+  }
+
+  // The form value is caller-controlled and the inserts below bypass RLS, so
+  // the role is checked here: nobody is created as admin, and a supervisor can
+  // only create workers.
+  if (role !== 'supervisor' && role !== 'worker') {
+    return { error: 'Role must be supervisor or worker' }
+  }
+  if (curMembership.role === 'supervisor' && role !== 'worker') {
+    return { error: 'Supervisors can only create workers' }
   }
 
   const adminClient = createAdminClient()
@@ -277,14 +290,15 @@ export async function createWorker(farmId: string, formData: FormData) {
     return { error: createError?.message || 'Failed to create auth user' }
   }
 
-  // 2. Insert into user_profiles
+  // 2. Make sure the profile exists. The role here is the platform-wide one and
+  // stays at its default; the farm role lives in farm_members (step 3). Upsert
+  // because the on_auth_user_created trigger may already have made the row.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: profileError } = await (adminClient.from('user_profiles') as any)
-    .insert({
+    .upsert({
       id: newUser.user.id,
       full_name: fullName,
-      role: role,
-    })
+    }, { onConflict: 'id' })
 
   if (profileError) {
     // Attempt rollback of auth user
@@ -333,25 +347,33 @@ export async function createWorker(farmId: string, formData: FormData) {
 
 // ─── Sensor actions ───────────────────────────────────────────────────────────
 
-async function requireAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { user: null, error: 'Not authenticated' as const }
-  const { data: profile } = await supabase
-    .from('user_profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return { user: null, error: 'Only admins can manage sensors' as const }
-  return { user, error: null }
+// These actions write through the service-role client, so RLS is bypassed and
+// the caller's admin role on this particular farm has to be checked here.
+
+// A sensor may only be attached to a block of its own farm.
+async function blockIsOnFarm(
+  adminClient: ReturnType<typeof createAdminClient>,
+  blockId: string,
+  farmId: string
+): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (adminClient as any).from('blocks')
+    .select('id').eq('id', blockId).eq('farm_id', farmId).maybeSingle()
+  return Boolean(data)
 }
 
 export async function registerSensor(
   farmId: string,
   values: SensorFormValues
 ): Promise<{ error?: string; sensor?: Sensor }> {
-  const { error: authError } = await requireAdmin()
-  if (authError) return { error: authError }
+  const gate = await requireFarmRole(farmId, 'admin')
+  if (!gate.ok) return { error: gate.error }
 
   const apiKey = crypto.randomUUID()
   const adminClient = createAdminClient()
+  if (values.block_id && !(await blockIsOnFarm(adminClient, values.block_id, farmId))) {
+    return { error: 'That block is not on this farm.' }
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (adminClient as any).from('sensors')
     .insert({
@@ -376,10 +398,13 @@ export async function updateSensor(
   farmId: string,
   values: Partial<SensorFormValues>
 ): Promise<{ error?: string }> {
-  const { error: authError } = await requireAdmin()
-  if (authError) return { error: authError }
+  const gate = await requireFarmRole(farmId, 'admin')
+  if (!gate.ok) return { error: gate.error }
 
   const adminClient = createAdminClient()
+  if (values.block_id && !(await blockIsOnFarm(adminClient, values.block_id, farmId))) {
+    return { error: 'That block is not on this farm.' }
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (adminClient as any).from('sensors')
     .update({
@@ -401,8 +426,8 @@ export async function deleteSensor(
   sensorId: string,
   farmId: string
 ): Promise<{ error?: string }> {
-  const { error: authError } = await requireAdmin()
-  if (authError) return { error: authError }
+  const gate = await requireFarmRole(farmId, 'admin')
+  if (!gate.ok) return { error: gate.error }
 
   const adminClient = createAdminClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -421,10 +446,13 @@ export async function assignSensorToBlock(
   blockId: string | null,
   farmId: string
 ): Promise<{ error?: string }> {
-  const { error: authError } = await requireAdmin()
-  if (authError) return { error: authError }
+  const gate = await requireFarmRole(farmId, 'admin')
+  if (!gate.ok) return { error: gate.error }
 
   const adminClient = createAdminClient()
+  if (blockId && !(await blockIsOnFarm(adminClient, blockId, farmId))) {
+    return { error: 'That block is not on this farm.' }
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (adminClient as any).from('sensors')
     .update({ block_id: blockId })
@@ -440,8 +468,8 @@ export async function generateSensorApiKey(
   sensorId: string,
   farmId: string
 ): Promise<{ error?: string; api_key?: string }> {
-  const { error: authError } = await requireAdmin()
-  if (authError) return { error: authError }
+  const gate = await requireFarmRole(farmId, 'admin')
+  if (!gate.ok) return { error: gate.error }
 
   const newKey = crypto.randomUUID()
   const adminClient = createAdminClient()
@@ -547,8 +575,8 @@ export async function saveSensecapCredentials(
   apiId: string,
   accessKey: string
 ): Promise<{ error?: string }> {
-  const { error: authError } = await requireAdmin()
-  if (authError) return { error: authError }
+  const gate = await requireFarmRole(farmId, 'admin')
+  if (!gate.ok) return { error: gate.error }
   const adminClient = createAdminClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (adminClient as any).from('farms')
@@ -563,8 +591,11 @@ export async function testSensecapConnection(
   apiId: string,
   accessKey: string
 ): Promise<{ org_id?: string; error?: string }> {
-  const { error: authError } = await requireAdmin()
-  if (authError) return { error: authError }
+  // Only checks credentials the caller typed in against SenseCAP; it touches no
+  // farm data, so being signed in is enough.
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
   try {
     const client = createSensecapClient(apiId, accessKey)
     const orgId = await client.verifyConnection()

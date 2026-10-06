@@ -26,14 +26,15 @@ export async function GET(request: Request) {
           .single()
 
         if (!profile) {
-          // Profile does not exist, create it with role 'admin'
+          // Profile does not exist, create it. The role is left at the column
+          // default: this is the platform-wide role, and farm access comes from
+          // farm_members, not from here.
           const adminClient = createAdminClient()
           const fullName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'New User'
           
           await adminClient.from('user_profiles').insert({
             id: user.id,
             full_name: fullName,
-            role: 'admin',
             updated_at: new Date().toISOString()
           })
         }

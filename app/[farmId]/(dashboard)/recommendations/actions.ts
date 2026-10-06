@@ -188,13 +188,14 @@ export async function generateAIRecommendations(
   farmId: string
 ): Promise<{ count: number; model: string } | { error: string }> {
   try {
-    const supabase = await createClient();
+    // The pipeline runs on the service-role client, so the farm role is checked
+    // here; recommendations are staff-writable, matching the RLS policy.
+    const gate = await requireFarmRole(farmId, "supervisor");
+    if (!gate.ok) throw new Error(gate.error);
+
     const admin = createAdminClient();
     const locale = await getLocale();
     const languageName = localeToLanguageName(locale);
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) throw new Error("Unauthorised");
 
     if (!process.env.OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured");
 
@@ -226,79 +227,4 @@ export async function generateAIRecommendations(
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }
-}
-
-export async function generateMockRecommendations(farmId: string) {
-  const supabase = await createClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- generated DB types predate blocks.farm_id migration
-  const { data: blocks, error: blocksError } = await (supabase.from("blocks") as any)
-    .select("id")
-    .eq("farm_id", farmId)
-    .limit(5);
-
-  if (blocksError || !blocks || blocks.length === 0) {
-    console.error("Error fetching blocks for mock data:", blocksError);
-    throw new Error("Could not fetch blocks to assign recommendations.");
-  }
-
-  const mockTemplates = [
-    {
-      category: "irrigate",
-      title: "High soil moisture deficit detected",
-      rationale:
-        "Soil moisture sensors in this block show a deficit approaching wilting point. High temperatures expected in the next 3 days.",
-      confidence: 92,
-    },
-    {
-      category: "spray",
-      title: "Spidermite risk high",
-      rationale:
-        "Recent hot, dry conditions are ideal for spidermite outbreaks. Nearby blocks have reported increased pressure.",
-      confidence: 85,
-    },
-    {
-      category: "fertilize",
-      title: "Nitrogen top-up required",
-      rationale:
-        "Tissue samples show N levels dropping below optimal threshold for the current nut-development stage.",
-      confidence: 78,
-    },
-    {
-      category: "scout",
-      title: "Monitor for Navel Orangeworm",
-      rationale:
-        "Hull split is beginning in this variety. NOW flights have been detected in the region.",
-      confidence: 88,
-    },
-    {
-      category: "prune",
-      title: "Remove shaded lower branches",
-      rationale:
-        "Canopy density has reduced light penetration below 30% in the lower third, reducing fruiting wood viability.",
-      confidence: 65,
-    },
-  ];
-
-  const newRecommendations = mockTemplates.map((template, i) => ({
-    farm_id: farmId,
-    block_id: blocks[i % blocks.length].id,
-    category: template.category as RecommendationCategory,
-    title: template.title,
-    rationale: template.rationale,
-    confidence: template.confidence / 100,
-    status: "pending" as const,
-  }));
-
-  const admin = createAdminClient();
-  const { error: insertError } = await admin
-    .from("recommendations")
-    .insert(newRecommendations);
-
-  if (insertError) {
-    console.error("Error inserting mock recommendations:", insertError);
-    throw new Error(insertError.message);
-  }
-
-  revalidatePath(`/${farmId}/recommendations`);
 }

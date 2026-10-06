@@ -16,8 +16,6 @@ export interface Farm {
   updated_at: string;
   climate_profile: import("@/utils/climate-profile").ClimateProfile | null;
   climate_fetched_at: string | null;
-  sensecap_api_id: string | null;
-  sensecap_access_key: string | null;
   organization_id: string | null;
 }
 

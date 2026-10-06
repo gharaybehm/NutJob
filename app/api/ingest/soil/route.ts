@@ -26,6 +26,16 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient()
+
+  // A sensor may only write readings to blocks of its own farm.
+  const { data: block } = await (admin as any)
+    .from('blocks')
+    .select('id')
+    .eq('id', blockId)
+    .eq('farm_id', sensor.farm_id)
+    .maybeSingle()
+  if (!block) return NextResponse.json({ error: 'block_id is not on this sensor\'s farm' }, { status: 403 })
+
   const { error: insertError } = await (admin as any).from('soil_water_readings').insert({
     block_id: blockId,
     sensor_id: sensor.id,

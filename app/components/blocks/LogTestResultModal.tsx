@@ -396,11 +396,8 @@ export default function LogTestResultModal({ open, onClose, blocks, defaultBlock
       fd.append('waterDeficit', waterDeficit);
       fd.append('notes',        notes);
 
-      if (file) {
-        fd.append('file', file);
-      } else if (existingFileUrl) {
-        fd.append('fileUrl', existingFileUrl);
-      }
+      // No file means the server keeps whatever report is already attached.
+      if (file) fd.append('file', file);
 
       for (const [k, v] of Object.entries(soil)) fd.append(k, v);
 

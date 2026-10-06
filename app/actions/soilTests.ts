@@ -20,7 +20,6 @@ export async function logTestResult(
   const recordedAt   = formData.get('recordedAt') as string;
   const labReference = formData.get('labReference') as string;
   const notes        = formData.get('notes')      as string;
-  let fileUrl        = formData.get('fileUrl')    as string | null;
   const file         = formData.get('file')       as File | null;
 
   // Core top-level columns
@@ -80,7 +79,11 @@ export async function logTestResult(
   const gate = await requireFarmRole(farmId, 'supervisor');
   if (!gate.ok) return { error: gate.error };
 
-  // Handle file upload if present
+  // The stored path only ever comes from an upload made here. A path sent by
+  // the client is ignored: the storage policy lets a user read any object one
+  // of their readings points at, so accepting one would let them link a file
+  // that belongs to another farm.
+  let fileUrl: string | null = null;
   if (file && file.size > 0) {
     const fileExt = file.name.split('.').pop();
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
@@ -115,22 +118,22 @@ export async function logTestResult(
     root_zone_temp: numOrNull(rootZoneTemp),
     water_deficit:  numOrNull(waterDeficit),
     lab_reference:  labReference || null,
-    file_url:       fileUrl,
     notes:          notes || null,
     parameters:     Object.keys(params).length > 0 ? params : null,
   };
 
   let saveError;
   if (id) {
+    // An edit keeps the report already attached unless a new one was uploaded.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('soil_water_readings') as any)
-      .update(row)
+      .update(fileUrl ? { ...row, file_url: fileUrl } : row)
       .eq('id', id);
     saveError = error;
   } else {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('soil_water_readings') as any)
-      .insert(row);
+      .insert({ ...row, file_url: fileUrl });
     saveError = error;
   }
 

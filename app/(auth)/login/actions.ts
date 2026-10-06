@@ -47,14 +47,14 @@ export async function signUp(formData: FormData) {
     redirect(`/login?mode=signup&message=${encodeURIComponent(error.message)}`)
   }
 
-  // Create the user profile in public.user_profiles with 'admin' role
+  // Create the user profile in public.user_profiles. The role is left at the
+  // column default; farm access comes from farm_members.
   if (data.user) {
     const adminClient = createAdminClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: profileError } = await (adminClient.from('user_profiles') as any).insert({
       id: data.user.id,
       full_name: fullName || email.split('@')[0],
-      role: 'admin',
       updated_at: new Date().toISOString()
     })
     

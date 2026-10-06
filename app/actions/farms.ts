@@ -99,8 +99,10 @@ export async function getFarms(): Promise<FarmWithMeta[]> {
 
    
   const db = supabase as any;
+  // Named columns, not '*': this result is passed to client components, and the
+  // farm row also holds the SenseCAP credentials, which must stay on the server.
   const { data: farmsRaw } = await db.from('farms')
-    .select('*, farm_members(role, user_id)')
+    .select('id, name, slug, gps_lat, gps_lng, gps_zoom, address, total_area, area_unit, created_by, created_at, updated_at, climate_profile, climate_fetched_at, organization_id, farm_members(role, user_id)')
     .order('created_at');
 
   if (!farmsRaw || farmsRaw.length === 0) return [];
@@ -165,8 +167,15 @@ export async function updateFarm(
   if (!user) return { error: 'Not authenticated' };
 
    
+  // `values` comes from the client, so only the fields this form edits are
+  // copied; anything else (organization_id, created_by, ...) is dropped.
+  const editable = ['name', 'address', 'gps_lat', 'gps_lng', 'gps_zoom', 'total_area', 'area_unit'] as const;
+  const picked: Record<string, unknown> = {};
+  for (const key of editable) {
+    if (values[key] !== undefined) picked[key] = values[key];
+  }
   const payload = {
-    ...values,
+    ...picked,
     ...(values.gps_lat != null ? { gps_lat: Math.round(values.gps_lat * 10000) / 10000 } : {}),
     ...(values.gps_lng != null ? { gps_lng: Math.round(values.gps_lng * 10000) / 10000 } : {}),
     updated_at: new Date().toISOString(),
