@@ -12,6 +12,7 @@ import type {
   AssistantMessage, AssistantPins, AssistantStreamEvent, AssistantThreadSummary,
 } from "@/utils/assistant/types";
 import { useOnlineStatus } from "./useOnlineStatus";
+import AnswerText from "./AnswerText";
 
 const ERROR_CODES = ["unavailable", "limit_user", "limit_farm", "bad_request", "forbidden", "not_configured", "unauthorized", "not_found"] as const;
 type ErrorCode = (typeof ERROR_CODES)[number];
@@ -391,6 +392,8 @@ export default function AssistantDrawer({ farmId, isAdmin, open, onClose, initia
                         <span className="sr-only">{m.role === "user" ? t("you") : t("assistantLabel")}: </span>
                         {m.role === "assistant" && m.content.length === 0 ? (
                           <span className="text-ink-3">{t("thinking")}</span>
+                        ) : m.role === "assistant" ? (
+                          <AnswerText text={m.content} />
                         ) : (
                           <p className="whitespace-pre-wrap break-words">{m.content}</p>
                         )}
