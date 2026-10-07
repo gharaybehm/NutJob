@@ -306,8 +306,26 @@ export async function gatherContext(
         notes.push(`The guides were searched for ${target.crop} only, the crop the question names.`);
       }
     } else if (target.reason === "several") {
-      notes.push("The farm grows several crops, and neither a pinned block nor the question says which, so no guides were searched. For guide-backed advice, ask the user to pin a block or name the crop.");
-      lookupStatus = "no_match";
+      // Search each crop on its own, so every passage stays tied to one crop.
+      const crops = [...new Set(farm.blocks.map((b) => knowledgeBaseCrop(b.crop_type)).filter(Boolean))].slice(0, 3) as string[];
+      const english = await searchQueryFor(question);
+      const per = Math.max(2, Math.ceil(PASSAGES / crops.length));
+      const lookups = await Promise.all(
+        crops.map((crop) => lookUpReferences(admin, `${english} ${crop}`, crop, per, null))
+      );
+      passages = labelPassages(lookups.flatMap((l) => l.chunks) as RetrievedChunk[], farm.country);
+      const statuses = lookups.map((l) => l.status);
+      lookupStatus = statuses.includes("found")
+        ? "found"
+        : statuses.every((s) => s === "none_loaded")
+          ? "none_loaded"
+          : statuses.includes("error") ? "error" : "no_match";
+      const without = crops.filter((_, i) => lookups[i].status !== "found");
+      notes.push(
+        `The farm grows several crops (${crops.join(", ")}) and the question does not say which, so guides were searched for each crop separately. ` +
+          `Answer per crop, using each passage only for the crop in its label.` +
+          (without.length > 0 ? ` No guide passage was found for: ${without.join(", ")}.` : "")
+      );
     } else {
       lookupStatus = "none_loaded";
     }

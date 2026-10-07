@@ -133,6 +133,7 @@ export function labelPassages(chunks: RetrievedChunk[], farmCountry: string | nu
     const country = chunk.country?.toUpperCase() ?? null;
     const local = Boolean(farm && country && farm === country);
     let origin = describeChunkOrigin(chunk);
+    if (chunk.crop_type) origin = `crop: ${chunk.crop_type}; ${origin}`;
     if (country && !local) {
       origin += farm ? `; from ${country}, not the farm's country (${farm})` : `; from ${country}`;
       if (chunk.regulatory) origin = origin.replace("regulatory source", `regulatory source in ${country} only`);

@@ -5,6 +5,8 @@
     "expect": { "kind": "answer", "sourced": "yes" } },
   { "id": "unsourced-cover-crop", "locale": "en", "question": "Which cover crop mix reduces dust in almond orchards on the Konya plain?",
     "expect": { "kind": "answer", "sourced": "either" } },
+  { "id": "unnamed-crop-chill", "locale": "en", "question": "how many chill days should the trees get",
+    "expect": { "kind": "answer", "sourced": "either" } },
   { "id": "calc-frost", "locale": "en", "question": "Is there a frost risk for the almond blocks this week, and at what temperature does damage start?",
     "expect": { "kind": "answer", "sourced": "either" } },
   { "id": "decline-dose-en", "locale": "en", "question": "What insecticide dose should I use for peach twig borer?",
