@@ -16,6 +16,7 @@ import AnswerText from "./AnswerText";
 import DraftCard from "./DraftCard";
 import { groupDrafts } from "@/utils/assistant/draft-groups";
 import RequestGuidesButton from "./RequestGuidesButton";
+import ShareWithSupport from "./ShareWithSupport";
 
 const ERROR_CODES = ["unavailable", "limit_user", "limit_farm", "bad_request", "forbidden", "not_configured", "unauthorized", "not_found"] as const;
 type ErrorCode = (typeof ERROR_CODES)[number];
@@ -354,6 +355,9 @@ export default function AssistantDrawer({ farmId, isAdmin, open, onClose, initia
                 </select>
               )}
             </div>
+
+            {/* Share with support: the owner's conversation, once it exists */}
+            {threadId && mine && !busy && <ShareWithSupport key={threadId} farmId={farmId} threadId={threadId} online={online} />}
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-3 py-4" aria-live="polite">

@@ -8,6 +8,7 @@ import { fetchKnowledgeDocuments } from '@/utils/kb-coverage';
 import { isGapRequest, knowledgeGaps, type GapRequest, type KnowledgeGap, type KnowledgeRequest, type KnowledgeRequestStatus } from '@/utils/kb-requests';
 import type { FarmHealth } from '@/utils/farm-health';
 import { loadFarmHealth, type FarmHealthReport } from './farm-health';
+import { COUNT_WINDOW_DAYS, countByFarm, countEvents, crossFarmTotals, type AssistantCounts } from '@/utils/assistant/operator-counts';
 
 async function requireSuperAdmin() {
   const supabase = await createClient();
@@ -34,9 +35,26 @@ export interface FarmOverviewRow {
   lastActivity: string | null;
   openAlerts: number;
   pendingRecommendations: number;
+  /** Field assistant questions in the last COUNT_WINDOW_DAYS days (a count, never text). */
+  assistantQuestions: number;
 }
 
-export async function getCrossFarmOverview(): Promise<{ farms?: FarmOverviewRow[]; error?: string }> {
+export interface AssistantOverview {
+  /** Totals across farms; null while fewer than MIN_FARMS_FOR_TOTALS farms contribute. */
+  totals: AssistantCounts | null;
+  contributingFarms: number;
+}
+
+/** assistant_events rows since the count window began, all farms. Kind, category and farm only. */
+async function assistantEventsSince(admin: any, farmId?: string) {
+  const since = new Date(Date.now() - COUNT_WINDOW_DAYS * 86_400_000).toISOString();
+  let q = admin.from('assistant_events').select('farm_id, kind, category').gte('created_at', since).limit(50_000);
+  if (farmId) q = q.eq('farm_id', farmId);
+  const { data, error } = await q;
+  return error ? null : ((data ?? []) as { farm_id: string; kind: string; category: string | null }[]);
+}
+
+export async function getCrossFarmOverview(): Promise<{ farms?: FarmOverviewRow[]; assistant?: AssistantOverview; error?: string }> {
   const { error: authError } = await requireSuperAdmin();
   if (authError) return { error: authError };
 
@@ -78,6 +96,8 @@ export async function getCrossFarmOverview(): Promise<{ farms?: FarmOverviewRow[
   const now = new Date();
   const docs = await fetchKnowledgeDocuments(admin);
   const reports = await Promise.all((farms ?? []).map((f: any) => loadFarmHealth(admin, f, docs, now)));
+  const events = await assistantEventsSince(admin);
+  const perFarm = countByFarm(events ?? []);
 
   const rows: FarmOverviewRow[] = (farms ?? []).map((f: any, i: number) => ({
     health: reports[i].health,
@@ -93,9 +113,10 @@ export async function getCrossFarmOverview(): Promise<{ farms?: FarmOverviewRow[
     memberCount: f.farm_members?.length ?? 0,
     blockCount: blockCountByFarm[f.id] ?? 0,
     createdAt: f.created_at,
+    assistantQuestions: perFarm.get(f.id)?.questions ?? 0,
   }));
 
-  return { farms: rows };
+  return { farms: rows, assistant: events ? crossFarmTotals(perFarm) : undefined };
 }
 
 export interface SubscriberRow {
@@ -303,6 +324,8 @@ export interface FarmHealthDetail {
   members: { id: string; name: string | null; email: string | null; role: string; lastSignInAt: string | null }[];
   /** When the figures were read (ISO), so ages on the page are measured from one moment. */
   checkedAt: string;
+  /** Field assistant counts for the last COUNT_WINDOW_DAYS days; null when they cannot be read. */
+  assistant: AssistantCounts | null;
 }
 
 /**
@@ -326,6 +349,7 @@ export async function getFarmHealthDetail(farmId: string): Promise<{ detail?: Fa
 
   const now = new Date();
   const report = await loadFarmHealth(admin, farm, await fetchKnowledgeDocuments(admin), now);
+  const assistantEvents = await assistantEventsSince(admin, farm.id);
 
   const memberRows = (farm.farm_members ?? []) as { user_id: string; role: string }[];
   const memberIds = memberRows.map((m) => m.user_id);
@@ -361,6 +385,97 @@ export async function getFarmHealthDetail(farmId: string): Promise<{ detail?: Fa
         lastSignInAt: authById[m.user_id]?.lastSignInAt ?? null,
       })),
       checkedAt: now.toISOString(),
+      assistant: assistantEvents ? countEvents(assistantEvents) : null,
+    },
+  };
+}
+
+// ─── Field assistant: conversations shared with support ──────────────────────
+// The only conversation text the operator can read, and only while the owner's
+// share is live (not withdrawn, not expired). Every open is logged first.
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export interface SupportShareRow {
+  id: string;
+  farmName: string;
+  sharedAt: string;
+  expiresAt: string;
+  views: number;
+}
+
+/** Live shares: farm name and times only (no title or text until one is opened). */
+export async function getSupportShares(): Promise<{ shares?: SupportShareRow[]; error?: string }> {
+  const { error: authError } = await requireSuperAdmin();
+  if (authError) return { error: authError };
+  const admin = createAdminClient() as any;
+  const { data, error } = await admin
+    .from('assistant_shares')
+    .select('id, farm_id, created_at, expires_at, farms(name), assistant_share_views(id)')
+    .is('revoked_at', null)
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false });
+  if (error) return { error: 'Shared conversations could not be read (is migration 20261007000200 applied?).' };
+  return {
+    shares: ((data ?? []) as any[]).map((s) => ({
+      id: s.id,
+      farmName: s.farms?.name ?? 'Unknown farm',
+      sharedAt: s.created_at,
+      expiresAt: s.expires_at,
+      views: (s.assistant_share_views ?? []).length,
+    })),
+  };
+}
+
+export interface SharedConversation {
+  farmName: string;
+  sharedAt: string;
+  expiresAt: string;
+  messages: { role: 'user' | 'assistant'; content: string; createdAt: string; citations: { n: number; title: string; section: string | null }[] }[];
+}
+
+/**
+ * One shared conversation, while the share is live. The view is logged before
+ * anything is returned; if the log cannot be written, nothing is shown.
+ */
+export async function getSharedConversation(shareId: string): Promise<{ conversation?: SharedConversation; error?: string }> {
+  const { user, error: authError } = await requireSuperAdmin();
+  if (authError || !user) return { error: authError ?? 'Not authenticated' };
+  if (!UUID.test(shareId)) return { error: 'Not found' };
+  const admin = createAdminClient() as any;
+
+  const { data: share } = await admin
+    .from('assistant_shares')
+    .select('id, thread_id, farm_id, created_at, expires_at, revoked_at, farms(name)')
+    .eq('id', shareId)
+    .maybeSingle();
+  if (!share || share.revoked_at || new Date(share.expires_at) <= new Date()) return { error: 'Not found' };
+
+  const { error: logError } = await admin.from('assistant_share_views').insert({ share_id: share.id, viewer_id: user.id });
+  if (logError) return { error: 'The view could not be logged, so the conversation is not shown.' };
+  await admin.from('assistant_events').insert({ farm_id: share.farm_id, user_id: user.id, kind: 'share_viewed' });
+
+  const { data: rows } = await admin
+    .from('assistant_messages')
+    .select('role, content, created_at, citations')
+    .eq('thread_id', share.thread_id)
+    .eq('farm_id', share.farm_id)
+    // The conversation as it was when shared: later messages were not shared.
+    .lte('created_at', share.created_at)
+    .order('created_at', { ascending: true })
+    .limit(200);
+
+  return {
+    conversation: {
+      farmName: share.farms?.name ?? 'Unknown farm',
+      sharedAt: share.created_at,
+      expiresAt: share.expires_at,
+      messages: ((rows ?? []) as any[]).map((m) => ({
+        role: m.role,
+        content: m.content,
+        createdAt: m.created_at,
+        citations: (Array.isArray(m.citations) ? m.citations : []).map((c: any) => ({ n: c.n, title: c.title, section: c.section ?? null })),
+      })),
     },
   };
 }

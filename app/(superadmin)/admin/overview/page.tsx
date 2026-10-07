@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid, Sparkles } from "lucide-react";
+import AssistantCountsGrid from "@/app/components/admin/AssistantCountsGrid";
+import { COUNT_WINDOW_DAYS, MIN_FARMS_FOR_TOTALS } from "@/utils/assistant/operator-counts";
 import { getCrossFarmOverview } from "@/app/(superadmin)/admin/actions";
 import AdminSectionCard, { SubscriptionStatusBadge } from "@/app/components/admin/AdminSectionCard";
 import HealthBadge from "@/app/components/admin/HealthBadge";
@@ -9,7 +11,7 @@ import { describeAge, type HealthLevel } from "@/utils/farm-health";
 const LEVEL_ORDER: HealthLevel[] = ["stalled", "attention", "not_set_up", "healthy"];
 
 export default async function AdminOverviewPage() {
-  const { farms, error } = await getCrossFarmOverview();
+  const { farms, assistant, error } = await getCrossFarmOverview();
   const now = new Date();
   const sorted = [...(farms ?? [])].sort((a, b) => LEVEL_ORDER.indexOf(a.health.level) - LEVEL_ORDER.indexOf(b.health.level));
   const needLook = sorted.filter((f) => f.health.level === "stalled" || f.health.level === "attention").length;
@@ -32,7 +34,7 @@ export default async function AdminOverviewPage() {
             <table className="min-w-full divide-y divide-line">
               <thead>
                 <tr>
-                  {["Farm", "Health", "Main issue", "Last activity", "Alerts", "Pending", "Blocks", "Members", "Owner", "Plan"].map((h) => (
+                  {["Farm", "Health", "Main issue", "Last activity", "Alerts", "Pending", "Blocks", "Members", `Assistant (${COUNT_WINDOW_DAYS}d)`, "Owner", "Plan"].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-ink-3">
                       {h}
                     </th>
@@ -56,6 +58,7 @@ export default async function AdminOverviewPage() {
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-ink-3">{f.pendingRecommendations}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-ink-3">{f.blockCount}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-ink-3">{f.memberCount}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-sm text-ink-3">{f.assistantQuestions}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-ink-3">{f.ownerName || f.ownerEmail || "—"}</td>
                     <td className="whitespace-nowrap px-4 py-3">
                       <SubscriptionStatusBadge status={f.subscriptionStatus} />
@@ -65,6 +68,19 @@ export default async function AdminOverviewPage() {
               </tbody>
             </table>
           </div>
+        )}
+      </AdminSectionCard>
+
+      <AdminSectionCard title="Field assistant" icon={Sparkles}
+        description={`Counts across all farms for the last ${COUNT_WINDOW_DAYS} days. Conversation text is never shown here.`}>
+        {!assistant ? (
+          <div className="py-6 text-center text-sm text-ink-4">The assistant&apos;s counts could not be read.</div>
+        ) : !assistant.totals ? (
+          <div className="py-6 text-center text-sm text-ink-4">
+            Totals are shown once at least {MIN_FARMS_FOR_TOTALS} farms use the assistant ({assistant.contributingFarms} do now), so a total cannot point to one farm. Each farm&apos;s own counts are on its page.
+          </div>
+        ) : (
+          <AssistantCountsGrid counts={assistant.totals} />
         )}
       </AdminSectionCard>
     </div>

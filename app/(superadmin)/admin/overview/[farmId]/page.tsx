@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { Activity, ArrowLeft, BookOpen, Cpu, Layers, Sparkles, Timer, Users } from "lucide-react";
+import { Activity, ArrowLeft, BookOpen, Cpu, Layers, MessageSquare, Sparkles, Timer, Users } from "lucide-react";
+import AssistantCountsGrid from "@/app/components/admin/AssistantCountsGrid";
+import { COUNT_WINDOW_DAYS } from "@/utils/assistant/operator-counts";
 import { getFarmHealthDetail } from "@/app/(superadmin)/admin/actions";
 import AdminSectionCard, { SubscriptionStatusBadge } from "@/app/components/admin/AdminSectionCard";
 import HealthBadge from "@/app/components/admin/HealthBadge";
@@ -204,6 +206,15 @@ export default async function AdminFarmHealthPage({ params }: { params: Promise<
               .
             </p>
           </>
+        )}
+      </AdminSectionCard>
+
+      <AdminSectionCard title="Field assistant" icon={MessageSquare}
+        description={`Counts for the last ${COUNT_WINDOW_DAYS} days. Conversations are the farm's own: none of their text is shown here, except one a user shares with support (Shared Conversations).`}>
+        {detail.assistant ? (
+          <AssistantCountsGrid counts={detail.assistant} />
+        ) : (
+          <div className="py-6 text-center text-sm text-ink-4">The assistant&apos;s counts could not be read.</div>
         )}
       </AdminSectionCard>
 
