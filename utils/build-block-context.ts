@@ -94,16 +94,19 @@ export interface BlockContextResult {
 
 export async function buildAllBlockContexts(
   admin: SupabaseAdminLike,
-  farmId?: string | null
+  farmId?: string | null,
+  options: { blockId?: string } = {}
 ): Promise<BlockContextResult> {
   const today = new Date();
 
   // ── fetch all data in parallel ──────────────────────────────────────────────
   const staleDailyThreshold = new Date(today.getTime() - 25 * 60 * 60 * 1000); // 25h ago
 
-  const blockQuery = farmId
+  let blockQuery = farmId
     ? admin.from("blocks").select("*").eq("farm_id", farmId)
     : admin.from("blocks").select("*");
+  // One block only (the field assistant); the caller has checked it belongs to farmId.
+  if (options.blockId) blockQuery = blockQuery.eq("id", options.blockId);
 
   const [
     { data: blocks, error: blocksError },

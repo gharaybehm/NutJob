@@ -16,7 +16,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "ingest:kb": "tsx scripts/ingest-knowledge-base.ts",
-    "test:kb": "tsx scripts/test-kb-retrieval.ts"
+    "test:kb": "tsx scripts/test-kb-retrieval.ts",
+    "test:assistant": "tsx scripts/test-assistant.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",

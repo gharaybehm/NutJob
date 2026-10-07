@@ -6,6 +6,7 @@ import type { BlockProfile, AgroDomain } from './types';
 import type { KnowledgeDocument } from '@/utils/kb-coverage';
 import { findRequest, gapFor, type KnowledgeRequest } from '@/utils/kb-requests';
 import RequestGuides from '@/app/components/knowledge/RequestGuides';
+import { AskAssistantButton } from '@/app/components/assistant/AssistantButton';
 import AlertBadge from './AlertBadge';
 import SoilWaterTab from './tabs/SoilWaterTab';
 import PhenologyTab from './tabs/PhenologyTab';
@@ -79,6 +80,7 @@ export default function BlockDetailPanel({
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0">
             <div className="flex items-center gap-2">
+              <AskAssistantButton pins={{ blockId: block.id }} />
               {onEdit && (
                 <button onClick={onEdit} className="text-xs font-medium text-ink-3 hover:text-green transition-colors">
                   Edit

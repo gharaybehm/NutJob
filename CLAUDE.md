@@ -4,7 +4,7 @@
 
 NutJob is an AI-powered, multi-farm, multi-crop farm management system (it started as an almond-only tool; the live farms grow almonds). It continuously ingests sensor data, weather feeds, and manual field inputs, maintains a live state per block, and uses an AI reasoning engine to generate prioritised agronomic recommendations that the farm manager can accept, edit, or skip.
 
-`Requirements.md` is the product spec and `PROGRESS.md` records what is built. Sections of `Requirements.md` marked "planned, not built" (currently the Field assistant) describe work that has no code yet.
+`Requirements.md` is the product spec and `PROGRESS.md` records what is built. Sections of `Requirements.md` marked "planned, not built" describe work that has no code yet; the Field assistant is part-built (see its heading).
 
 ## Architecture
 
@@ -139,7 +139,7 @@ The system ingests from four source types:
 - Every server action and route handler that touches farm data gates on `requireFarmRole(farmId, minimum)` from `utils/supabase/farm-access.ts`; the same matrix is enforced in RLS.
 - `super_admin` is a global platform role with the `/admin` area. The platform operator is not a farm member and must never be shown a farm's log text, notes, alert messages or recommendation text — counts, times and settings only.
 
-## Field Assistant (planned, not built)
+## Field Assistant (Phase 1 built on branch `feat/field-assistant`; Phases 2-3 planned)
 
 A chat drawer for supervisors and admins on every farm page. The full requirement is the "Field assistant" section of `Requirements.md`. Rules to hold when building it:
 

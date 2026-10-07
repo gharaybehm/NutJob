@@ -14,8 +14,10 @@ import {
   Warehouse,
   Settings,
   X,
+  Sparkles,
 } from "lucide-react";
 import SignOutButton from "./auth/SignOutButton";
+import { useAssistant } from "./assistant/AssistantProvider";
 import type { FarmWithMeta } from "@/utils/supabase/farm-types";
 
 interface BottomNavProps {
@@ -31,6 +33,8 @@ export default function BottomNav({ userRole, farmId, farms = [] }: BottomNavPro
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const t = useTranslations('nav');
+  // Present only for supervisors and admins (see the farm layout).
+  const assistant = useAssistant();
 
   function switchFarm(targetFarmId: string) {
     if (targetFarmId === farmId) return;
@@ -103,6 +107,19 @@ export default function BottomNav({ userRole, farmId, farms = [] }: BottomNavPro
                 </Link>
               );
             })}
+            {assistant && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDrawerOpen(false);
+                  assistant.open();
+                }}
+                className="flex flex-col items-center gap-2 rounded-xl p-3 text-xs font-medium text-ink-2 hover:bg-tile transition-colors"
+              >
+                <Sparkles className="h-6 w-6" />
+                {t("assistant")}
+              </button>
+            )}
           </div>
           {farms.length > 1 && (
             <div className="border-t border-line-soft pt-3 mb-3">

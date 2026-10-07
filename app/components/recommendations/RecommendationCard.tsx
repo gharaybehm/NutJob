@@ -19,6 +19,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CATEGORY_STYLES, type Category } from "@/app/components/ui/CategoryChip";
 import { ConfidenceBar, confidenceLevel } from "@/app/components/ui/ConfidenceBar";
+import { AskAssistantButton } from "@/app/components/assistant/AssistantButton";
 
 type Status = "pending" | "accepted" | "edited" | "skipped";
 type CardCategory = Category | "other";
@@ -162,6 +163,7 @@ export default function RecommendationCard({
             </span>
           </p>
         )}
+        <AskAssistantButton pins={{ recommendationId: id }} className="mt-2.5" />
       </div>
 
       {status === "pending" && !expired ? (
