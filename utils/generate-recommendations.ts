@@ -12,12 +12,12 @@ import { expandQuery, selectChunks } from "@/utils/kb-retrieval";
 import { knowledgeBaseCrop } from "@/utils/crops";
 import { varietyScope } from "@/utils/kb-coverage";
 import { isPlaceholder } from "@/utils/plant-catalog";
+import { PRIMARY_MODEL, EMBEDDING_MODEL } from "@/utils/ai-models";
 // re-exported for existing callers
-export { openrouter };
+export { openrouter, EMBEDDING_MODEL };
 
 
-export const OPENROUTER_MODEL = "google/gemini-2.5-flash";
-export const EMBEDDING_MODEL = "text-embedding-3-small";
+export const OPENROUTER_MODEL = PRIMARY_MODEL;
 // Empirically calibrated against text-embedding-3-small cosine similarity on
 // this corpus: paragraph-length prose matched against short synthesized
 // queries clusters much lower than short-text-to-short-text similarity (a

@@ -8,6 +8,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useEffect } from "react";
 import { setLocale } from "@/app/(dashboard)/settings/actions";
 import FarmSwitcher from "@/app/components/farms/FarmSwitcher";
+import { AssistantNavButton } from "@/app/components/assistant/AssistantButton";
 import type { FarmWithMeta } from "@/utils/supabase/farm-types";
 
 interface TopNavProps {
@@ -92,6 +93,9 @@ export default function TopNav({ farmId, alertCount = 0, farms = [] }: TopNavPro
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Field assistant (supervisors and admins; renders nothing for workers) */}
+        <AssistantNavButton />
+
         {/* Language switcher */}
         <div ref={langRef} className="relative">
           <button

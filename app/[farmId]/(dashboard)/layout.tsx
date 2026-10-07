@@ -1,6 +1,8 @@
 import Sidebar from "@/app/components/Sidebar";
 import TopNav from "@/app/components/TopNav";
 import BottomNav from "@/app/components/BottomNav";
+import AssistantProvider from "@/app/components/assistant/AssistantProvider";
+import { atLeast } from "@/utils/supabase/farm-access";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { getFarms } from "@/app/actions/farms";
@@ -116,7 +118,7 @@ export default async function DashboardLayout({
     getDataFreshness(farmId, blockIds),
   ]);
 
-  return (
+  const page = (
     <>
       <Sidebar
         userEmail={user.email}
@@ -136,5 +138,14 @@ export default async function DashboardLayout({
         <BottomNav userRole={effectiveRole} farmId={farmId} farms={allFarms} />
       </div>
     </>
+  );
+
+  // Field assistant: supervisors and admins only. Without the provider every
+  // assistant control renders nothing, so workers never see it.
+  if (!atLeast(effectiveRole, "supervisor")) return page;
+  return (
+    <AssistantProvider farmId={farmId} isAdmin={effectiveRole === "admin"}>
+      {page}
+    </AssistantProvider>
   );
 }

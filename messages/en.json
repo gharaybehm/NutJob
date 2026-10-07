@@ -1,5 +1,6 @@
 {
   "nav": {
+    "assistant": "Assistant",
     "dashboard": "Dashboard",
     "blocks": "Blocks",
     "calendar": "Calendar",
@@ -427,5 +428,80 @@
     "goToFarms": "Back to farms",
     "reload": "Reload the page",
     "referenceLabel": "Reference"
+  },
+  "assistant": {
+    "open": "Field assistant",
+    "title": "Field assistant",
+    "ask": "Ask the assistant",
+    "close": "Close",
+    "newConversation": "New conversation",
+    "conversations": "Conversations",
+    "teamConversations": "Team conversations",
+    "noConversations": "No conversations yet.",
+    "placeholder": "Ask about your farm…",
+    "send": "Send",
+    "thinking": "Thinking…",
+    "you": "You",
+    "assistantLabel": "Assistant",
+    "adminNotice": "Farm admins can read every conversation on this farm.",
+    "adviceOnly": "The assistant advises only. It never changes your records, calendar or inventory.",
+    "readOnlyThread": "{name}'s conversation. You can read it but not reply.",
+    "offline": "You are offline. Past conversations can be read; new questions need a connection.",
+    "back": "Back",
+    "pins": {
+      "title": "Pinned",
+      "block": "Block",
+      "dates": "Dates",
+      "recommendation": "Card",
+      "pinBlock": "Pin a block",
+      "pinDates": "Pin dates",
+      "pinCard": "Pin a card",
+      "from": "From",
+      "to": "To",
+      "remove": "Remove pin",
+      "none": "None"
+    },
+    "suggestedTitle": "Suggested questions",
+    "suggest": {
+      "alert": "What should I do about the {domain} alert on {block}?",
+      "recommendation": "Why does the card “{title}” recommend this?",
+      "lastIrrigation": "When was {block} last irrigated?",
+      "frostWeek": "Is there a frost risk for {block} this week?",
+      "scoutNow": "What should I scout for on {block} now?"
+    },
+    "sources": "Sources",
+    "notSourceBacked": "Not source-backed",
+    "usedRecords": "Based on",
+    "records": {
+      "block": "block data ({label})",
+      "activity": "{label} activity entries",
+      "calendar": "{label} calendar entries",
+      "recommendation": "the card “{label}”",
+      "snapshot": "calculations of {label}"
+    },
+    "delete": "Delete conversation",
+    "deleteConfirm": "Delete this conversation? This cannot be undone.",
+    "errors": {
+      "unavailable": "The assistant is not available right now. Try again in a few minutes.",
+      "limit_user": "You have reached today's limit of questions. Try again tomorrow.",
+      "limit_farm": "This farm has reached today's limit of questions. Try again tomorrow.",
+      "bad_request": "That question could not be sent.",
+      "forbidden": "You do not have access to the assistant on this farm.",
+      "not_configured": "The assistant is not set up yet.",
+      "unauthorized": "Please sign in again.",
+      "not_found": "This farm could not be found."
+    },
+    "decline": {
+      "veterinary": "I can't advise on animal health. Please contact a veterinarian.",
+      "medical": "I can't give medical advice. If someone is unwell or may have been exposed to a chemical, contact a doctor or a poison centre, and in an emergency call the emergency number.",
+      "legal": "I can't give legal advice. Please consult a lawyer.",
+      "financial": "I can't give financial advice. Please consult a financial adviser.",
+      "circumvention": "I can't do that. I follow the same rules for every question: this farm's own data, guides for its crop and variety, and the system's calculations.",
+      "pesticide_no_regulatory": "I can't name a pesticide product or dose for this farm: no regulatory source for your country is loaded in the knowledge base. Check the product label, or ask a licensed plant-protection adviser.",
+      "off_topic": "I can only help with running this farm."
+    },
+    "doseRemoved": "A pesticide product or dose was removed from this answer because no regulatory source for your country backs it. Check the product label or ask a licensed adviser.",
+    "figureUnchecked": "Note: a figure in this answer could not be matched to the farm's data or the guides. Check it before acting on it.",
+    "couldNotAnswer": "I couldn't produce a reliable answer to that. Try rephrasing it, or pin a block."
   }
 }

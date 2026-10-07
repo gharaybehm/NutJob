@@ -1,5 +1,6 @@
 {
   "nav": {
+    "assistant": "Asistan",
     "dashboard": "Gösterge Paneli",
     "blocks": "Bloklar",
     "calendar": "Takvim",
@@ -427,5 +428,80 @@
     "goToFarms": "Çiftliklere dön",
     "reload": "Sayfayı yeniden yükle",
     "referenceLabel": "Referans"
+  },
+  "assistant": {
+    "open": "Saha asistanı",
+    "title": "Saha asistanı",
+    "ask": "Asistana sor",
+    "close": "Kapat",
+    "newConversation": "Yeni konuşma",
+    "conversations": "Konuşmalar",
+    "teamConversations": "Ekip konuşmaları",
+    "noConversations": "Henüz konuşma yok.",
+    "placeholder": "Çiftliğiniz hakkında sorun…",
+    "send": "Gönder",
+    "thinking": "Düşünüyor…",
+    "you": "Siz",
+    "assistantLabel": "Asistan",
+    "adminNotice": "Çiftlik yöneticileri bu çiftlikteki tüm konuşmaları okuyabilir.",
+    "adviceOnly": "Asistan yalnızca öneri verir. Kayıtlarınızı, takviminizi veya envanterinizi asla değiştirmez.",
+    "readOnlyThread": "{name} kişisinin konuşması. Okuyabilirsiniz ama yanıt veremezsiniz.",
+    "offline": "Çevrimdışısınız. Geçmiş konuşmalar okunabilir; yeni sorular için bağlantı gerekir.",
+    "back": "Geri",
+    "pins": {
+      "title": "Sabitlenenler",
+      "block": "Blok",
+      "dates": "Tarihler",
+      "recommendation": "Kart",
+      "pinBlock": "Blok sabitle",
+      "pinDates": "Tarih sabitle",
+      "pinCard": "Kart sabitle",
+      "from": "Başlangıç",
+      "to": "Bitiş",
+      "remove": "Sabitlemeyi kaldır",
+      "none": "Yok"
+    },
+    "suggestedTitle": "Önerilen sorular",
+    "suggest": {
+      "alert": "{block} üzerindeki {domain} uyarısı için ne yapmalıyım?",
+      "recommendation": "“{title}” kartı bunu neden öneriyor?",
+      "lastIrrigation": "{block} en son ne zaman sulandı?",
+      "frostWeek": "Bu hafta {block} için don riski var mı?",
+      "scoutNow": "{block} üzerinde şu anda neyi gözlemlemeliyim?"
+    },
+    "sources": "Kaynaklar",
+    "notSourceBacked": "Kaynakla desteklenmiyor",
+    "usedRecords": "Dayanak",
+    "records": {
+      "block": "blok verileri ({label})",
+      "activity": "{label} faaliyet kaydı",
+      "calendar": "{label} takvim kaydı",
+      "recommendation": "“{label}” kartı",
+      "snapshot": "{label} hesaplamaları"
+    },
+    "delete": "Konuşmayı sil",
+    "deleteConfirm": "Bu konuşma silinsin mi? Bu işlem geri alınamaz.",
+    "errors": {
+      "unavailable": "Asistan şu anda kullanılamıyor. Birkaç dakika sonra tekrar deneyin.",
+      "limit_user": "Bugünkü soru sınırınıza ulaştınız. Yarın tekrar deneyin.",
+      "limit_farm": "Bu çiftlik bugünkü soru sınırına ulaştı. Yarın tekrar deneyin.",
+      "bad_request": "Bu soru gönderilemedi.",
+      "forbidden": "Bu çiftlikte asistana erişiminiz yok.",
+      "not_configured": "Asistan henüz kurulmadı.",
+      "unauthorized": "Lütfen tekrar giriş yapın.",
+      "not_found": "Bu çiftlik bulunamadı."
+    },
+    "decline": {
+      "veterinary": "Hayvan sağlığı konusunda öneri veremem. Lütfen bir veterinere başvurun.",
+      "medical": "Tıbbi öneri veremem. Biri rahatsızsa veya bir kimyasala maruz kalmış olabilirse bir doktora ya da zehir danışma merkezine başvurun; acil durumda acil çağrı numarasını arayın.",
+      "legal": "Hukuki öneri veremem. Lütfen bir avukata danışın.",
+      "financial": "Mali öneri veremem. Lütfen bir mali danışmana başvurun.",
+      "circumvention": "Bunu yapamam. Her soruda aynı kurallara uyarım: bu çiftliğin kendi verileri, ürününe ve çeşidine ait kılavuzlar ve sistemin hesaplamaları.",
+      "pesticide_no_regulatory": "Bu çiftlik için ilaç ürünü veya dozu belirtemem: bilgi tabanında ülkeniz için resmi (mevzuata dayalı) bir kaynak yüklü değil. Ürün etiketine bakın veya yetkili bir bitki koruma danışmanına sorun.",
+      "off_topic": "Yalnızca bu çiftliğin yönetimiyle ilgili yardımcı olabilirim."
+    },
+    "doseRemoved": "Ülkeniz için resmi bir kaynakla desteklenmediğinden bu yanıttan bir ilaç ürünü veya dozu çıkarıldı. Ürün etiketine bakın veya yetkili bir danışmana sorun.",
+    "figureUnchecked": "Not: Bu yanıttaki bir değer çiftlik verileri veya kılavuzlarla eşleştirilemedi. Uygulamadan önce kontrol edin.",
+    "couldNotAnswer": "Buna güvenilir bir yanıt üretemedim. Soruyu farklı sorun veya bir blok sabitleyin."
   }
 }
