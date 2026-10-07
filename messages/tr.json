@@ -546,6 +546,15 @@
         "rationale": "{date} tarihli sulama hesaplaması, kök bölgesindeki {raw} mm kolay alınabilir suyun {depletion} mm'sinin kullanıldığını gösteriyor. {mm} mm ({m3} m³) sulama gerekiyor; sulama eşiğine kalan gün: {days}.",
         "source": "Sulama hesaplaması, {date} günlük özeti"
       }
+    },
+    "share": {
+      "button": "Destek ile paylaş",
+      "explain": "Bu, RootLoot destek ekibinin yalnızca bu konuşmayı 14 gün boyunca okumasına izin verir (örneğin yanlış bir yanıtı incelemek için). Diğer konuşmalarınız gizli kalır. İstediğiniz zaman geri çekebilirsiniz ve destek ekibinin her açışı kaydedilir.",
+      "confirm": "Paylaş",
+      "cancel": "İptal",
+      "active": "{date} tarihine kadar destek ile paylaşıldı.",
+      "withdraw": "Geri çek",
+      "failed": "Olmadı. Tekrar deneyin."
     }
   }
 }

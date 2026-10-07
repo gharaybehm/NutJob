@@ -546,6 +546,15 @@
         "rationale": "The irrigation calculation of {date} shows {depletion} mm used of {raw} mm readily available water in the root zone. It calls for {mm} mm ({m3} m³); days until the irrigation threshold: {days}.",
         "source": "Irrigation calculation, daily snapshot of {date}"
       }
+    },
+    "share": {
+      "button": "Share with support",
+      "explain": "This lets the RootLoot support team read this one conversation for 14 days, for example to look into a wrong answer. Your other conversations stay private. You can withdraw it at any time, and each time support opens it is logged.",
+      "confirm": "Share",
+      "cancel": "Cancel",
+      "active": "Shared with support until {date}.",
+      "withdraw": "Withdraw",
+      "failed": "That did not work. Try again."
     }
   }
 }
