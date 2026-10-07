@@ -12,7 +12,11 @@ import { classifyQuestion, mayBeDeclinePrefix, parseModelDecline } from "./inten
 import { isPesticideProductOrDoseQuestion, hasRegulatorySourceFor, redactPesticideDoses, citationFor } from "./source-rules";
 import { checkAnswer, stripInvalidCitations, citedNumbers, answerReferenceStatus, type AnswerCheck } from "./answer-checks";
 import { assistantSystemPrompt } from "./prompt";
-import { gatherContext, regulatorySourceLoaded, searchCrop, type FarmInfo } from "./gather";
+import { gatherContext, regulatorySourceLoaded, searchCrop, type FarmInfo, type GatheredContext } from "./gather";
+import {
+  applyIrrigationCalculation, irrigationTemplateDraft, parseDrafts, splitDrafts, streamSafeLength, MAX_DRAFTS, type AssistantDraft,
+} from "./drafts";
+import { fold } from "./source-rules";
 import type { AssistantCitation, AssistantPins, AssistantRecordRef, DeclineCategory, ReferenceStatus } from "./types";
 
 type Admin = Parameters<typeof gatherContext>[0];
@@ -35,6 +39,8 @@ export type AnswerResult =
       citations: AssistantCitation[];
       referenceStatus: ReferenceStatus | null;
       recordRefs: AssistantRecordRef[];
+      drafts: AssistantDraft[];
+      searchScope: GatheredContext["searchScope"];
       model: string;
       events: AnswerEvent[];
     };
@@ -48,7 +54,7 @@ export interface AnswerOptions {
   /** Earlier turns of the conversation, oldest first. */
   history: { role: "user" | "assistant"; content: string }[];
   /** Localised text by key under the "assistant" namespace. */
-  t: (key: string) => string;
+  t: (key: string, values?: Record<string, string | number>) => string;
   /** Text as it streams; the final answer may still differ (see `shown`). */
   onDelta?: (text: string) => void;
   signal?: AbortSignal;
@@ -76,8 +82,9 @@ export async function answerQuestion(o: AnswerOptions): Promise<AnswerResult & {
   const gathered = await gatherContext(o.admin, o.farm, o.pins, intent, o.question);
   const dosesAllowed = hasRegulatorySourceFor(gathered.passages.map((p) => p.chunk), o.farm.country);
   const historyTurns: OpenAI.Chat.ChatCompletionMessageParam[] = o.history.map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }));
+  const draftsAllowed = intent.kind === "advice" && gathered.scopeBlocks.length > 0;
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: assistantSystemPrompt({ locale: o.locale, dosesAllowed }) },
+    { role: "system", content: assistantSystemPrompt({ locale: o.locale, dosesAllowed, draftsAllowed }) },
     { role: "system", content: gathered.contextMessage },
     ...historyTurns,
     { role: "user", content: o.question },
@@ -86,7 +93,7 @@ export async function answerQuestion(o: AnswerOptions): Promise<AnswerResult & {
   const isAdvice = intent.kind === "advice";
   const passageCount = gathered.passages.length;
 
-  // ── Stream, holding text back while it could still be a decline marker ──
+  // ── Stream, holding back a possible decline marker and anything from the drafts marker on ──
   const { stream, model, usedFallback } = await streamWithFallback(
     { messages, temperature: 0.2, ...GENERATION },
     PRIMARY_MODEL,
@@ -97,20 +104,46 @@ export async function answerQuestion(o: AnswerOptions): Promise<AnswerResult & {
   let usedModel = model;
   let full = "";
   let released = 0;
+  /** What the drawer is showing: anything different at the end is sent as a replace. */
+  let shown = "";
   let finishReason: string | null = null;
-  for await (const chunk of stream) {
-    finishReason = chunk.choices[0]?.finish_reason ?? finishReason;
-    const delta = chunk.choices[0]?.delta?.content ?? "";
-    if (!delta) continue;
-    full += delta;
-    if (parseModelDecline(full) || mayBeDeclinePrefix(full)) continue;
-    o.onDelta?.(full.slice(released));
-    released = full.length;
+  try {
+    for await (const chunk of stream) {
+      finishReason = chunk.choices[0]?.finish_reason ?? finishReason;
+      const delta = chunk.choices[0]?.delta?.content ?? "";
+      if (!delta) continue;
+      full += delta;
+      if (parseModelDecline(full) || mayBeDeclinePrefix(full)) continue;
+      const safe = streamSafeLength(full);
+      if (safe > released) {
+        o.onDelta?.(full.slice(released, safe));
+        released = safe;
+        shown = full.slice(0, released);
+      }
+    }
+  } catch (e) {
+    // The provider dropped the stream part-way ("upstream idle timeout"). Unless the
+    // user went away, answer in one piece on the other model; whatever was shown
+    // is replaced by the final text.
+    if (o.signal?.aborted) throw e;
+    events.push({ kind: "fallback", category: "stream_broken" });
+    const other = model === FALLBACK_MODEL ? PRIMARY_MODEL : FALLBACK_MODEL;
+    const { completion, model: completedBy } = await completeWithFallback(
+      { messages, temperature: 0.2, ...GENERATION },
+      other,
+      model,
+      { timeoutMs: 90_000 }
+    );
+    full = completion.choices[0]?.message?.content ?? "";
+    finishReason = completion.choices[0]?.finish_reason ?? null;
+    usedModel = completedBy;
   }
-  const shown = full.slice(0, released);
 
+  // The checks look at the answer only; the drafts block is validated on its own.
+  const check0 = (text: string, reason: string | null) =>
+    checkAnswer(splitDrafts(text).answer, { passageCount, isAdvice, suppliedText, finishReason: reason });
   let modelDecline = parseModelDecline(full);
-  let check: AnswerCheck = checkAnswer(full, { passageCount, isAdvice, suppliedText, finishReason });
+  let check: AnswerCheck = check0(full, finishReason);
 
   // ── One retry on the stronger model, only for a failure code can detect ──
   if (!modelDecline && check.problems.length > 0) {
@@ -124,12 +157,7 @@ export async function answerQuestion(o: AnswerOptions): Promise<AnswerResult & {
       );
       const retried = completion.choices[0]?.message?.content ?? "";
       const retryDecline = parseModelDecline(retried);
-      const retryCheck = checkAnswer(retried, {
-        passageCount,
-        isAdvice,
-        suppliedText,
-        finishReason: completion.choices[0]?.finish_reason ?? null,
-      });
+      const retryCheck = check0(retried, completion.choices[0]?.finish_reason ?? null);
       if (retryDecline || retryCheck.problems.length < check.problems.length) {
         full = retried;
         modelDecline = retryDecline;
@@ -144,7 +172,8 @@ export async function answerQuestion(o: AnswerOptions): Promise<AnswerResult & {
   if (modelDecline) return { ...decline(modelDecline, usedModel), shown };
 
   // ── Code, not the model, has the last word on citations, doses and figures ──
-  let text = stripInvalidCitations(full, passageCount).trim();
+  const { answer, raw: rawDrafts } = splitDrafts(full);
+  let text = stripInvalidCitations(answer, passageCount).trim();
   if (!dosesAllowed) {
     const r = redactPesticideDoses(text, o.question);
     if (r.redacted) text = `${r.text}\n\n${o.t("doseRemoved")}`.trim();
@@ -157,14 +186,46 @@ export async function answerQuestion(o: AnswerOptions): Promise<AnswerResult & {
   const referenceStatus = isAdvice ? answerReferenceStatus(gathered.lookupStatus, citations.length) : null;
   if (isAdvice && referenceStatus !== "found") events.push({ kind: "unsourced", category: referenceStatus });
 
+  // ── Draft cards: validated by code; the irrigation calculation overrides the model ──
+  let drafts: AssistantDraft[] = [];
+  if (draftsAllowed && !check.problems.includes("form") && !check.problems.includes("truncated")) {
+    drafts = parseDrafts(rawDrafts, {
+      blocks: gathered.scopeBlocks,
+      passages: gathered.passages,
+      answerReferenceStatus: referenceStatus,
+      question: o.question,
+      dosesAllowed,
+      suppliedText,
+    });
+    drafts = applyIrrigationCalculation(drafts, gathered.scopeBlocks, gathered.snapshots, o.t);
+    // An irrigation question on a block the calculation says needs water gets its card from the template.
+    if (asksAboutIrrigation(o.question)) {
+      for (const b of gathered.scopeBlocks) {
+        if (drafts.length >= MAX_DRAFTS) break;
+        if (drafts.some((d) => d.block_id === b.id && d.category === "irrigate")) continue;
+        const template = irrigationTemplateDraft(b, gathered.snapshots.get(b.id) ?? null, o.t);
+        if (template) drafts.push(template);
+      }
+    }
+  }
+
   return {
     kind: "answer",
     text: text.slice(0, 20000),
     citations,
     referenceStatus,
     recordRefs: gathered.recordRefs,
+    drafts,
+    searchScope: gathered.searchScope,
     model: usedModel,
     events,
     shown,
   };
+}
+
+const IRRIGATION_WORDS = ["irrigat", "water", "sula", "sulama", "riego", "regar", "ري", "سقي"];
+
+function asksAboutIrrigation(question: string): boolean {
+  const q = fold(question);
+  return IRRIGATION_WORDS.some((w) => q.includes(w));
 }

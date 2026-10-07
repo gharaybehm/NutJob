@@ -117,10 +117,22 @@
       "welcomeSubtitle": "Follow the steps below to get your farm up and running.",
       "emptyHint": "Your dashboard will populate with live data once you add blocks and start logging activity.",
       "steps": {
-        "blocks": { "title": "Add your first block", "desc": "Draw your block boundaries on the satellite map and enter crop details." },
-        "soilTest": { "title": "Log soil & water tests", "desc": "Enter soil test results per block to baseline your agronomic data." },
-        "calendar": { "title": "Schedule your first event", "desc": "Add irrigation, spraying, or scouting events to the farm calendar." },
-        "sensors": { "title": "Connect sensors", "desc": "Link IoT soil moisture and weather sensors for live data feeds." }
+        "blocks": {
+          "title": "Add your first block",
+          "desc": "Draw your block boundaries on the satellite map and enter crop details."
+        },
+        "soilTest": {
+          "title": "Log soil & water tests",
+          "desc": "Enter soil test results per block to baseline your agronomic data."
+        },
+        "calendar": {
+          "title": "Schedule your first event",
+          "desc": "Add irrigation, spraying, or scouting events to the farm calendar."
+        },
+        "sensors": {
+          "title": "Connect sensors",
+          "desc": "Link IoT soil moisture and weather sensors for live data feeds."
+        }
       }
     },
     "plan": {
@@ -337,7 +349,8 @@
       "disagree": "I disagree",
       "no_resources": "No water or crew"
     },
-    "skipNoReason": "Skip without a reason"
+    "skipNoReason": "Skip without a reason",
+    "fromAssistant": "From the assistant"
   },
   "activity": {
     "title": "Activity Log",
@@ -502,6 +515,37 @@
     },
     "doseRemoved": "A pesticide product or dose was removed from this answer because no regulatory source for your country backs it. Check the product label or ask a licensed adviser.",
     "figureUnchecked": "Note: a figure in this answer could not be matched to the farm's data or the guides. Check it before acting on it.",
-    "couldNotAnswer": "I couldn't produce a reliable answer to that. Try rephrasing it, or pin a block."
+    "couldNotAnswer": "I couldn't produce a reliable answer to that. Try rephrasing it, or pin a block.",
+    "drafts": {
+      "label": "Draft card",
+      "title": "Title",
+      "acceptAndSchedule": "Accept and schedule",
+      "dismiss": "Dismiss",
+      "accepted": "Accepted and booked on the calendar",
+      "acceptedEdited": "Accepted with changes and booked on the calendar",
+      "dismissed": "Dismissed",
+      "already": "This card was already handled.",
+      "readOnly": "This farm is read-only while its subscription is overdue, so cards cannot be accepted.",
+      "failed": "That did not work. Try again.",
+      "fromCalculation": "From the irrigation calculation",
+      "perBlock": "One calendar entry per block ({count})"
+    },
+    "guides": {
+      "request": "Request guides on this",
+      "explain": "This sends your question to the RootLoot team so they can look for guides that cover it. They will see the question and your farm's name.",
+      "send": "Send",
+      "cancel": "Cancel",
+      "sent": "Sent to the RootLoot team",
+      "limit": "This farm already has several open questions with the RootLoot team. Try again once they are answered.",
+      "failed": "The request could not be sent. Try again."
+    },
+    "templates": {
+      "irrigate": {
+        "titleNow": "Irrigate {block} now: {mm} mm",
+        "titleSoon": "Irrigate {block} soon: {mm} mm",
+        "rationale": "The irrigation calculation of {date} shows {depletion} mm used of {raw} mm readily available water in the root zone. It calls for {mm} mm ({m3} m³); days until the irrigation threshold: {days}.",
+        "source": "Irrigation calculation, daily snapshot of {date}"
+      }
+    }
   }
 }

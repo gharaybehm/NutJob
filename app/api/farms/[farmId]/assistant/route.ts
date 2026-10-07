@@ -17,7 +17,7 @@ import { isOpenRouterConfigured } from "@/utils/openrouter";
 import { answerQuestion } from "@/utils/assistant/answer";
 import { checkPins, loadFarm } from "@/utils/assistant/gather";
 import { HISTORY_TURNS, LIMIT_WINDOW_MS, MAX_QUESTION_CHARS, limitHit } from "@/utils/assistant/limits";
-import type { AssistantStreamEvent } from "@/utils/assistant/types";
+import { canRequestGuidesFor, type AssistantStreamEvent } from "@/utils/assistant/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ farmId
           question,
           locale,
           history,
-          t: (key) => t(key as never),
+          t: (key, values) => t(key as never, values as never),
           onDelta: (text) => send({ type: "delta", text }),
           signal: request.signal,
         });
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ farmId
 
         if (result.kind === "decline") {
           const messageId = await storeAnswer({ content: result.text, kind: "decline", model: result.model });
-          send({ type: "done", messageId, kind: "decline", citations: [], referenceStatus: null, recordRefs: [] });
+          send({ type: "done", messageId, kind: "decline", citations: [], referenceStatus: null, recordRefs: [], drafts: [], canRequestGuides: false });
         } else {
           const messageId = await storeAnswer({
             content: result.text,
@@ -179,6 +179,8 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ farmId
             citations: result.citations,
             reference_status: result.referenceStatus,
             record_refs: result.recordRefs,
+            drafts: result.drafts,
+            search_scope: result.searchScope,
             model: result.model,
           });
           send({
@@ -188,6 +190,9 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ farmId
             citations: result.citations,
             referenceStatus: result.referenceStatus,
             recordRefs: result.recordRefs,
+            // A draft can only be acted on once it is stored.
+            drafts: messageId ? result.drafts : [],
+            canRequestGuides: Boolean(messageId) && canRequestGuidesFor(result.referenceStatus, result.searchScope),
           });
         }
       } catch (e) {

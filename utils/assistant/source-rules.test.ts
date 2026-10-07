@@ -63,6 +63,16 @@ describe('redactPesticideDoses', () => {
     expect(r.text).toBe('Mites are present. Check again in a week.')
   })
 
+  it('removes a dose for a product named only by its active ingredient', () => {
+    expect(redactPesticideDoses('Mites are present. Spray abamectin at 50 ml/100 L.', 'What should I do about mites?'))
+      .toEqual({ text: 'Mites are present.', redacted: true })
+    expect(redactPesticideDoses('Akarlar var. Abamektin 50 ml/100 L püskürtün.', 'Akarlar için ne yapmalıyım?').redacted).toBe(true)
+  })
+
+  it('keeps an applied fertiliser rate', () => {
+    expect(redactPesticideDoses('Apply 40 kg/ha of nitrogen in March.', 'When should I fertilise?').redacted).toBe(false)
+  })
+
   it('keeps a fertiliser rate in a fertiliser answer', () => {
     const answer = 'The budget gives 120 kg/ha of nitrogen this season.'
     expect(redactPesticideDoses(answer, 'How much nitrogen is left?')).toEqual({ text: answer, redacted: false })

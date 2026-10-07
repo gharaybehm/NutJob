@@ -11,7 +11,9 @@ import { createClient } from '@/utils/supabase/server';
 import { getFarmMemberNames, requireFarmRole } from '@/utils/supabase/farm-access';
 import { notExpiredFilter } from '@/utils/recommendation-lifecycle';
 import { buildSuggestions, type Suggestion } from '@/utils/assistant/suggestions';
-import type { AssistantMessage, AssistantThreadSummary } from '@/utils/assistant/types';
+import { canRequestGuidesFor, type AssistantMessage, type AssistantThreadSummary } from '@/utils/assistant/types';
+import { createAdminClient } from '@/utils/supabase/admin';
+import { isFarmReadOnly } from '@/utils/farm-status';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -68,12 +70,33 @@ export async function getAssistantThread(
 
   const { data: rows, error } = await supabase
     .from('assistant_messages')
-    .select('id, role, content, kind, citations, reference_status, record_refs, created_at')
+    .select('id, role, content, kind, citations, reference_status, record_refs, drafts, draft_states, search_scope, created_at')
     .eq('thread_id', threadId)
     .eq('farm_id', farmId)
     .order('created_at', { ascending: true })
     .limit(200);
   if (error) return { error: 'Conversation could not be loaded.' };
+
+  // What became of each draft comes from the recommendations it was written to
+  // (one row per draft, enforced by a unique index), so two cards acted on at
+  // once cannot overwrite each other's state. draft_states keeps the guide request.
+  const answerIds = ((rows ?? []) as any[]).filter((m) => m.role === 'assistant' && Array.isArray(m.drafts) && m.drafts.length > 0).map((m) => m.id);
+  const handled = new Map<string, Record<string, any>>();
+  if (answerIds.length > 0) {
+    const { data: recs } = await supabase
+      .from('recommendations')
+      .select('id, assistant_message_id, draft_index, status, manager_note, acted_at')
+      .eq('farm_id', farmId)
+      .in('assistant_message_id', answerIds);
+    for (const r of (recs ?? []) as any[]) {
+      const states = handled.get(r.assistant_message_id) ?? {};
+      states[String(r.draft_index)] =
+        r.status === 'skipped'
+          ? { state: 'dismissed', recommendation_id: r.id, reason: String(r.manager_note ?? '').replace(/^skip_reason:/, '') || null, at: r.acted_at }
+          : { state: r.status === 'edited' ? 'edited' : 'accepted', recommendation_id: r.id, at: r.acted_at };
+      handled.set(r.assistant_message_id, states);
+    }
+  }
 
   return {
     mine: thread.user_id === gate.actor.userId,
@@ -86,6 +109,9 @@ export async function getAssistantThread(
       citations: m.citations ?? [],
       referenceStatus: m.reference_status ?? null,
       recordRefs: m.record_refs ?? [],
+      drafts: Array.isArray(m.drafts) ? m.drafts : [],
+      draftStates: { ...(m.draft_states?.guides ? { guides: m.draft_states.guides } : {}), ...(handled.get(m.id) ?? {}) },
+      canRequestGuides: canRequestGuidesFor(m.reference_status ?? null, m.search_scope),
       createdAt: m.created_at,
     })),
   };
@@ -113,6 +139,8 @@ export interface AssistantStartData {
   suggestions: Suggestion[];
   blocks: { id: string; name: string }[];
   recommendations: { id: string; title: string; blockId: string | null }[];
+  /** The farm's subscription has lapsed: drafts cannot be accepted. */
+  readOnly: boolean;
 }
 
 /** Blocks and open cards for the pin pickers, and suggested questions. */
@@ -148,6 +176,7 @@ export async function getAssistantStart(farmId: string, blockId?: string | null)
   );
 
   return {
+    readOnly: await isFarmReadOnly(createAdminClient() as any, farmId),
     suggestions,
     blocks: blockList,
     recommendations: ((recs ?? []) as any[]).map((r) => ({ id: r.id, title: r.title, blockId: r.block_id })),

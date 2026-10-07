@@ -27,6 +27,18 @@ export interface KnowledgeRequest {
   admin_note: string | null
   created_at: string
   updated_at: string
+  /** 'gap' (one per farm per gap) or 'question' (from the assistant, closed by hand). Missing before the Phase 2 migration. */
+  kind?: 'gap' | 'question'
+  origin?: 'manual' | 'assistant'
+  /** Questions from the assistant attached to a gap request. */
+  questions?: string[]
+  /** The question of a question-level request. */
+  question?: string | null
+}
+
+/** A request about a gap (every request made before question-level requests existed). */
+export function isGapRequest(r: Pick<KnowledgeRequest, 'kind'>): boolean {
+  return (r.kind ?? 'gap') === 'gap'
 }
 
 /**
@@ -143,6 +155,7 @@ export function knowledgeGaps(
     if (!gap.farms.includes(farm)) gap.farms.push(farm)
   }
   for (const r of requests) {
+    if (!isGapRequest(r)) continue
     const gap = gaps.get(`${r.crop_key}|${r.variety_key}`)
     // No gap any more: the guides were loaded, or the blocks were changed or removed.
     if (gap) gap.requests.push({ ...r, farmName: farmNames.get(r.farm_id) ?? 'Unknown farm' })
@@ -163,5 +176,6 @@ interface RequestReader {
 export async function fetchFarmKnowledgeRequests(client: RequestReader, farmId: string): Promise<KnowledgeRequest[] | null> {
   const { data, error } = await client.from('knowledge_requests').select('*').eq('farm_id', farmId)
   if (error || !data) return null
-  return data as KnowledgeRequest[]
+  // Question-level requests share the crop key with a crop gap's request; only gap requests answer "is this gap requested".
+  return (data as KnowledgeRequest[]).filter(isGapRequest)
 }

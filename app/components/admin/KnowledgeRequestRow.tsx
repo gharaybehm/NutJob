@@ -41,6 +41,15 @@ export default function KnowledgeRequestRow({ request, requesterName }: { reques
         <span className="text-ink-3"> · {requesterName} · {new Date(request.created_at).toLocaleDateString()}</span>
       </p>
       {request.note && <p className="mt-1 text-sm text-ink-2">{request.note}</p>}
+      {request.question && <p className="mt-1 text-sm text-ink-2">&ldquo;{request.question}&rdquo;</p>}
+      {request.questions && request.questions.length > 0 && (
+        <div className="mt-1.5">
+          <p className="text-xs font-semibold text-ink-3">Questions from the assistant</p>
+          <ul className="mt-0.5 list-disc space-y-0.5 ps-5 text-sm text-ink-2">
+            {request.questions.map((q, i) => <li key={i}>{q}</li>)}
+          </ul>
+        </div>
+      )}
       {request.link && (
         <a href={request.link} target="_blank" rel="noopener noreferrer" className="mt-1 block break-all text-sm text-green underline underline-offset-2">
           {request.link}

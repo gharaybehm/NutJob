@@ -117,10 +117,22 @@
       "welcomeSubtitle": "Çiftliğinizi kurmak için aşağıdaki adımları izleyin.",
       "emptyHint": "Blok ekleyip aktivite kaydetmeye başladığınızda gösterge paneli canlı verilerle dolacaktır.",
       "steps": {
-        "blocks": { "title": "İlk bloğunuzu ekleyin", "desc": "Uydu haritasında blok sınırlarınızı çizin ve ürün ayrıntılarını girin." },
-        "soilTest": { "title": "Toprak ve su testlerini kaydedin", "desc": "Tarımsal verilerinizi temellemek için blok başına toprak testi sonuçlarını girin." },
-        "calendar": { "title": "İlk etkinliğinizi planlayın", "desc": "Çiftlik takvimine sulama, ilaçlama veya saha tarama etkinlikleri ekleyin." },
-        "sensors": { "title": "Sensörleri bağlayın", "desc": "Canlı veri akışları için IoT toprak nemi ve hava sensörlerini bağlayın." }
+        "blocks": {
+          "title": "İlk bloğunuzu ekleyin",
+          "desc": "Uydu haritasında blok sınırlarınızı çizin ve ürün ayrıntılarını girin."
+        },
+        "soilTest": {
+          "title": "Toprak ve su testlerini kaydedin",
+          "desc": "Tarımsal verilerinizi temellemek için blok başına toprak testi sonuçlarını girin."
+        },
+        "calendar": {
+          "title": "İlk etkinliğinizi planlayın",
+          "desc": "Çiftlik takvimine sulama, ilaçlama veya saha tarama etkinlikleri ekleyin."
+        },
+        "sensors": {
+          "title": "Sensörleri bağlayın",
+          "desc": "Canlı veri akışları için IoT toprak nemi ve hava sensörlerini bağlayın."
+        }
       }
     },
     "plan": {
@@ -337,7 +349,8 @@
       "disagree": "Katılmıyorum",
       "no_resources": "Su veya ekip yok"
     },
-    "skipNoReason": "Sebep belirtmeden atla"
+    "skipNoReason": "Sebep belirtmeden atla",
+    "fromAssistant": "Asistandan"
   },
   "activity": {
     "title": "Aktivite Günlüğü",
@@ -502,6 +515,37 @@
     },
     "doseRemoved": "Ülkeniz için resmi bir kaynakla desteklenmediğinden bu yanıttan bir ilaç ürünü veya dozu çıkarıldı. Ürün etiketine bakın veya yetkili bir danışmana sorun.",
     "figureUnchecked": "Not: Bu yanıttaki bir değer çiftlik verileri veya kılavuzlarla eşleştirilemedi. Uygulamadan önce kontrol edin.",
-    "couldNotAnswer": "Buna güvenilir bir yanıt üretemedim. Soruyu farklı sorun veya bir blok sabitleyin."
+    "couldNotAnswer": "Buna güvenilir bir yanıt üretemedim. Soruyu farklı sorun veya bir blok sabitleyin.",
+    "drafts": {
+      "label": "Taslak kart",
+      "title": "Başlık",
+      "acceptAndSchedule": "Kabul et ve planla",
+      "dismiss": "Reddet",
+      "accepted": "Kabul edildi ve takvime eklendi",
+      "acceptedEdited": "Değişikliklerle kabul edildi ve takvime eklendi",
+      "dismissed": "Reddedildi",
+      "already": "Bu kart zaten işlendi.",
+      "readOnly": "Aboneliği gecikmiş olduğundan bu çiftlik salt okunur; kartlar kabul edilemez.",
+      "failed": "Olmadı. Tekrar deneyin.",
+      "fromCalculation": "Sulama hesaplamasından",
+      "perBlock": "Her blok için bir takvim kaydı ({count})"
+    },
+    "guides": {
+      "request": "Bu konuda kılavuz iste",
+      "explain": "Bu, sorunuzu kapsayan kılavuzları araması için RootLoot ekibine gönderir. Ekip soruyu ve çiftliğinizin adını görür.",
+      "send": "Gönder",
+      "cancel": "İptal",
+      "sent": "RootLoot ekibine gönderildi",
+      "limit": "Bu çiftliğin RootLoot ekibinde zaten birkaç açık sorusu var. Yanıtlandıktan sonra tekrar deneyin.",
+      "failed": "İstek gönderilemedi. Tekrar deneyin."
+    },
+    "templates": {
+      "irrigate": {
+        "titleNow": "{block} şimdi sulanmalı: {mm} mm",
+        "titleSoon": "{block} yakında sulanmalı: {mm} mm",
+        "rationale": "{date} tarihli sulama hesaplaması, kök bölgesindeki {raw} mm kolay alınabilir suyun {depletion} mm'sinin kullanıldığını gösteriyor. {mm} mm ({m3} m³) sulama gerekiyor; sulama eşiğine kalan gün: {days}.",
+        "source": "Sulama hesaplaması, {date} günlük özeti"
+      }
+    }
   }
 }

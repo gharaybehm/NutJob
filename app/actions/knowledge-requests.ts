@@ -57,6 +57,7 @@ export async function requestKnowledgeGuides(
     .eq('farm_id', farmId)
     .eq('crop_key', keys.cropKey)
     .eq('variety_key', keys.varietyKey)
+    .neq('kind', 'question')
     .maybeSingle();
   if (existing) return { request: existing as KnowledgeRequest };
 

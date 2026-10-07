@@ -23,6 +23,20 @@ const rec = (over: Partial<PastRecommendation> = {}): PastRecommendation => ({
   ...over,
 })
 
+describe('a card accepted in the field assistant', () => {
+  // Written as accepted with no expiry, never pending: the weekly run's supersede
+  // step (status = 'pending') cannot expire it, and its history shows it booked.
+  const fromAssistant = rec({ status: 'accepted', acted_at: '2026-09-29T08:00:00Z', expires_at: null })
+
+  it('is never treated as expired', () => {
+    expect(isExpired(fromAssistant.expires_at, now)).toBe(false)
+  })
+
+  it('reads as scheduled in the next run\'s history, so the advice is not repeated', () => {
+    expect(describeOutcome(fromAssistant, { start_date: '2026-10-02T06:00:00Z', completed_at: null }, now)).toMatch(/^SCHEDULED for 2026-10-02/)
+  })
+})
+
 describe('isExpired', () => {
   it('treats a missing expiry as open', () => {
     expect(isExpired(null, now)).toBe(false)

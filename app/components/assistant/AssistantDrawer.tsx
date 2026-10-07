@@ -9,10 +9,13 @@ import {
   deleteAssistantThread, getAssistantStart, getAssistantThread, listAssistantThreads, type AssistantStartData,
 } from "@/app/actions/assistant";
 import type {
-  AssistantMessage, AssistantPins, AssistantStreamEvent, AssistantThreadSummary,
+  AssistantMessage, AssistantPins, AssistantStreamEvent, AssistantThreadSummary, DraftState,
 } from "@/utils/assistant/types";
 import { useOnlineStatus } from "./useOnlineStatus";
 import AnswerText from "./AnswerText";
+import DraftCard from "./DraftCard";
+import { groupDrafts } from "@/utils/assistant/draft-groups";
+import RequestGuidesButton from "./RequestGuidesButton";
 
 const ERROR_CODES = ["unavailable", "limit_user", "limit_farm", "bad_request", "forbidden", "not_configured", "unauthorized", "not_found"] as const;
 type ErrorCode = (typeof ERROR_CODES)[number];
@@ -89,6 +92,10 @@ export default function AssistantDrawer({ farmId, isAdmin, open, onClose, initia
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  function setDraftState(messageId: string, key: string, state: DraftState) {
+    setMessages((list) => list.map((m) => (m.id === messageId ? { ...m, draftStates: { ...m.draftStates, [key]: state } } : m)));
+  }
+
   async function showList() {
     setView("list");
     const r = await listAssistantThreads(farmId);
@@ -127,8 +134,8 @@ export default function AssistantDrawer({ farmId, isAdmin, open, onClose, initia
     const pendingId = `pending-${now}`;
     setMessages((m) => [
       ...m,
-      { id: `user-${now}`, role: "user", content: q, kind: "answer", citations: [], referenceStatus: null, recordRefs: [], createdAt: now },
-      { id: pendingId, role: "assistant", content: "", kind: "answer", citations: [], referenceStatus: null, recordRefs: [], createdAt: now },
+      { id: `user-${now}`, role: "user", content: q, kind: "answer", citations: [], referenceStatus: null, recordRefs: [], drafts: [], draftStates: {}, canRequestGuides: false, createdAt: now },
+      { id: pendingId, role: "assistant", content: "", kind: "answer", citations: [], referenceStatus: null, recordRefs: [], drafts: [], draftStates: {}, canRequestGuides: false, createdAt: now },
     ]);
     const patch = (fn: (m: AssistantMessage) => AssistantMessage) =>
       setMessages((list) => list.map((m) => (m.id === pendingId ? fn(m) : m)));
@@ -179,6 +186,8 @@ export default function AssistantDrawer({ farmId, isAdmin, open, onClose, initia
               citations: ev.citations,
               referenceStatus: ev.referenceStatus,
               recordRefs: ev.recordRefs,
+              drafts: ev.drafts ?? [],
+              canRequestGuides: ev.canRequestGuides ?? false,
             }));
           } else if (ev.type === "error") {
             finished = true;
@@ -398,7 +407,31 @@ export default function AssistantDrawer({ farmId, isAdmin, open, onClose, initia
                           <p className="whitespace-pre-wrap break-words">{m.content}</p>
                         )}
                         {m.role === "assistant" && m.kind === "answer" && m.content.length > 0 && !m.id.startsWith("pending-") && (
-                          <AnswerFooter m={m} t={t} tRec={tRec} />
+                          <>
+                            <AnswerFooter m={m} t={t} tRec={tRec} />
+                            {groupDrafts(m.drafts).map((g) => (
+                              <DraftCard
+                                key={g.key}
+                                farmId={farmId}
+                                messageId={m.id}
+                                indexes={g.indexes}
+                                drafts={g.drafts}
+                                states={g.indexes.map((i) => m.draftStates[String(i)])}
+                                canAct={mine && online}
+                                readOnly={Boolean(start?.readOnly)}
+                                onDone={(i, s) => setDraftState(m.id, String(i), s)}
+                              />
+                            ))}
+                            {m.canRequestGuides && (
+                              <RequestGuidesButton
+                                farmId={farmId}
+                                messageId={m.id}
+                                sent={Boolean(m.draftStates.guides)}
+                                canAct={mine && online}
+                                onSent={(kind) => setDraftState(m.id, "guides", { state: "guides_requested", request_kind: kind, at: new Date().toISOString() })}
+                              />
+                            )}
+                          </>
                         )}
                       </div>
                     </li>

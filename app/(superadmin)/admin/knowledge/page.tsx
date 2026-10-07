@@ -1,4 +1,4 @@
-import { BookOpen } from "lucide-react";
+import { BookOpen, MessageCircleQuestion } from "lucide-react";
 import { getKnowledgeQueue } from "@/app/(superadmin)/admin/actions";
 import AdminSectionCard from "@/app/components/admin/AdminSectionCard";
 import KnowledgeRequestRow from "@/app/components/admin/KnowledgeRequestRow";
@@ -6,6 +6,7 @@ import KnowledgeRequestRow from "@/app/components/admin/KnowledgeRequestRow";
 export default async function AdminKnowledgePage() {
   const { queue, error } = await getKnowledgeQueue();
   const gaps = queue?.gaps ?? [];
+  const questions = queue?.questions ?? [];
   const requested = gaps.filter((g) => g.requests.length > 0).length;
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -59,6 +60,25 @@ export default async function AdminKnowledgePage() {
                     ))}
                   </div>
                 )}
+              </div>
+            ))}
+          </div>
+        )}
+      </AdminSectionCard>
+
+      <AdminSectionCard title="Questions from the assistant" icon={MessageCircleQuestion}
+        description="Questions a farm sent from the field assistant because the loaded guides did not cover them. Loading a document cannot close these: set the status by hand once answered.">
+        {error ? null : questions.length === 0 ? (
+          <div className="py-6 text-center text-sm text-ink-4">No questions sent.</div>
+        ) : (
+          <div className="space-y-3">
+            {questions.map((r) => (
+              <div key={r.id} className="space-y-2">
+                <p className="text-xs font-semibold text-ink-3">
+                  {r.crop_type}{r.variety ? ` · ${r.variety}` : ""}
+                </p>
+                <KnowledgeRequestRow request={r}
+                  requesterName={(r.requested_by && queue?.requesterNames[r.requested_by]) || "Unknown user"} />
               </div>
             ))}
           </div>

@@ -1,7 +1,13 @@
 // Shapes shared by the field assistant's route, actions and drawer.
 import type { ReferenceStatus } from "@/utils/generate-recommendations";
+import type { AssistantDraft, DraftState } from "./drafts";
 
-export type { ReferenceStatus };
+export type { ReferenceStatus, AssistantDraft, DraftState };
+
+/** Guides can be requested for an answer that had no source and was about one crop. */
+export function canRequestGuidesFor(referenceStatus: ReferenceStatus | null, searchScope: unknown): boolean {
+  return searchScope != null && (referenceStatus === "none_loaded" || referenceStatus === "no_match");
+}
 
 /** What a conversation is about. Every id is checked against the farm on the server. */
 export interface AssistantPins {
@@ -51,6 +57,12 @@ export interface AssistantMessage {
   citations: AssistantCitation[];
   referenceStatus: ReferenceStatus | null;
   recordRefs: AssistantRecordRef[];
+  /** Draft recommendation cards, validated by the server. */
+  drafts: AssistantDraft[];
+  /** What became of each draft, keyed by its index. */
+  draftStates: Record<string, DraftState>;
+  /** The answer had no source and its guides were searched for one crop: guides can be requested. */
+  canRequestGuides: boolean;
   createdAt: string;
 }
 
@@ -75,5 +87,7 @@ export type AssistantStreamEvent =
       citations: AssistantCitation[];
       referenceStatus: ReferenceStatus | null;
       recordRefs: AssistantRecordRef[];
+      drafts: AssistantDraft[];
+      canRequestGuides: boolean;
     }
   | { type: "error"; code: "unavailable" | "limit_user" | "limit_farm" | "bad_request" | "forbidden" | "not_configured" };
