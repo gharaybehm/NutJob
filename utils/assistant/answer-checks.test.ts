@@ -53,6 +53,11 @@ describe('checkAnswer', () => {
     expect(checkAnswer(' ', base).problems).toContain('form')
   })
 
+  it('flags an answer stopped by the token limit', () => {
+    expect(checkAnswer('Irrigate 18 mm [1]. Breeding programs have aimed to', { ...base, finishReason: 'length' }).problems).toEqual(['truncated'])
+    expect(checkAnswer('Irrigate 18 mm [1].', { ...base, finishReason: 'stop' }).problems).toEqual([])
+  })
+
   it('ignores an invalid marker as a citation', () => {
     expect(checkAnswer('Irrigate soon [5].', base)).toEqual({ problems: ['no_citation'], cited: [] })
   })

@@ -17,6 +17,11 @@ import type { AssistantCitation, AssistantPins, AssistantRecordRef, DeclineCateg
 
 type Admin = Parameters<typeof gatherContext>[0];
 
+// Gemini 2.5 Pro always reasons before it writes, and reasoning tokens count
+// against max_tokens: at 1200 a retry was cut off mid-sentence. The answer is
+// short; the headroom is for the reasoning, which OpenRouter caps separately.
+const GENERATION = { max_tokens: 4000, reasoning: { max_tokens: 1024 } } as Record<string, unknown>;
+
 export interface AnswerEvent {
   kind: "decline" | "retry" | "fallback" | "unsourced";
   category: string | null;
@@ -83,7 +88,7 @@ export async function answerQuestion(o: AnswerOptions): Promise<AnswerResult & {
 
   // ── Stream, holding text back while it could still be a decline marker ──
   const { stream, model, usedFallback } = await streamWithFallback(
-    { messages, temperature: 0.2, max_tokens: 1200 },
+    { messages, temperature: 0.2, ...GENERATION },
     PRIMARY_MODEL,
     FALLBACK_MODEL,
     { signal: o.signal }
@@ -92,7 +97,9 @@ export async function answerQuestion(o: AnswerOptions): Promise<AnswerResult & {
   let usedModel = model;
   let full = "";
   let released = 0;
+  let finishReason: string | null = null;
   for await (const chunk of stream) {
+    finishReason = chunk.choices[0]?.finish_reason ?? finishReason;
     const delta = chunk.choices[0]?.delta?.content ?? "";
     if (!delta) continue;
     full += delta;
@@ -103,21 +110,26 @@ export async function answerQuestion(o: AnswerOptions): Promise<AnswerResult & {
   const shown = full.slice(0, released);
 
   let modelDecline = parseModelDecline(full);
-  let check: AnswerCheck = checkAnswer(full, { passageCount, isAdvice, suppliedText });
+  let check: AnswerCheck = checkAnswer(full, { passageCount, isAdvice, suppliedText, finishReason });
 
   // ── One retry on the stronger model, only for a failure code can detect ──
   if (!modelDecline && check.problems.length > 0) {
     events.push({ kind: "retry", category: check.problems.join(",") });
     try {
       const { completion, model: retryModel } = await completeWithFallback(
-        { messages, temperature: 0.1, max_tokens: 1200 },
+        { messages, temperature: 0.1, ...GENERATION },
         RETRY_MODEL,
         FALLBACK_MODEL,
-        { timeoutMs: 60_000 }
+        { timeoutMs: 90_000 }
       );
       const retried = completion.choices[0]?.message?.content ?? "";
       const retryDecline = parseModelDecline(retried);
-      const retryCheck = checkAnswer(retried, { passageCount, isAdvice, suppliedText });
+      const retryCheck = checkAnswer(retried, {
+        passageCount,
+        isAdvice,
+        suppliedText,
+        finishReason: completion.choices[0]?.finish_reason ?? null,
+      });
       if (retryDecline || retryCheck.problems.length < check.problems.length) {
         full = retried;
         modelDecline = retryDecline;
@@ -138,7 +150,7 @@ export async function answerQuestion(o: AnswerOptions): Promise<AnswerResult & {
     if (r.redacted) text = `${r.text}\n\n${o.t("doseRemoved")}`.trim();
   }
   if (check.problems.includes("unknown_figure")) text = `${text}\n\n${o.t("figureUnchecked")}`;
-  if (check.problems.includes("form") || text.length === 0) text = o.t("couldNotAnswer");
+  if (check.problems.includes("form") || check.problems.includes("truncated") || text.length === 0) text = o.t("couldNotAnswer");
 
   const cited = citedNumbers(text).filter((n) => n >= 1 && n <= passageCount);
   const citations = gathered.passages.filter((p) => cited.includes(p.n)).map(citationFor);

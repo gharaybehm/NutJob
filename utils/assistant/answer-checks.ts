@@ -3,7 +3,7 @@
 
 import type { ReferenceStatus } from "./types";
 
-export type AnswerProblem = "form" | "no_citation" | "unknown_figure";
+export type AnswerProblem = "form" | "truncated" | "no_citation" | "unknown_figure";
 
 /** The distinct [n] markers in an answer, in order of first appearance. */
 export function citedNumbers(text: string): number[] {
@@ -71,13 +71,20 @@ export interface AnswerCheck {
  */
 export function checkAnswer(
   text: string,
-  { passageCount, isAdvice, suppliedText }: { passageCount: number; isAdvice: boolean; suppliedText: string }
+  {
+    passageCount,
+    isAdvice,
+    suppliedText,
+    finishReason = null,
+  }: { passageCount: number; isAdvice: boolean; suppliedText: string; finishReason?: string | null }
 ): AnswerCheck {
   const problems: AnswerProblem[] = [];
   const trimmed = text.trim();
   if (trimmed.length < 2 || trimmed.startsWith("```") || trimmed.startsWith("{") || trimmed.startsWith("[{")) {
     problems.push("form");
   }
+  // Stopped by the token limit: the answer ends mid-sentence.
+  if (finishReason === "length") problems.push("truncated");
   const cited = citedNumbers(text).filter((n) => n >= 1 && n <= passageCount);
   if (isAdvice && passageCount > 0 && cited.length === 0) problems.push("no_citation");
   if (unknownFigures(text, suppliedText).length > 0) problems.push("unknown_figure");
