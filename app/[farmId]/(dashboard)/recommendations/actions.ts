@@ -8,12 +8,9 @@ import { localeToLanguageName } from "@/utils/format";
 import { generateFarmRecommendations } from "@/utils/generate-recommendations";
 
 import { requireFarmRole } from "@/utils/supabase/farm-access";
-import {
-  categoryToActivityType,
-  defaultDurationHours,
-  type RecommendationCategory,
-} from "@/utils/recommendation-effects";
+import { type RecommendationCategory } from "@/utils/recommendation-effects";
 import { isExpired } from "@/utils/recommendation-lifecycle";
+import { bookRecommendationEvent, type ScheduleInput } from "@/utils/recommendation-schedule";
 
 export async function getRecommendations(farmId: string) {
   const supabase = await createClient();
@@ -50,12 +47,6 @@ export async function getRecommendations(farmId: string) {
   }));
 }
 
-export interface ScheduleInput {
-  /** ISO start time chosen by the manager. */
-  start: string;
-  durationHours?: number;
-}
-
 /**
  * Accepting a recommendation books the work on the calendar. Nothing about the
  * block changes yet: the activity log entry and the block-state effects are
@@ -80,34 +71,15 @@ async function scheduleRecommendation(
     .single();
   if (fetchError || !rec) throw new Error(fetchError?.message ?? "Recommendation not found");
 
-  const category = rec.category as RecommendationCategory;
-  const start = new Date(schedule.start);
-  if (Number.isNaN(start.getTime())) throw new Error("Invalid start time");
-  const hours = schedule.durationHours && schedule.durationHours > 0
-    ? schedule.durationHours
-    : defaultDurationHours(category);
-  const end = new Date(start.getTime() + hours * 3_600_000);
-
-  const admin = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- farm_id predates the generated types
-  const { data: event, error } = await (admin.from("calendar_events") as any)
-    .insert({
-      farm_id: farmId,
-      user_id: gate.actor.userId,
-      title: title ?? rec.title,
-      type: categoryToActivityType(category),
-      block_id: rec.block_id,
-      start_date: start.toISOString(),
-      end_date: end.toISOString(),
-      notes: rec.rationale,
-      details: { source: "recommendation", recommendation_id: id },
-    })
-    .select("id")
-    .single();
-  if (error) throw new Error(error.message);
-
+  const eventId = await bookRecommendationEvent(
+    farmId,
+    gate.actor.userId,
+    { id, title: rec.title, category: rec.category as RecommendationCategory, block_id: rec.block_id, rationale: rec.rationale },
+    schedule,
+    title,
+  );
   revalidatePath(`/${farmId}/calendar`);
-  return event.id;
+  return eventId;
 }
 
 export async function acceptRecommendation(id: string, farmId: string, schedule: ScheduleInput) {

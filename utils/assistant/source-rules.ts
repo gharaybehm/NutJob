@@ -62,6 +62,20 @@ export function mentionsPesticide(text: string): boolean {
   return PESTICIDE_TERMS.some((t) => containsTerm(text, t));
 }
 
+// Spraying words. A dose next to one of these is read as a pesticide dose even
+// when the product is named only by its active ingredient ("abamectin").
+// "Apply" is not here: "apply 40 kg N/ha" is a fertiliser rate.
+const SPRAY_TERMS = [
+  "spray", "sprays", "spraying",
+  "püskürt", "ilaçla",
+  "pulveriz", "fumig",
+  "رش", "يرش", "رشّ",
+];
+
+function mentionsSpraying(text: string): boolean {
+  return SPRAY_TERMS.some((t) => containsTerm(text, t));
+}
+
 /** A question that asks which pesticide product to use, or how much of it. */
 export function isPesticideProductOrDoseQuestion(text: string): boolean {
   const lower = fold(text);
@@ -94,8 +108,9 @@ export function containsDose(text: string): boolean {
 /**
  * Removes pesticide product-and-dose sentences from an answer when no
  * regulatory source for the farm's country backs them. A sentence goes when it
- * states a dose and either it or the question is about pesticides; a nitrogen
- * rate in an answer about fertiliser stays.
+ * states a dose and the question is about pesticides, or the sentence names a
+ * pesticide or speaks of spraying or applying it. A fertiliser rate from the
+ * nitrogen budget ("120 kg/ha of nitrogen") stays.
  */
 export function redactPesticideDoses(answer: string, question: string): { text: string; redacted: boolean } {
   const questionIsPesticide = mentionsPesticide(question) || isPesticideProductOrDoseQuestion(question);
@@ -103,7 +118,7 @@ export function redactPesticideDoses(answer: string, question: string): { text: 
   let redacted = false;
   const kept = parts.filter((s) => {
     if (!containsDose(s)) return true;
-    if (questionIsPesticide || mentionsPesticide(s)) {
+    if (questionIsPesticide || mentionsPesticide(s) || mentionsSpraying(s)) {
       redacted = true;
       return false;
     }

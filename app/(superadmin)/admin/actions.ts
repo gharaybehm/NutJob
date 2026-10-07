@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { fetchKnowledgeDocuments } from '@/utils/kb-coverage';
-import { knowledgeGaps, type KnowledgeGap, type KnowledgeRequest, type KnowledgeRequestStatus } from '@/utils/kb-requests';
+import { isGapRequest, knowledgeGaps, type GapRequest, type KnowledgeGap, type KnowledgeRequest, type KnowledgeRequestStatus } from '@/utils/kb-requests';
 import type { FarmHealth } from '@/utils/farm-health';
 import { loadFarmHealth, type FarmHealthReport } from './farm-health';
 
@@ -224,6 +224,8 @@ export async function getSubscriberDetail(orgId: string): Promise<{ subscriber?:
 
 export interface KnowledgeQueue {
   gaps: KnowledgeGap[];
+  /** Questions from the field assistant that the loaded guides did not cover; closed by hand. */
+  questions: GapRequest[];
   /** Display name of each requester, keyed by user id. */
   requesterNames: Record<string, string>;
 }
@@ -259,7 +261,13 @@ export async function getKnowledgeQueue(): Promise<{ queue?: KnowledgeQueue; err
     requesterNames[p.id] = p.full_name?.trim() || 'Unknown user';
   });
 
-  return { queue: { gaps: knowledgeGaps(blocks ?? [], farmNames, docs, (requests ?? []) as KnowledgeRequest[]), requesterNames } };
+  const all = (requests ?? []) as KnowledgeRequest[];
+  // The farm chose to send these to the platform team (the drawer says so before sending).
+  const questions = all
+    .filter((r) => !isGapRequest(r))
+    .map((r) => ({ ...r, farmName: farmNames.get(r.farm_id) ?? 'Unknown farm' }))
+    .sort((a, b) => Number(a.status === 'done' || a.status === 'declined') - Number(b.status === 'done' || b.status === 'declined'));
+  return { queue: { gaps: knowledgeGaps(blocks ?? [], farmNames, docs, all), questions, requesterNames } };
 }
 
 const REQUEST_STATUSES: KnowledgeRequestStatus[] = ['open', 'in_progress', 'done', 'declined'];

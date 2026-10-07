@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect, type ReactNode } from "reac
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import RecommendationCard from "./RecommendationCard";
+import ScheduleFields, { defaultHoursFor, nextHourLocal } from "./ScheduleFields";
 import {
   acceptRecommendation,
   skipRecommendation,
@@ -48,6 +49,8 @@ interface Recommendation {
   scheduled_event?: { id: string; start_date: string; completed_at: string | null } | null;
   /** Pending but replaced by a newer batch or past its expiry: shown in History, not actionable. */
   expired?: boolean;
+  /** 'assistant' for a draft card accepted or dismissed in the field assistant. */
+  origin?: string | null;
 }
 
 const isOpen = (r: Recommendation) => r.status === "pending" && !r.expired;
@@ -101,7 +104,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId }
 
   const resetSchedule = (rec: Recommendation) => {
     setStartLocal(nextHourLocal());
-    setDurationHours(String(rec.category === "irrigate" ? 4 : rec.category === "scout" ? 1 : 2));
+    setDurationHours(defaultHoursFor(rec.category));
   };
 
   const scheduleInput = () => ({
@@ -305,6 +308,7 @@ export default function RecommendationsClient({ initialRecommendations, farmId }
               managerNote={rec.manager_note}
               sources={rec.sources}
               referenceStatus={rec.reference_status}
+              fromAssistant={rec.origin === "assistant"}
               scheduledEvent={rec.scheduled_event}
               activityLogId={rec.activity_log_id}
               expired={rec.expired}
@@ -476,40 +480,6 @@ export default function RecommendationsClient({ initialRecommendations, farmId }
           </div>
         </Dialog>
       )}
-    </div>
-  );
-}
-
-/** datetime-local value for the next full hour, in the browser's timezone. */
-function nextHourLocal(): string {
-  const d = new Date();
-  d.setMinutes(0, 0, 0);
-  d.setHours(d.getHours() + 1);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`;
-}
-
-function ScheduleFields({
-  startLocal, setStartLocal, durationHours, setDurationHours,
-}: {
-  startLocal: string;
-  setStartLocal: (v: string) => void;
-  durationHours: string;
-  setDurationHours: (v: string) => void;
-}) {
-  const t = useTranslations('recommendations');
-  return (
-    <div className="grid grid-cols-[1fr_110px] gap-3">
-      <label className="flex flex-col gap-1.5 text-[13px] text-ink-2">
-        {t('startTime')}
-        <input type="datetime-local" value={startLocal} onChange={(e) => setStartLocal(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-lg border border-line bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-green/30" />
-      </label>
-      <label className="flex flex-col gap-1.5 text-[13px] text-ink-2">
-        {t('durationHours')}
-        <input type="number" min="0.5" step="0.5" value={durationHours} onChange={(e) => setDurationHours(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-lg border border-line bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-green/30" />
-      </label>
     </div>
   );
 }

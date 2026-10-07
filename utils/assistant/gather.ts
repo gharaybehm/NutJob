@@ -175,6 +175,12 @@ export interface GatheredContext {
   /** Null when no guide search applies (a record question). */
   lookupStatus: ReferenceStatus | null;
   recordRefs: AssistantRecordRef[];
+  /** The blocks whose data the model was given (drafts may only name these). */
+  scopeBlocks: FarmBlock[];
+  /** Latest daily snapshot per block in scope. */
+  snapshots: Map<string, DailySnapshot>;
+  /** The one crop and variety the guides were searched for, for "Request guides". Null for none or several. */
+  searchScope: { crop: string; cropType: string; variety: string | null } | null;
 }
 
 export async function gatherContext(
@@ -220,6 +226,7 @@ export async function gatherContext(
 
   // ── Calculated figures from the daily snapshot ──
   const facts: { blockName: string; text: string }[] = [];
+  const latest = new Map<string, DailySnapshot>();
   if (scopeIds.length > 0) {
     const { data: policyRow } = await admin.from("farm_policy").select("*").eq("farm_id", farm.id).maybeSingle();
     const policy = toPolicy(policyRow ?? null);
@@ -231,7 +238,6 @@ export async function gatherContext(
       .gte("snapshot_date", new Date(now.getTime() - 14 * 86_400_000).toISOString().slice(0, 10))
       .order("snapshot_date", { ascending: false })
       .limit(scopeIds.length * 14);
-    const latest = new Map<string, DailySnapshot>();
     for (const s of (snaps ?? []) as { block_id: string; data: DailySnapshot }[]) {
       if (!latest.has(s.block_id)) latest.set(s.block_id, s.data);
     }
@@ -300,12 +306,15 @@ export async function gatherContext(
   // ── Guides ──
   let passages: LabelledPassage[] = [];
   let lookupStatus: ReferenceStatus | null = null;
+  let searchScope: GatheredContext["searchScope"] = null;
   if (intent.kind === "advice") {
     const target = searchCrop(farm, pins, question);
     if (target.crop) {
       // A variety filter needs one variety: the pinned block's, or the only one grown of that crop.
-      const varieties = [...new Set(farm.blocks.filter((b) => knowledgeBaseCrop(b.crop_type) === target.crop).map((b) => b.variety))];
+      const ofCrop = farm.blocks.filter((b) => knowledgeBaseCrop(b.crop_type) === target.crop);
+      const varieties = [...new Set(ofCrop.map((b) => b.variety))];
       const variety = pinned?.variety ?? (varieties.length === 1 ? varieties[0] : null);
+      searchScope = { crop: target.crop, cropType: (pinned ?? ofCrop[0])?.crop_type ?? target.crop, variety };
       const query = [await searchQueryFor(question), target.crop, variety].filter(Boolean).join(" ");
       const lookup = await lookUpReferences(admin, query, target.crop, PASSAGES, variety);
       passages = labelPassages(lookup.chunks as RetrievedChunk[], farm.country);
@@ -352,5 +361,5 @@ export async function gatherContext(
     notes,
   });
 
-  return { contextMessage, passages, lookupStatus, recordRefs };
+  return { contextMessage, passages, lookupStatus, recordRefs, scopeBlocks: scope, snapshots: latest, searchScope };
 }

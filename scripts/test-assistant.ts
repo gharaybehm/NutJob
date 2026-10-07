@@ -22,12 +22,16 @@ interface Case {
   locale: "en" | "tr" | "ar";
   question: string;
   pins?: Record<string, string>;
+  /** Pins the farm's block of this name (block ids differ per farm). */
+  pinBlockName?: string;
   expect: {
     kind: "answer" | "decline";
     category?: string;
     /** yes: must cite; none: must not need sources (record question); either: cites, or says why not. */
     sourced?: "yes" | "none" | "either";
     script?: "tr" | "ar";
+    /** yes: at least one draft card; none: no draft card. Unset: not checked. */
+    drafts?: "yes" | "none";
   };
 }
 
@@ -64,7 +68,12 @@ async function main() {
 
   let failed = 0;
   for (const c of cases.filter((x) => !only || x.id === only)) {
-    const pins = (await checkPins(admin, farm, c.pins ?? null)) ?? {};
+    const named = c.pinBlockName ? farm.blocks.find((b) => b.name === c.pinBlockName) : null;
+    if (c.pinBlockName && !named) {
+      console.log(`SKIP  ${c.id}  (no block named "${c.pinBlockName}" on this farm)`);
+      continue;
+    }
+    const pins = (await checkPins(admin, farm, { ...(c.pins ?? {}), ...(named ? { blockId: named.id } : {}) })) ?? {};
     const problems: string[] = [];
     let summary = "";
     try {
@@ -80,9 +89,15 @@ async function main() {
         if (c.expect.sourced === "either" && cites === 0 && !r.referenceStatus) problems.push("neither cites nor says why not");
         if (c.expect.script === "ar" && !/[؀-ۿ]/.test(r.text)) problems.push("answer is not in Arabic");
         if (c.expect.script === "tr" && !/[çğıöşüÇĞİÖŞÜ]/.test(r.text)) problems.push("answer does not look Turkish");
-        summary = `${cites} citation(s), status ${r.referenceStatus ?? "n/a"}, model ${r.model}, events ${r.events.map((e) => e.kind).join(",") || "none"}`;
+        if (c.expect.drafts === "yes" && r.drafts.length === 0) problems.push("no draft card");
+        if (c.expect.drafts === "none" && r.drafts.length > 0) problems.push(`unexpected draft card(s): ${r.drafts.map((d) => d.title).join(" | ")}`);
+        const drafts = r.drafts.map((d) => `${d.category}@${d.block_name}${d.from_calculation ? "(calc)" : ""}`).join(",") || "none";
+        summary = `${cites} citation(s), status ${r.referenceStatus ?? "n/a"}, drafts ${drafts}, model ${r.model}, events ${r.events.map((e) => e.kind).join(",") || "none"}`;
       }
-      if (process.argv.includes("--show")) console.log(`\n${r.text}\n`);
+      if (process.argv.includes("--show")) {
+        console.log(`\n${r.text}\n`);
+        if (r.kind === "answer") for (const d of r.drafts) console.log(`  [draft ${d.category} @ ${d.block_name}] ${d.title} — ${d.rationale}\n`);
+      }
     } catch (e) {
       problems.push(`threw ${e instanceof Error ? e.message : String(e)}`);
     }

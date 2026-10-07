@@ -14,6 +14,7 @@ import {
   CalendarClock,
   CalendarCheck,
   Clock,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -43,6 +44,8 @@ interface RecommendationCardProps {
   sources?: RecommendationSource[] | null;
   /** What the knowledge-base lookup found when this was generated. Null on older cards. */
   referenceStatus?: string | null;
+  /** Accepted or dismissed from a draft card in the field assistant. */
+  fromAssistant?: boolean;
   /** The calendar event an accepted recommendation booked, if any. */
   scheduledEvent?: { start_date: string; completed_at: string | null } | null;
   /** Set once the work was logged as done. */
@@ -75,6 +78,7 @@ export default function RecommendationCard({
   managerNote,
   sources,
   referenceStatus,
+  fromAssistant = false,
   scheduledEvent,
   activityLogId,
   expired = false,
@@ -134,6 +138,12 @@ export default function RecommendationCard({
           </span>
         </div>
 
+        {fromAssistant && (
+          <p className="mb-1 flex items-center gap-1 text-[11px] font-medium text-green">
+            <Sparkles className="h-3 w-3" aria-hidden="true" />
+            {t('fromAssistant')}
+          </p>
+        )}
         <h3 className="font-heading text-[14.5px] font-semibold text-ink mb-1">{title}</h3>
 
         <p className="text-[12.5px] text-ink-2 line-clamp-3 leading-relaxed">{rationale}</p>
