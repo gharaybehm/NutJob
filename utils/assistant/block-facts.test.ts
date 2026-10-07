@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DailySnapshot } from '@/engines/snapshot'
-import { blockFacts, formatFacts } from './block-facts'
+import { blockFacts, formatFacts, irrigationRuleFacts } from './block-facts'
 import { buildSuggestions } from './suggestions'
 import { limitHit, DAILY_FARM_CAP, DAILY_USER_CAP } from './limits'
 
@@ -65,6 +65,22 @@ describe('blockFacts', () => {
 
   it('reports frost as off outside the stages it applies to', () => {
     expect(formatFacts(blockFacts(snapshot({ applicable: false }), NOW))).toContain('Frost risk calculation: OFF — no frost threshold after harvest')
+  })
+})
+
+describe('irrigationRuleFacts', () => {
+  const policy = { strategyName: 'full', allowableDepletion: 0.4, defaultRootDepthM: null }
+
+  it('turns the rule into a soil-moisture trigger when the block has its soil values', () => {
+    const text = formatFacts(irrigationRuleFacts(policy, 30, 12))
+    expect(text).toContain('used 40% of its available water')
+    expect(text).toContain('Irrigation trigger for this block: 22.8% volumetric soil moisture (field capacity 30%, wilting point 12%)')
+  })
+
+  it('gives the rule but no trigger without the soil values', () => {
+    const text = formatFacts(irrigationRuleFacts(policy, null, 12))
+    expect(text).toContain('Irrigation trigger rule:')
+    expect(text).toContain('Irrigation trigger for this block: OFF — field capacity and wilting point are not set')
   })
 })
 

@@ -97,6 +97,44 @@ export function blockFacts(snapshot: DailySnapshot | null, now: Date): BlockFact
   return facts;
 }
 
+/**
+ * The farm's irrigation trigger rule, which applies even while the irrigation
+ * calculation is off. With the block's field capacity and wilting point, the
+ * rule is turned into a soil-moisture trigger here, by code, so the model
+ * quotes the figure rather than working it out.
+ */
+export function irrigationRuleFacts(
+  policy: { strategyName: string; allowableDepletion: number; defaultRootDepthM: number | null },
+  fieldCapacityPct: number | null,
+  wiltingPointPct: number | null
+): BlockFact[] {
+  const pct = Math.round(policy.allowableDepletion * 100);
+  const source = "farm irrigation settings";
+  const facts: BlockFact[] = [
+    {
+      name: "Irrigation trigger rule",
+      value: `irrigate when the root zone has used ${pct}% of its available water (strategy: ${policy.strategyName}). As soil moisture: field capacity minus ${pct}% of (field capacity minus wilting point)`,
+      source,
+    },
+  ];
+  if (fieldCapacityPct != null && wiltingPointPct != null && fieldCapacityPct > wiltingPointPct) {
+    const trigger = Math.round((fieldCapacityPct - policy.allowableDepletion * (fieldCapacityPct - wiltingPointPct)) * 10) / 10;
+    facts.push({
+      name: "Irrigation trigger for this block",
+      value: `${trigger}% volumetric soil moisture (field capacity ${fieldCapacityPct}%, wilting point ${wiltingPointPct}%)`,
+      source: `${source} and block soil values`,
+    });
+  } else {
+    facts.push({
+      name: "Irrigation trigger for this block",
+      off: true,
+      reason: "field capacity and wilting point are not set for this block (Settings → block configuration, or from a soil lab test)",
+    });
+  }
+  if (policy.defaultRootDepthM != null) facts.push({ name: "Default rooting depth", value: `${policy.defaultRootDepthM} m`, source });
+  return facts;
+}
+
 export function formatFacts(facts: BlockFact[]): string {
   return facts
     .map((f) => ("off" in f ? `- ${f.name}: OFF — ${f.reason}` : `- ${f.name}: ${f.value} (${f.source})`))

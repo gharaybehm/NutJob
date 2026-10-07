@@ -37,7 +37,8 @@ function num(v: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-function toPolicy(row: any | null): SnapshotPolicy {
+/** A farm_policy row as the engines' policy, defaults filled in. Also used by the field assistant. */
+export function toPolicy(row: any | null): SnapshotPolicy {
   const d = defaultPolicy()
   if (!row) return d
   return {

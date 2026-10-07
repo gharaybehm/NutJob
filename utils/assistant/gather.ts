@@ -9,7 +9,10 @@ import { knowledgeBaseCrop } from "@/utils/crops";
 import { completeWithFallback } from "@/utils/openrouter";
 import { PRIMARY_MODEL, FALLBACK_MODEL } from "@/utils/ai-models";
 import type { DailySnapshot } from "@/engines/snapshot";
-import { blockFacts, formatFacts } from "./block-facts";
+import { blockFacts, formatFacts, irrigationRuleFacts } from "./block-facts";
+import { toPolicy } from "@/utils/run-daily-snapshot";
+
+const num = (v: unknown): number | null => (v == null || v === "" || !Number.isFinite(Number(v)) ? null : Number(v));
 import { buildContextMessage } from "./prompt";
 import { labelPassages, type LabelledPassage } from "./source-rules";
 import { cropsNamedIn } from "./question-crop";
@@ -26,6 +29,8 @@ export interface FarmBlock {
   name: string;
   crop_type: string | null;
   variety: string | null;
+  field_capacity?: number | null;
+  wilting_point?: number | null;
 }
 
 export interface FarmInfo {
@@ -43,7 +48,7 @@ const RECORD_DAYS = 90;
 export async function loadFarm(admin: Admin, farmId: string): Promise<FarmInfo | null> {
   const [farmRes, { data: blocks }] = await Promise.all([
     admin.from("farms").select("id, name, country").eq("id", farmId).maybeSingle(),
-    admin.from("blocks").select("id, name, crop_type, variety").eq("farm_id", farmId).order("name"),
+    admin.from("blocks").select("id, name, crop_type, variety, field_capacity, wilting_point").eq("farm_id", farmId).order("name"),
   ]);
   let farm = farmRes.data;
   // farms.country arrives with 20261007000000_field_assistant.sql; without it the
@@ -216,6 +221,8 @@ export async function gatherContext(
   // ── Calculated figures from the daily snapshot ──
   const facts: { blockName: string; text: string }[] = [];
   if (scopeIds.length > 0) {
+    const { data: policyRow } = await admin.from("farm_policy").select("*").eq("farm_id", farm.id).maybeSingle();
+    const policy = toPolicy(policyRow ?? null);
     const { data: snaps } = await admin
       .from("daily_snapshots")
       .select("block_id, snapshot_date, data")
@@ -229,7 +236,8 @@ export async function gatherContext(
       if (!latest.has(s.block_id)) latest.set(s.block_id, s.data);
     }
     for (const b of scope) {
-      facts.push({ blockName: b.name, text: formatFacts(blockFacts(latest.get(b.id) ?? null, now)) });
+      const ruleFacts = irrigationRuleFacts(policy, num(b.field_capacity), num(b.wilting_point));
+      facts.push({ blockName: b.name, text: formatFacts([...blockFacts(latest.get(b.id) ?? null, now), ...ruleFacts]) });
     }
     if (latest.size > 0) recordRefs.push({ kind: "snapshot", label: [...latest.values()][0].date });
   }
