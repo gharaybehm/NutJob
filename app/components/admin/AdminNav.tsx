@@ -31,7 +31,9 @@ export default function AdminNav({ userEmail, userName }: AdminNavProps) {
   };
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-text">
+    // Same dark gradient as the farm sidebar (components/Sidebar.tsx); there is no `bg-sidebar` colour,
+    // so the old class left the white text on the page's cream background.
+    <aside className="flex w-64 shrink-0 flex-col bg-gradient-to-b from-sidebar-from to-sidebar-to text-sidebar-text">
       <div className="flex shrink-0 items-center gap-2 px-5 py-6">
         <ShieldAlert className="h-6 w-6 text-gold-bright" strokeWidth={2.25} />
         <div>
