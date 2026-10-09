@@ -1,0 +1,7 @@
+type: perennial
+harvested_product: kernels
+yield_unit: kg/ha
+price_unit: per kg of kernels
+co_products:
+  - in-shell
+  - hull

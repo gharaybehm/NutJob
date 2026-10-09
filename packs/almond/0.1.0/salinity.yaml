@@ -1,0 +1,12 @@
+threshold_ece: $sal_threshold_ece
+slope_pct_per_ds_m: $sal_slope_pct_per_ds_m
+unit: dS/m ECe
+specific_ions:
+  - { ion: Na, limit: $na_limit, unit: to be confirmed with the source }
+  - { ion: Cl, limit: $cl_limit, unit: to be confirmed with the source }
+  - { ion: B, limit: $b_limit, unit: to be confirmed with the source }
+leaching_fraction_max: $leaching_fraction_max
+notes:
+  - Valid only where the rootstock does not rapidly accumulate sodium or chloride.
+  - Gypsiferous soils tolerate about 2 dS/m more.
+evidence: FAO_SALT
