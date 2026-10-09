@@ -1,0 +1,47 @@
+scale:
+  id: bbch_stone_fruit
+  name: BBCH scale for stone fruit
+  evidence: BBCH_STONE
+  stages:
+    - { code: "0", name: Sprouting and bud development }
+    - { code: "1", name: Leaf development }
+    - { code: "3", name: Shoot development }
+    - { code: "5", name: Inflorescence emergence }
+    - { code: "6", name: Flowering }
+    - { code: "7", name: Development of fruit }
+    - { code: "8", name: Maturity of fruit and seed }
+    - { code: "9", name: Senescence and beginning of dormancy }
+
+# The phases the engines use, in season order. Hull split timing differs by
+# variety, so phases are tracked per block.
+phases:
+  - { id: dormant, name: Dormant, starts_at_stage: $bbch_dormant_start, recorded_as: [dormancy] }
+  - { id: bloom, name: Bloom, starts_at_stage: $bbch_bloom_start, recorded_as: [bloom] }
+  - { id: fruit_set, name: Fruit set, starts_at_stage: $bbch_fruit_set_start, recorded_as: [petal-fall] }
+  - { id: fruit_growth, name: Fruit growth, starts_at_stage: $bbch_fruit_growth_start, recorded_as: [nut-development] }
+  - { id: kernel_fill, name: Kernel fill, starts_at_stage: $bbch_kernel_fill_start }
+  - { id: hull_split, name: Hull split, starts_at_stage: $bbch_hull_split_start, recorded_as: [hull-split] }
+  - { id: harvest, name: Harvest, starts_at_stage: $bbch_harvest_start, recorded_as: [harvest] }
+  - { id: post_harvest, name: Post-harvest, starts_at_stage: $bbch_post_harvest_start, recorded_as: [post-harvest] }
+
+review: >-
+  Until scouting records BBCH stages, phases come from the stage the
+  application records today. Two gaps: "nut-development" covers both fruit
+  growth and kernel fill and is read as fruit growth, so the kernel-fill
+  rules cannot fire; "bud-swell" and "bud-break" have no phase here, so a
+  block at those stages is not assessed.
+
+models:
+  - id: bloom_date
+    type: chill_then_heat
+    predicts: bloom
+    units: CP then GDH
+    heat_cardinal_temperatures_c: { base: $gdh_base_c, optimum: $gdh_optimum_c, critical: $gdh_critical_c }
+    note: Chill requirement, then heat requirement, both per variety (varieties section).
+
+to_be_sourced:
+  - item: Almond descriptions and photos for each stage, for scouting
+  - item: Secondary BBCH stage codes
+    note: Only the principal growth stages are listed.
+  - item: Prediction models for the stages after bloom
+    note: Degree-day or day-count models for fruit set through harvest maturity.

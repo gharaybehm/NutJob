@@ -1,0 +1,82 @@
+# Every value referenced as $name anywhere in the pack.
+# status: sourced | expert estimate | to be sourced
+# Bounds limit farm calibration. Where the specification gives no range, the
+# bounds equal the start value: the parameter is fixed until a range is sourced.
+parameters:
+  # --- Phenology ---
+  - { id: makako_chill_cp, start: null, unit: CP, bounds: null, status: to be sourced, evidence: null, note: Intermediate in the INTA trial (INTA Catamarca 2025). }
+  - { id: vairo_chill_cp, start: null, unit: CP, bounds: null, status: to be sourced, evidence: null, note: High in the INTA trial (INTA Catamarca 2025). }
+  - { id: makako_heat_gdh, start: null, unit: GDH, bounds: null, status: to be sourced, evidence: null, note: CITA work on Spanish varieties is the starting point. }
+  - { id: vairo_heat_gdh, start: null, unit: GDH, bounds: null, status: to be sourced, evidence: null, note: CITA work on Spanish varieties is the starting point. }
+  - { id: gdh_base_c, start: null, unit: degC, bounds: null, status: to be sourced, evidence: null, note: Cardinal temperatures of the heat model; they must match the source of the heat requirement. }
+  - { id: gdh_optimum_c, start: null, unit: degC, bounds: null, status: to be sourced, evidence: null }
+  - { id: gdh_critical_c, start: null, unit: degC, bounds: null, status: to be sourced, evidence: null }
+  - { id: bbch_dormant_start, start: null, unit: BBCH code, bounds: null, status: to be sourced, evidence: null, note: Phase boundaries come from the agronomist. }
+  - { id: bbch_bloom_start, start: null, unit: BBCH code, bounds: null, status: to be sourced, evidence: null }
+  - { id: bbch_fruit_set_start, start: null, unit: BBCH code, bounds: null, status: to be sourced, evidence: null }
+  - { id: bbch_fruit_growth_start, start: null, unit: BBCH code, bounds: null, status: to be sourced, evidence: null }
+  - { id: bbch_kernel_fill_start, start: null, unit: BBCH code, bounds: null, status: to be sourced, evidence: null }
+  - { id: bbch_hull_split_start, start: null, unit: BBCH code, bounds: null, status: to be sourced, evidence: null }
+  - { id: bbch_harvest_start, start: null, unit: BBCH code, bounds: null, status: to be sourced, evidence: null }
+  - { id: bbch_post_harvest_start, start: null, unit: BBCH code, bounds: null, status: to be sourced, evidence: null }
+
+  # --- Water ---
+  - { id: p, start: 0.40, unit: fraction of TAW, bounds: [0.30, 0.60], status: sourced, evidence: FAO56, note: FAO-56 Table 22. }
+  - { id: swp_trigger_below_baseline_bar, start: 3.5, unit: bar, bounds: [2, 5], status: sourced, evidence: UCD_SWP, note: Irrigate about 3 to 4 bars below baseline. }
+  - { id: rdi_swp_floor_bar, start: -15, unit: bar, bounds: [-20, -12], status: sourced, evidence: IRTA_RDI_VAIRO, note: -1.5 to -2.0 MPa in the Vairo trials. }
+  - { id: rdi_fraction, start: 0.5, unit: fraction of ETc, bounds: [0.4, 0.7], status: sourced, evidence: IRTA_RDI, note: 50 % of ETc during kernel fill in Spanish trials. }
+  - { id: rain_prob_defer, start: 0.7, unit: probability, bounds: [0.6, 0.9], status: expert estimate, evidence: EXPERT_OPERATIONAL }
+  - { id: swp_baseline_divisor, start: 10, unit: degF per bar, bounds: [10, 10], status: expert estimate, evidence: UCD_SWP, note: "Interim baseline: about -(air temperature in degF / 10) bars." }
+  - { id: kcb_ml, start: null, unit: dimensionless, bounds: null, status: to be sourced, evidence: null, note: Density-coefficient multiplier (Allen and Pereira 2009; Rallo et al. 2021). }
+  - { id: kcb_fr, start: null, unit: dimensionless, bounds: null, status: to be sourced, evidence: null, note: Stomatal-control factor (Allen and Pereira 2009; Rallo et al. 2021). }
+  - { id: kc_min, start: null, unit: dimensionless, bounds: null, status: to be sourced, evidence: null, note: Minimum Kc for bare soil. }
+  - { id: root_depth_m, start: null, unit: m, bounds: null, status: to be sourced, evidence: null, note: By tree age. Blocks carry their own measured root depth today. }
+
+  # --- Nutrition ---
+  - { id: n_removal_kg_per_kg, start: 0.068, unit: kg N per kg kernels, bounds: [0.050, 0.075], status: sourced, evidence: CDFA_UC, note: About 68 kg N per 1000 kg kernels (range 50 to 75). }
+  - { id: p_removal_kg_per_kg, start: 0.0085, unit: kg P per kg kernels, bounds: [0.008, 0.009], status: sourced, evidence: CDFA_UC, note: 8 to 9 kg per 1000 kg kernels; the start value is the midpoint. }
+  - { id: k_removal_kg_per_kg, start: 0.075, unit: kg K per kg kernels, bounds: [0.070, 0.080], status: sourced, evidence: CDFA_UC, note: 70 to 80 kg per 1000 kg kernels; the start value is the midpoint. }
+  - { id: n_share_fruit_set, start: 0.2, unit: fraction of annual N, bounds: [0.2, 0.2], status: sourced, evidence: CDFA_UC }
+  - { id: n_share_fruit_growth, start: 0.3, unit: fraction of annual N, bounds: [0.3, 0.3], status: sourced, evidence: CDFA_UC }
+  - { id: n_share_kernel_fill, start: 0.3, unit: fraction of annual N, bounds: [0.3, 0.3], status: sourced, evidence: CDFA_UC }
+  - { id: n_share_hull_split, start: 0.2, unit: fraction of annual N, bounds: [0.2, 0.2], status: sourced, evidence: CDFA_UC }
+  - { id: n_growth_young_kg_ha, start: null, unit: kg N/ha, bounds: null, status: to be sourced, evidence: null, note: "Growth requirement of young trees, by age." }
+  - { id: fert_efficiency, start: 0.7, unit: fraction, bounds: [0.5, 0.9], status: expert estimate, evidence: EXPERT_OPERATIONAL, note: A farm setting; this is the default. }
+  - { id: max_single_dose_kg_ha, start: null, unit: kg/ha, bounds: null, status: to be sourced, evidence: null, note: Caps every fertigation dose (safeguard SG-FERT-3). }
+
+  # --- Salinity ---
+  - { id: sal_threshold_ece, start: 1.5, unit: dS/m, bounds: [1.5, 1.5], status: sourced, evidence: FAO_SALT }
+  - { id: sal_slope_pct_per_ds_m, start: 19, unit: "% per dS/m", bounds: [19, 19], status: sourced, evidence: FAO_SALT }
+  - { id: leaching_fraction_max, start: null, unit: fraction, bounds: null, status: to be sourced, evidence: null, note: "The specification says the leaching fraction is raised within bounds and gives none." }
+  - { id: na_limit, start: null, unit: to be confirmed, bounds: null, status: to be sourced, evidence: null, note: By rootstock. }
+  - { id: cl_limit, start: null, unit: to be confirmed, bounds: null, status: to be sourced, evidence: null, note: By rootstock. }
+  - { id: b_limit, start: null, unit: to be confirmed, bounds: null, status: to be sourced, evidence: null, note: By rootstock. }
+
+  # --- Frost ---
+  - { id: frost_closed_buds_c, start: -3.3, unit: degC, bounds: [-3.3, -3.3], status: sourced, evidence: SAUNIER1960 }
+  - { id: frost_full_bloom_c, start: -2.7, unit: degC, bounds: [-2.7, -2.7], status: sourced, evidence: SAUNIER1960 }
+  - { id: frost_young_fruit_c, start: -1.1, unit: degC, bounds: [-1.1, -1.1], status: sourced, evidence: SAUNIER1960 }
+  - { id: frost_vairo_bloom_lt10_c, start: -3.46, unit: degC, bounds: [-3.46, -3.46], status: sourced, evidence: CALLE2025 }
+  - { id: frost_vairo_bloom_lt50_c, start: -4.85, unit: degC, bounds: [-4.85, -4.85], status: sourced, evidence: CALLE2025 }
+  - { id: frost_vairo_bloom_lt90_c, start: -6.25, unit: degC, bounds: [-6.25, -6.25], status: sourced, evidence: CALLE2025 }
+  - { id: frost_loss_fraction_per_degree, start: null, unit: fraction per degC, bounds: null, status: to be sourced, evidence: null, note: Fraction of the crop lost per degree below the critical temperature. }
+
+  # --- Insect pests ---
+  - { id: now_dd_first_hatch_F, start: 100, unit: degree-days F, bounds: [80, 130], status: sourced, evidence: UCIPM_NOW }
+  - { id: now_dd_second_flight_F, start: 1056, unit: degree-days F, bounds: [950, 1150], status: sourced, evidence: UCIPM_NOW }
+  - { id: hull_split_start_pct, start: 1, unit: "%", bounds: [1, 5], status: sourced, evidence: UCIPM_NOW, note: Spray at the start of hull split. }
+  - { id: ptb_dd_treat_F, start: 400, unit: degree-days F, bounds: [300, 500], status: sourced, evidence: UCIPM_PTB, note: Most products at about 400; the bounds span the product-specific timings (300 to 500). }
+  - { id: ptb_shoot_strikes_per_tree, start: null, unit: strikes per tree, bounds: null, status: to be sourced, evidence: null, note: The source says "several". }
+
+  # --- Diseases ---
+  - { id: alt_dsv_threshold, start: 10, unit: DSV over 7 days, bounds: [6, 12], status: sourced, evidence: ALMOND_DOCTOR_DSV }
+  - { id: rlb_frac_max_consecutive, start: null, unit: applications, bounds: null, status: to be sourced, evidence: null, note: Maximum consecutive uses of one FRAC group. }
+  - { id: rlb_vairo_loss_modifier, start: null, unit: fraction of expected loss, bounds: null, status: to be sourced, evidence: null, note: Vairo is very tolerant; the size of the reduction is not given. }
+  - { id: rlb_makako_loss_modifier, start: null, unit: fraction of expected loss, bounds: null, status: to be sourced, evidence: null, note: Makako sensitivity is not known. }
+
+  # --- Seasonal engines ---
+  - { id: hive_density_per_ha, start: null, unit: hives/ha, bounds: null, status: to be sourced, evidence: null, note: From the agronomist. }
+  - { id: pruning_dry_window_days, start: null, unit: days, bounds: null, status: to be sourced, evidence: null, note: Dry days needed after pruning to protect wounds. }
+  - { id: harvest_shake_hull_split_pct, start: null, unit: "%", bounds: null, status: to be sourced, evidence: null }
+  - { id: harvest_moisture_target_pct, start: null, unit: "%", bounds: null, status: to be sourced, evidence: null }
+  - { id: preharvest_irrigation_cutoff_days, start: null, unit: days, bounds: null, status: to be sourced, evidence: null }

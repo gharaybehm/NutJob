@@ -52,16 +52,21 @@ NutJob/
 │   ├── api/                    # Route handlers: cron/*, ingest, webhooks, push, extract-soil-test
 │   └── components/             # UI by area (blocks, calendar, recommendations, knowledge, admin, ui, ...)
 ├── engines/                # Pure agronomic calculations with tests (irrigation, frost/heat,
-│                           #   nutrition, nitrogen, maturity, snapshot, watchdog)
-├── utils/                  # Domain logic: generate-recommendations, build-block-context,
+│   │                       #   nutrition, nitrogen, maturity, snapshot, watchdog): the live engines
+│   ├── core/ rules/ pack/ framework/   # Decision engine foundation: calculators, rule tables, pack format, engine contract
+│   ├── decision/           # Decision engines (phenology, yield forecast, salinity, irrigation, fertigation, frost, insect pests, diseases) and the per-block daily run
+│   └── safeguards/         # Hard safeguards (spray rules SG-SPR-1 to 8)
+├── packs/                  # Crop Knowledge Packs as YAML: packs/<crop>/<version>/ (almond 0.1.0)
+├── utils/                  # Domain logic: generate-recommendations, build-block-context, decision/ (shadow run),
 │   │                       #   kb-retrieval, kb-coverage, kb-requests, crops, push, stripe, ...
 │   └── supabase/           # Clients, types, farm-access.ts (requireFarmRole)
-├── scripts/                # ingest-knowledge-base.ts, test-kb-retrieval.ts
+├── scripts/                # ingest-knowledge-base.ts, test-kb-retrieval.ts, validate-pack.ts, install-pack.ts, bind-blocks-to-pack.ts
 ├── knowledge-base-source/  # Source documents for the knowledge base, per crop
 ├── supabase/migrations/    # SQL migrations (the user runs them in Supabase Studio)
 ├── src/trigger/            # Trigger.dev task (soil-test extraction only)
 ├── messages/               # en.json, ar.json, tr.json (next-intl); i18n/ holds the config
 ├── proxy.ts                # Next.js 16 request proxy (replaces middleware)
+├── docs/                   # nut-job-cdss-spec.md: decision engine specification v3.0 (foundation built)
 ├── Requirements.md         # Product requirements
 ├── PROGRESS.md             # Status tables and dated changelog
 ├── design.png              # Design reference (AgriTech SaaS Platform)
@@ -154,6 +159,27 @@ A chat drawer for supervisors and admins on every farm page. The full requiremen
 - **Operator privacy.** Admin pages get counts only; conversation text is readable by the operator only for a thread the user shared with support.
 - **Farm notes and guide text are untrusted input** to the prompt.
 
+## Decision Engine (foundation and shadow run built; most engines not built)
+
+`docs/nut-job-cdss-spec.md` (v3.0) specifies a crop-agnostic, five-layer recommendation engine (science core, twelve decision engines, arbitrator, LLM narrator, hard safeguards) with a recommendation log, shadow mode and a learning loop. All crop science comes from versioned Crop Knowledge Packs; a crop number in platform code is a defect. The summary and the open points are in the "Decision engine" section of `Requirements.md`. Two decisions (2026-10-09) override the specification file:
+
+- **TypeScript, not Python.** Build it as pure modules in `engines/` with tests; no separate Python service. The specification's acceptance tests apply unchanged, and its Python code is the reference to check against.
+- **Packs are platform-wide.** The platform operator installs, validates and updates packs after review, like guide documents. A farm binds blocks to an installed pack and variety; calibrated values, Shadow or Live per engine and the product library are per farm.
+
+Built (2026-10-09), with tests: the science core (`engines/core/`), decision tables (`engines/rules/`), the pack format, loader, validator and `PackContext` (`engines/pack/`), the engine contract (`engines/framework/`), almond pack 0.1 (`packs/almond/0.1.0/`), a daily shadow run of eight engines: phenology, yield forecast, salinity, irrigation, fertigation, frost, insect pests and diseases (`engines/decision/`, `utils/decision/run-decision-engine.ts`, `/api/cron/decision-engine`), and the spray safeguards (`engines/safeguards/spray.ts`), fed by `field_observations` and the per-farm product library `farm_products` that writes `weather_hourly`, `block_engine_state` and `engine_recommendation_log`. Packs are installed into `crop_packs` with `npm run install:pack` and blocks are bound with `npm run bind:blocks`. Not built: the four seasonal engines (pollination, pruning, weeds and groundcover, harvest), the other safeguards, arbitrator, narrator, manager decisions in the log, live mode, interface. Rules for this code:
+
+- **No crop content in `engines/core`, `rules`, `pack`, `framework`, `decision` or `safeguards`.** A test (`engines/framework/framework.test.ts`) fails on a variety, pest, disease or phase name there.
+- **A value the source does not give is `to be sourced` in the pack, never invented.** An engine that depends on one stays in Shadow.
+- **After any change to a pack file,** run `npm run validate:pack -- --pack=<id> --version=<x.y.z> --sign`; the manifest signature is a digest of the files and the tests fail when it is stale.
+- **Shadow only.** The run must not write to `recommendations`, `block_alerts` or `calendar_events`, and its route returns counts and errors, never recommendation text. `engine_recommendation_log` is append-only and has no operator policy.
+- **Safeguard limits come from the product library, never from code.** A missing label value, an unrecorded registration or bee toxicity, or an unapproved product blocks the product; nothing is assumed. Safeguards are not tuned, calibrated or switched off.
+- **An engine that cannot decide says so.** A missing input is reported with its name; it never falls through to a 'hold' or 'no action' result.
+- **An installed pack version is never changed;** a change is a new version.
+- **Engines talk only through the block state.** An engine adds values with `publish`, in the order set in `engines/decision/run-block.ts`; it never calls another engine.
+- **The live engines stay** until each replacement has run beside the old one (order of work in `Requirements.md`, point 12).
+
+The other open points are not decided; settle the ones a task touches with the user before writing code.
+
 ## Navigation
 
 - Top navigation bar, left sidebar on desktop, bottom navigation with a More drawer on mobile; all role-gated
@@ -178,7 +204,11 @@ npm run start    # Start production server
 npm run lint     # Run ESLint
 npm test         # Unit tests (vitest)
 npm run test:kb  # Live knowledge-base retrieval test (costs a few embedding calls)
+npm run test:photos -- --dir=photo-test   # Photo diagnosis accuracy test on labelled photos (2-3 model calls per case)
 npm run ingest:kb -- --crop=almond   # Load knowledge-base documents (--dry-run to skip DB and embedding)
+npm run validate:pack -- --pack=almond --version=0.1.0   # Check a Crop Knowledge Pack and print its report (--sign after a reviewed change)
+npm run install:pack -- --pack=almond --version=0.1.0    # Install a valid pack into crop_packs (--dry-run validates only); writes to production
+npm run bind:blocks -- --pack=almond --version=0.1.0     # Bind blocks of the pack's crop to it (--dry-run, --farm=); writes to production
 ```
 
 Deployment: Coolify does not deploy on push; the user redeploys manually. Migrations are run by the user in Supabase Studio. Local `.env.local` points at production.

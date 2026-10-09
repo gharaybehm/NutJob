@@ -1,0 +1,93 @@
+# One case per row of each decision table.
+
+# --- Irrigation ---
+- id: irr-dormant-no-action
+  kind: table
+  table: irrigation
+  state: { phase: dormant }
+  expect: { row: ALM-IRR-00, action: none }
+
+- id: irr-rain-defers
+  kind: table
+  table: irrigation
+  state: { phase: bloom, rain_48h_mm: 30, rain_prob: 0.8, Dr: 20, RAW: 50 }
+  expect: { row: ALM-IRR-01, action: defer }
+
+- id: irr-rdi-below-floor
+  kind: table
+  table: irrigation
+  state: { phase: kernel_fill, rain_48h_mm: 0, rain_prob: 0, rdi_enabled: true, swp_age_days: 2, swp_bar: -17, ETc_since_last: 30, Dr: 40, RAW: 50 }
+  expect: { row: ALM-IRR-05, action: irrigate, amount: 15 }
+
+- id: irr-rdi-partial
+  kind: table
+  table: irrigation
+  state: { phase: kernel_fill, rain_48h_mm: 0, rain_prob: 0, rdi_enabled: true, swp_age_days: 2, swp_bar: -12, ETc_since_last: 30, Dr: 40, RAW: 50 }
+  expect: { row: ALM-IRR-06, action: irrigate_partial, amount: 15 }
+
+- id: irr-refill-at-raw
+  kind: table
+  table: irrigation
+  state: { phase: fruit_growth, rain_48h_mm: 0, rain_prob: 0, rdi_enabled: false, Dr: 60, RAW: 50, efficiency: 0.9, leaching_fraction: 0.1 }
+  expect: { row: ALM-IRR-02, action: irrigate, amount: 73.333 }
+
+- id: irr-tree-stressed-before-raw
+  kind: table
+  table: irrigation
+  state: { phase: fruit_growth, rain_48h_mm: 0, rain_prob: 0, rdi_enabled: false, Dr: 30, RAW: 50, efficiency: 0.9, leaching_fraction: 0, swp_age_days: 2, swp_deviation_bar: -4 }
+  expect: { row: ALM-IRR-03, action: irrigate, amount: 33.333, flag: MODEL_SENSOR_DIVERGENCE }
+
+- id: irr-hold
+  kind: table
+  table: irrigation
+  state: { phase: fruit_growth, rain_48h_mm: 0, rain_prob: 0, rdi_enabled: false, Dr: 30, RAW: 50, efficiency: 0.9, leaching_fraction: 0, swp_age_days: 2, swp_deviation_bar: -1 }
+  expect: { row: ALM-IRR-04, action: hold }
+
+# --- Navel orangeworm ---
+- id: now-biofix-rising-counts
+  kind: table
+  table: now
+  state: { biofix_set: false, egg_counts_rising_consecutive_checks: 2, share_traps_with_eggs: 0.2 }
+  expect: { row: ALM-NOW-01, action: set_biofix }
+
+- id: now-biofix-half-of-traps
+  kind: table
+  table: now
+  state: { biofix_set: false, egg_counts_rising_consecutive_checks: 1, share_traps_with_eggs: 0.6 }
+  expect: { row: ALM-NOW-01b, action: set_biofix }
+
+- id: now-monitor-before-biofix
+  kind: table
+  table: now
+  state: { biofix_set: false, egg_counts_rising_consecutive_checks: 0, share_traps_with_eggs: 0.1 }
+  expect: { row: ALM-NOW-02, action: monitor }
+
+- id: now-spray-at-hull-split
+  kind: table
+  table: now
+  state: { biofix_set: true, dd_F: 1100, hull_split_pct: 2, expected_loss_avoided: 500, cost: 100 }
+  expect: { row: ALM-NOW-03, action: spray }
+
+- id: now-spray-scheduled-before-hull-split
+  kind: table
+  table: now
+  state: { biofix_set: true, dd_F: 1100, hull_split_pct: 0, expected_loss_avoided: 500, cost: 100 }
+  expect: { row: ALM-NOW-04, action: spray_scheduled }
+
+- id: now-prepare
+  kind: table
+  table: now
+  state: { biofix_set: true, dd_F: 950, hull_split_pct: 0, expected_loss_avoided: 500, cost: 100 }
+  expect: { row: ALM-NOW-05, action: prepare }
+
+- id: now-no-spray-when-cost-exceeds-loss
+  kind: table
+  table: now
+  state: { biofix_set: true, dd_F: 1100, hull_split_pct: 2, expected_loss_avoided: 50, cost: 100 }
+  expect: { row: ALM-NOW-05, action: prepare }
+
+- id: now-monitor-after-biofix
+  kind: table
+  table: now
+  state: { biofix_set: true, dd_F: 300, hull_split_pct: 0, expected_loss_avoided: 500, cost: 100 }
+  expect: { row: ALM-NOW-06, action: monitor }

@@ -1,0 +1,65 @@
+diseases:
+  - id: alternaria
+    name: Alternaria leaf spot
+    type: infection_value
+    # Disease severity values, adapted from TOMCAST. Temperatures in degF.
+    units: F
+    evaluation: { hour: 11, window_hours: 23 }
+    dry_hours_split: 2
+    aggregate: max
+    # steps: [minimum wet hours, value]
+    bands:
+      - { tmin: 59, tmax: 63, steps: [[7, 1], [16, 2], [21, 3]] }
+      - { tmin: 63, tmax: 68, steps: [[4, 1], [9, 2], [16, 3], [23, 4]] }
+      - { tmin: 68, tmax: 77, steps: [[3, 1], [6, 2], [13, 3], [21, 4]] }
+      - { tmin: 77, tmax: 82, steps: [[4, 1], [9, 2], [16, 3], [23, 4]] }
+    accumulation_days: 7
+    threshold: $alt_dsv_threshold
+    threshold_guidance: Treat at 6 to 12 units; 6 to 8 for orchards with a history of the disease, 10 to 12 without.
+    reset_on_spray: true
+    active_phases: null
+    evidence: ALMOND_DOCTOR_DSV
+    review: >-
+      The specification does not say how to combine two wet events in one day
+      (the largest value is used here) or in which phases the model is active.
+
+  - id: red_leaf_blotch
+    name: Red leaf blotch
+    scientific_name: Polystigma amygdalinum
+    type: phenology_timed
+    anchor_event: petal_fall
+    timings:
+      - { label: Petal fall, offset_days: [0, 0] }
+      - { label: Two to three weeks after petal fall, offset_days: [14, 21] }
+      - { label: Five to six weeks after petal fall, offset_days: [35, 42] }
+    biology: >-
+      One infection cycle per year. Infection runs from petal fall, while young
+      leaves emerge with spring rain, to about May; symptoms appear 35 to 40
+      days later.
+    ineffective: Sprays during bloom or after symptoms appear.
+    resistance:
+      rule: Rotate FRAC groups.
+      max_consecutive_same_group: $rlb_frac_max_consecutive
+    sanitation:
+      - Remove leaf litter or accelerate its decomposition (effective area-wide).
+    variety_loss_modifiers:
+      vairo: $rlb_vairo_loss_modifier
+      makako: $rlb_makako_loss_modifier
+    combined_with: The spray timings overlap with shot hole, scab and rust, so programmes can be combined.
+    evidence: UCIPM_RLB
+
+  - id: hull_rot
+    name: Hull rot
+    type: cultural_risk
+    phase: hull_split
+    drivers:
+      - { state_key: swp_deviation_bar, effect: Full water status raises the risk; a mild deficit lowers it. }
+      - { state_key: leaf_n_status, effect: High nitrogen raises the risk. }
+    advisory: Sent to Irrigation and Fertigation during hull split.
+    evidence: null
+    review: The specification cites no source for the hull rot rule and gives no thresholds.
+
+to_be_sourced:
+  - item: Models and timings for shot hole, scab, rust, anthracnose, Fusicoccum and Monilinia
+    note: Spanish sources preferred.
+  - item: Damage functions for each disease

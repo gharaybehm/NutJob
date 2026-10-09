@@ -1,0 +1,39 @@
+pollination:
+  summary: >-
+    Both varieties are self-compatible, so hives are optional or at reduced
+    density. Plan by the bloom prediction. Bee-toxic sprays are vetoed during
+    bloom.
+  params:
+    hive_density_per_ha: $hive_density_per_ha
+  bee_protection_phases: [bloom]
+  to_be_sourced:
+    - item: Hive arrival and removal stages
+
+canopy_pruning:
+  summary: >-
+    Training in years 1 to 3; maintenance pruning in mature years. Prune in
+    dry-weather windows to limit wound infection.
+  params:
+    dry_window_days: $pruning_dry_window_days
+  to_be_sourced:
+    - item: Pruning templates by age and training system
+    - item: Canopy targets (ground cover, height, light interception)
+
+weed_groundcover:
+  summary: >-
+    Floor preparation before harvest; cover crop management; herbicide
+    applications go through the spray safeguards.
+  to_be_sourced:
+    - item: Groundcover templates by phase
+    - item: Effect of groundcover on the crop coefficient
+
+harvest:
+  summary: >-
+    Readiness from hull split progress. Pre-harvest irrigation cut-off. Drying
+    to a safe moisture to limit aflatoxin risk. Pre-harvest interval checks.
+  params:
+    shake_hull_split_pct: $harvest_shake_hull_split_pct
+    moisture_target_pct: $harvest_moisture_target_pct
+    irrigation_cutoff_days: $preharvest_irrigation_cutoff_days
+  to_be_sourced:
+    - item: Post-harvest handling tasks and maximum time before drying
