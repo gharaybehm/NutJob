@@ -1,0 +1,18 @@
+# Almond reference pack. Source: docs/nut-job-cdss-spec.md, Part C.
+id: almond
+crop:
+  common_name: Almond
+  scientific_name: Prunus dulcis
+version: 0.1.1
+min_platform_version: 0.1.0
+authors:
+  - Nut Job (from CDSS specification v3.0, Part C)
+review_date: "2026-10-09"
+regions:
+  - Mediterranean climates
+region_notes: >-
+  Not confirmed for Central Anatolia (Aksaray), which is continental. The navel
+  orangeworm and peach twig borer models and thresholds are from California;
+  which pests matter locally is for the agronomist to confirm.
+licence: Proprietary, Nut Job
+signature: sha256:d709510e5baa7d2b3af371d1451aa89e95acb6ee2546a7d334e2926368f12121

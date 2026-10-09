@@ -328,12 +328,44 @@ const diseasesSchema = z.object({
 
 const SEASONAL_ENGINES = ['pollination', 'canopy_pruning', 'weed_groundcover', 'harvest'] as const
 
+/** When a seasonal task falls due (spec §A5.5: dated tasks from templates, adjusted by phenology and weather). */
+const templateAnchor = z.discriminatedUnion('type', [
+  /** Due while the block is in a phase. */
+  z.object({ type: z.literal('phase'), phase: z.string() }),
+  /** Due a number of days before or after a dated event, such as petal fall or the planned harvest. */
+  z.object({ type: z.literal('event'), event: z.string(), offset_days: z.tuple([z.number(), z.number()]) }),
+  /** Due in calendar months (1-12). */
+  z.object({ type: z.literal('months'), months: z.array(z.number().int().min(1).max(12)).min(1) }),
+])
+
+const seasonalTemplate = z.object({
+  id: z.string(),
+  task: z.string(),
+  anchor: templateAnchor,
+  /** Block ages, in whole years since planting, the task applies to. */
+  age: z.object({ min_years: z.number().optional(), max_years: z.number().optional() }).optional(),
+  /** Weather gate: dry days needed from the day of the task. */
+  dry_days: paramRef.optional(),
+  /** Pack id the task sprays against; such a task goes through the spray safeguards. */
+  spray_target: z.string().optional(),
+  evidence: z.string().optional(),
+})
+
 const seasonalSchema = z.partialRecord(
   z.enum(SEASONAL_ENGINES),
   z.object({
     summary: z.string(),
-    templates: z.array(z.looseObject({ id: z.string(), task: z.string() })).default([]),
+    templates: z.array(seasonalTemplate).default([]),
     params: z.record(z.string(), paramRef).default({}),
+    /** Pollination: hives per hectare, and the weather pollinators fly in. */
+    hive_density_per_ha: paramRef.optional(),
+    flight: z.object({ min_temp_c: paramRef, max_wind_ms: paramRef }).optional(),
+    /** Harvest: the observations that show the crop is ready, each with its threshold. */
+    maturity: z
+      .array(z.object({ observation: z.string(), field: z.string(), comparison: z.enum(['ge', 'le']), ready_at: paramRef }))
+      .default([]),
+    /** Harvest: days before the planned harvest at which irrigation stops. */
+    irrigation_cutoff_days: paramRef.optional(),
     /** Pollination only: phases in which bee-toxic products are vetoed (safeguard SG-SPR-8). */
     bee_protection_phases: z.array(z.string()).default([]),
     to_be_sourced: toBeSourced,

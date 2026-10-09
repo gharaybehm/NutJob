@@ -111,6 +111,7 @@ export const salinityEngine: DecisionEngine = {
           latestDay: 30,
           inputsSnapshot: { soil_ece: ece, soil_ece_at: state.soil_ece_at ?? null, threshold: a.thresholdA, relative_yield_pct: a.relativeYield },
           expectedOutcome: 'A current soil salinity value for the root zone',
+          requiresEntry: true,
         }),
       )
     }

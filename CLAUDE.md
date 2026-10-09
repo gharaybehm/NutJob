@@ -54,9 +54,11 @@ NutJob/
 ├── engines/                # Pure agronomic calculations with tests (irrigation, frost/heat,
 │   │                       #   nutrition, nitrogen, maturity, snapshot, watchdog): the live engines
 │   ├── core/ rules/ pack/ framework/   # Decision engine foundation: calculators, rule tables, pack format, engine contract
-│   ├── decision/           # Decision engines (phenology, yield forecast, salinity, irrigation, fertigation, frost, insect pests, diseases) and the per-block daily run
-│   └── safeguards/         # Hard safeguards (spray rules SG-SPR-1 to 8)
-├── packs/                  # Crop Knowledge Packs as YAML: packs/<crop>/<version>/ (almond 0.1.0)
+│   ├── decision/           # The twelve decision engines and the per-block daily run
+│   ├── safeguards/         # Hard safeguards: sensor validation, irrigation, spray, fertigation, frost, harvest
+│   ├── arbitrator/         # The seven-day farm plan: solver, vetoes, deferral reasons
+│   └── narrator/           # Narrator input, the number check on its answer, rule-based text
+├── packs/                  # Crop Knowledge Packs as YAML: packs/<crop>/<version>/ (almond 0.1.0 installed, 0.1.1 latest)
 ├── utils/                  # Domain logic: generate-recommendations, build-block-context, decision/ (shadow run),
 │   │                       #   kb-retrieval, kb-coverage, kb-requests, crops, push, stripe, ...
 │   └── supabase/           # Clients, types, farm-access.ts (requireFarmRole)
@@ -166,15 +168,17 @@ A chat drawer for supervisors and admins on every farm page. The full requiremen
 - **TypeScript, not Python.** Build it as pure modules in `engines/` with tests; no separate Python service. The specification's acceptance tests apply unchanged, and its Python code is the reference to check against.
 - **Packs are platform-wide.** The platform operator installs, validates and updates packs after review, like guide documents. A farm binds blocks to an installed pack and variety; calibrated values, Shadow or Live per engine and the product library are per farm.
 
-Built (2026-10-09), with tests: the science core (`engines/core/`), decision tables (`engines/rules/`), the pack format, loader, validator and `PackContext` (`engines/pack/`), the engine contract (`engines/framework/`), almond pack 0.1 (`packs/almond/0.1.0/`), a daily shadow run of eight engines: phenology, yield forecast, salinity, irrigation, fertigation, frost, insect pests and diseases (`engines/decision/`, `utils/decision/run-decision-engine.ts`, `/api/cron/decision-engine`), and the spray safeguards (`engines/safeguards/spray.ts`), fed by `field_observations` and the per-farm product library `farm_products` that writes `weather_hourly`, `block_engine_state` and `engine_recommendation_log`. Packs are installed into `crop_packs` with `npm run install:pack` and blocks are bound with `npm run bind:blocks`. Not built: the four seasonal engines (pollination, pruning, weeds and groundcover, harvest), the other safeguards, arbitrator, narrator, manager decisions in the log, live mode, interface. Rules for this code:
+Built (2026-10-09), with tests: the science core (`engines/core/`), decision tables (`engines/rules/`), the pack format, loader, validator and `PackContext` (`engines/pack/`), the engine contract (`engines/framework/`), almond pack 0.1 (`packs/almond/0.1.0/`), a daily shadow run of all twelve engines (`engines/decision/`, `utils/decision/run-decision-engine.ts`, `/api/cron/decision-engine`), the hard safeguards (`engines/safeguards/`), the arbitrator's seven-day plan per farm (`engines/arbitrator/`, stored in `farm_plans`) and the narrator (`engines/narrator/`, `utils/decision/narrate.ts`), fed by `field_observations` and the per-farm product library `farm_products` that writes `weather_hourly`, `block_engine_state` and `engine_recommendation_log`. Packs are installed into `crop_packs` with `npm run install:pack` and blocks are bound with `npm run bind:blocks`. Not built: manager decisions in the log, live mode, the interface, the learning loop. Rules for this code:
 
-- **No crop content in `engines/core`, `rules`, `pack`, `framework`, `decision` or `safeguards`.** A test (`engines/framework/framework.test.ts`) fails on a variety, pest, disease or phase name there.
+- **No crop content in `engines/core`, `rules`, `pack`, `framework`, `decision`, `safeguards`, `arbitrator` or `narrator`.** A test (`engines/framework/framework.test.ts`) fails on a variety, pest, disease or phase name there.
 - **A value the source does not give is `to be sourced` in the pack, never invented.** An engine that depends on one stays in Shadow.
 - **After any change to a pack file,** run `npm run validate:pack -- --pack=<id> --version=<x.y.z> --sign`; the manifest signature is a digest of the files and the tests fail when it is stale.
 - **Shadow only.** The run must not write to `recommendations`, `block_alerts` or `calendar_events`, and its route returns counts and errors, never recommendation text. `engine_recommendation_log` is append-only and has no operator policy.
 - **Safeguard limits come from the product library, never from code.** A missing label value, an unrecorded registration or bee toxicity, or an unapproved product blocks the product; nothing is assumed. Safeguards are not tuned, calibrated or switched off.
+- **The arbitrator never invents an action or changes an engine's numbers.** A mandatory action that cannot fit is reported, never dropped; every deferred action has a reason.
+- **The narrator writes no numbers of its own.** Its answer passes `checkNarration` or is replaced by the rule-based text. The model is called only with `&narrate=1`; keep it off in the scheduled run until someone reads the output. Safeguard events are shown as stored, never paraphrased.
 - **An engine that cannot decide says so.** A missing input is reported with its name; it never falls through to a 'hold' or 'no action' result.
-- **An installed pack version is never changed;** a change is a new version.
+- **An installed pack version is never changed;** a change is a new version. Almond 0.1.0 is installed in production: do not edit `packs/almond/0.1.0/` (a test pins its digest). Copy the latest version to a new folder, change that, sign it, and point the tests at it.
 - **Engines talk only through the block state.** An engine adds values with `publish`, in the order set in `engines/decision/run-block.ts`; it never calls another engine.
 - **The live engines stay** until each replacement has run beside the old one (order of work in `Requirements.md`, point 12).
 

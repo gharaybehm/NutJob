@@ -70,6 +70,7 @@ export const phenologyEngine: DecisionEngine = {
         earliestDay: 0,
         latestDay: 3,
         inputsSnapshot: { recorded_stage: null },
+        requiresEntry: true,
         evidence: null,
         expectedOutcome: 'The block has a growth phase, so the other engines can assess it',
         flags: stateFlags(state),

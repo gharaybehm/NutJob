@@ -69,7 +69,7 @@ function input(over: Partial<BlockDayInput> = {}, today = MAY): BlockDayInput {
 }
 
 const by = (r: ReturnType<typeof runBlockDay>, engine: string) => r.actions.filter(a => a.engineId === engine)
-const almond = () => createPackContext(packSchema.parse(loadPackSource(join(__dirname, '../../packs/almond/0.1.0')).raw))
+const almond = () => createPackContext(packSchema.parse(loadPackSource(join(__dirname, '../../packs/almond/0.1.1')).raw))
 
 describe('the made-up test pack', () => {
   it('is itself a valid pack apart from its missing test cases', () => {

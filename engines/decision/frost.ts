@@ -157,6 +157,7 @@ export const frostEngine: DecisionEngine = {
             description: `Scout for frost damage after the night of ${night.date}`,
             earliestDay: night.dayIndex + 1,
             latestDay: night.dayIndex + 3,
+            requiresEntry: true,
           }),
         )
       }

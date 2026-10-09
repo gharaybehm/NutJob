@@ -4,6 +4,7 @@ import { demoPackRaw } from '@/engines/decision/__fixtures__/demo-pack'
 import { packSchema } from '@/engines/pack/schema'
 import type { BlockDayResult } from '@/engines/decision/run-block'
 import { parseHourlyResponse } from './hourly-weather'
+import type { FarmPlan } from '@/engines/arbitrator/plan'
 import { runDecisionEngine } from './run-decision-engine'
 
 const NOW = new Date('2026-05-10T04:00:00Z')
@@ -52,6 +53,7 @@ function fakeAdmin(tables: Record<string, Row[]>) {
       is: () => q,
       not: () => q,
       gte: () => q,
+      lt: () => q,
       order: (col: string, o?: { ascending?: boolean }) => ((rows = rows.sort((a, b) => (a[col] < b[col] ? -1 : 1) * (o?.ascending === false ? -1 : 1))), q),
       limit: () => q,
       maybeSingle: async () => ({ data: rows[0] ?? null, error: null }),
@@ -276,6 +278,77 @@ describe('runDecisionEngine', () => {
     ])
   })
 
+  const dry = { through: '2026-05-09', Dr: 90, De: 22.5, fw: 0.4, etcSinceIrrigation: 30, gapsMm: [], initialAssumed: false, last: { et0: 5, etc: 4.5, raw: 75, taw: 150, ks: 1 } }
+  const twoDryBlocks = (policy: Row = {}) =>
+    tables({
+      blocks: [block(), block({ id: 'B2' })],
+      phenology_latest: ['B1', 'B2'].map(id => ({ block_id: id, current_stage: 'leafy', source: 'manual', recorded_at: null })),
+      block_engine_state: ['B1', 'B2'].map(id => ({ block_id: id, state_date: '2026-05-09', carried: dry })),
+      farm_policy: [{ farm_id: 'F1', ...policy }],
+    })
+
+  it('makes one plan for the farm and stores it in shadow with rule-based text', async () => {
+    stubWeather(openMeteo())
+    const { admin, writes } = fakeAdmin(twoDryBlocks())
+    const [r] = await runDecisionEngine(admin, { now: NOW })
+    // Per block: one irrigation and one standing pest task.
+    expect(r).toMatchObject({ planStatus: 'OPTIMAL', planned: 4, deferred: 0, unscheduledMandatory: 0, narration: 'rules', errors: [] })
+    const stored = writes.find(w => w.table === 'farm_plans')!.rows[0]
+    expect(stored).toMatchObject({ farm_id: 'F1', plan_date: '2026-05-10', mode: 'shadow', status: 'OPTIMAL', horizon_days: 7, narration_source: 'rules', narration_model: null })
+    expect(stored.plan).toHaveLength(4)
+    expect(stored.narration.action_explanations).toHaveLength(4)
+    expect(stored.notes).toContain('No daily water limit is set for the farm, so water does not limit the plan')
+  })
+
+  it("shares the farm's daily water between its blocks", async () => {
+    stubWeather(openMeteo())
+    const plans: { farmId: string; plan: FarmPlan }[] = []
+    // Each block needs 2000 m3 (100 mm over 2 ha) within two days; 2500 m3 a day lets one run today and one tomorrow.
+    await runDecisionEngine(fakeAdmin(twoDryBlocks({ daily_water_m3: 2500 })).admin, { now: NOW, dryRun: true, collectPlans: plans })
+    const irrigations = plans[0].plan.plan.filter(p => p.actionId.includes(':irrigation:'))
+    expect(irrigations.map(p => p.day).sort()).toEqual([0, 1])
+    // 1900 m3 a day cannot carry either block.
+    plans.length = 0
+    const [r] = await runDecisionEngine(fakeAdmin(twoDryBlocks({ daily_water_m3: 1900 })).admin, { now: NOW, dryRun: true, collectPlans: plans })
+    expect(r.deferred).toBe(2)
+    expect(plans[0].plan.deferred.map(d => d.reason)).toEqual(['resource_limit', 'resource_limit'])
+  })
+
+  it('keeps a standing task from an earlier day in the plan until its window closes, and drops a daily one', async () => {
+    stubWeather(openMeteo())
+    const earlier = (over: Row) => ({ actionId: 'x', blockId: 'B1', engineId: 'canopy_pruning', ruleId: 'maintain', actionType: 'seasonal_task', description: 'Maintenance pruning', quantity: null, unit: null, earliestDay: 0, latestDay: 7, expectedLossAvoided: 0, delayCostPerDay: 0, cost: 0, labourHrs: 0, waterM3: 0, equipment: [], confidence: 1, mandatory: false, inputsSnapshot: {}, evidence: null, expectedOutcome: null, flags: [], requiresEntry: true, standing: true, ...over })
+    const log = [
+      { farm_id: 'F1', block_id: 'B1', run_date: '2026-05-07', action: earlier({ actionId: 'standing-open' }) },
+      { farm_id: 'F1', block_id: 'B1', run_date: '2026-05-01', action: earlier({ actionId: 'standing-closed', ruleId: 'old' }) },
+      { farm_id: 'F1', block_id: 'B1', run_date: '2026-05-09', action: earlier({ actionId: 'daily', engineId: 'frost', ruleId: 'FROST-WARNING', actionType: 'frost_protect', standing: false }) },
+    ]
+    const plans: { farmId: string; plan: FarmPlan }[] = []
+    await runDecisionEngine(fakeAdmin(tables({ engine_recommendation_log: log })).admin, { now: NOW, dryRun: true, collectPlans: plans })
+    const ids = plans[0].plan.plan.map(p => p.actionId)
+    expect(ids).toContain('standing-open')
+    expect(ids).not.toContain('standing-closed')
+    expect(ids).not.toContain('daily')
+  })
+
+  it('asks the model for the explanation only when told to, and stores what passes the check', async () => {
+    stubWeather(openMeteo())
+    const call = vi.fn(async (input: { plan: { action_id: string }[] }, _language: string, model: string) => ({
+      output: {
+        action_explanations: input.plan.map(p => ({ action_id: p.action_id, text: 'Explained.' })),
+        deferred_explanations: [],
+        conflicts: [],
+        observation_requests: [],
+        task_drafts: [],
+      },
+      model,
+    }))
+    const { admin, writes } = fakeAdmin(twoDryBlocks())
+    const [r] = await runDecisionEngine(admin, { now: NOW, narrate: true, narrationLanguage: 'tr', narratorCall: call as never })
+    expect(call).toHaveBeenCalledTimes(1)
+    expect(r.narration).toBe('model')
+    expect(writes.find(w => w.table === 'farm_plans')!.rows[0]).toMatchObject({ narration_source: 'model', narration_language: 'tr', narration_model: 'google/gemini-2.5-flash' })
+  })
+
   it('writes nothing in a dry run', async () => {
     stubWeather(openMeteo())
     const { admin, writes } = fakeAdmin(tables())
@@ -309,6 +382,7 @@ describe('runDecisionEngine', () => {
     stubWeather(openMeteo(-3))
     const { admin } = fakeAdmin(tables({ phenology_latest: [{ block_id: 'B1', current_stage: 'flowers', source: 'manual', recorded_at: null }] }))
     const [r] = await runDecisionEngine(admin, { now: NOW })
-    expect(Object.keys(r).sort()).toEqual(['blocks', 'bound', 'errors', 'evaluated', 'farm', 'logged', 'recommendations'])
+    expect(Object.keys(r).sort()).toEqual(['blocks', 'bound', 'deferred', 'errors', 'evaluated', 'farm', 'logged', 'narration', 'planStatus', 'planned', 'recommendations', 'unscheduledMandatory'])
+    expect(Object.values(r).every(v => typeof v !== 'string' || v.length < 20)).toBe(true)
   })
 })
