@@ -571,7 +571,7 @@ function AnswerFooter({ m, t, tRec }: { m: AssistantMessage; t: T; tRec: T }) {
       )}
       {m.recordRefs.length > 0 && (
         <p className="text-ink-4">
-          {t("usedRecords")}: {m.recordRefs.map((r) => t(`records.${r.kind}`, { label: r.label })).join(", ")}
+          {t("usedRecords")}: {m.recordRefs.map((r) => (t as unknown as (key: string, values: { label: string }) => string)(`records.${r.kind}`, { label: r.label })).join(", ")}
         </p>
       )}
     </div>

@@ -479,3 +479,65 @@ export async function getSharedConversation(shareId: string): Promise<{ conversa
     },
   };
 }
+
+// ─── Crop Knowledge Packs ────────────────────────────────────────────────────
+
+export interface InstalledPackRow {
+  packId: string;
+  version: string;
+  cropName: string;
+  installedAt: string;
+  digest: string;
+  /** From the validation report stored at install time. */
+  toBeSourced: { id: string; unit: string; engines: string[]; note: string | null }[];
+  expertEstimates: number;
+  pendingContent: { section: string; item: string }[];
+  reviewNotes: { where: string; note: string }[];
+  testsPassed: number;
+  testsTotal: number;
+  engines: { engineId: string; hasContent: boolean; liveBlockedBy: string[] }[];
+  /** Counts only: how many blocks, on how many farms, are bound to this version. */
+  blocksBound: number;
+  farmsBound: number;
+  /** Engines switched to Live for this pack, across all farms (a count). */
+  liveSwitches: number;
+}
+
+/**
+ * Installed packs with their validation reports and how widely each is used.
+ * Packs hold published science and no farm data; usage is given as counts.
+ */
+export async function getInstalledPacks(): Promise<{ packs: InstalledPackRow[] | null; error: string | null }> {
+  const gate = await requireSuperAdmin();
+  if (gate.error) return { packs: null, error: gate.error };
+  const admin = createAdminClient() as any;
+
+  const { data: rows, error } = await admin.from('crop_packs').select('pack_id, version, crop_name, digest, report, installed_at').order('pack_id').order('installed_at', { ascending: false });
+  if (error) return { packs: null, error: error.message };
+  const { data: blocks } = await admin.from('blocks').select('farm_id, pack_id, pack_version').not('pack_id', 'is', null);
+  const { data: modes } = await admin.from('farm_engine_modes').select('pack_id, mode').eq('mode', 'live');
+
+  const packs: InstalledPackRow[] = (rows ?? []).map((p: any) => {
+    const report = p.report ?? {};
+    const bound = (blocks ?? []).filter((b: any) => b.pack_id === p.pack_id && b.pack_version === p.version);
+    const tests: any[] = Array.isArray(report.tests) ? report.tests : [];
+    return {
+      packId: p.pack_id,
+      version: p.version,
+      cropName: p.crop_name,
+      installedAt: p.installed_at,
+      digest: p.digest,
+      toBeSourced: Array.isArray(report.toBeSourced) ? report.toBeSourced : [],
+      expertEstimates: Array.isArray(report.expertEstimates) ? report.expertEstimates.length : 0,
+      pendingContent: Array.isArray(report.pendingContent) ? report.pendingContent : [],
+      reviewNotes: Array.isArray(report.reviewNotes) ? report.reviewNotes : [],
+      testsPassed: tests.filter((t) => t.passed).length,
+      testsTotal: tests.length,
+      engines: Object.entries(report.engines ?? {}).map(([engineId, e]: [string, any]) => ({ engineId, hasContent: e?.hasContent === true, liveBlockedBy: Array.isArray(e?.liveBlockedBy) ? e.liveBlockedBy : [] })),
+      blocksBound: bound.length,
+      farmsBound: new Set(bound.map((b: any) => b.farm_id)).size,
+      liveSwitches: (modes ?? []).filter((m: any) => m.pack_id === p.pack_id).length,
+    };
+  });
+  return { packs, error: null };
+}

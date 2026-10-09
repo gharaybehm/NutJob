@@ -1,8 +1,9 @@
 import type { PestDiseaseDomain, PestObservation } from '../types';
 import AlertBadge from '../AlertBadge';
 import SourceBadge from '../SourceBadge';
+import FieldObservations from '../FieldObservations';
 
-interface Props { data: PestDiseaseDomain; }
+interface Props { data: PestDiseaseDomain; blockId: string; }
 
 function RiskBadge({ level }: { level: 'green' | 'amber' | 'red' }) {
   return (
@@ -61,7 +62,7 @@ function ObservationCard({ obs }: { obs: PestObservation }) {
   );
 }
 
-export default function PestDiseaseTab({ data }: Props) {
+export default function PestDiseaseTab({ data, blockId }: Props) {
   const riskColor =
     data.overallRisk === 'green' ? 'text-green' :
     data.overallRisk === 'amber' ? 'text-amber-ink' : 'text-red';
@@ -116,6 +117,9 @@ export default function PestDiseaseTab({ data }: Props) {
           <p className="text-xs text-ink-3 mt-1">Block is clear. Continue scheduled scouting.</p>
         </div>
       )}
+
+      {/* Trap checks, counts and other observations the crop pack asks for */}
+      <FieldObservations key={blockId} blockId={blockId} />
     </div>
   );
 }

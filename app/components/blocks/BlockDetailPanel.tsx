@@ -166,7 +166,7 @@ export default function BlockDetailPanel({
           />
         )}
         {activeTab === 'nutrition'    && <NutritionTab    data={profile.nutrition}    block={block} farmId={farmId} canLog={canLogObservations} />}
-        {activeTab === 'pest-disease' && <PestDiseaseTab  data={profile.pestDisease}  />}
+        {activeTab === 'pest-disease' && <PestDiseaseTab  data={profile.pestDisease}  blockId={profile.block.id} />}
         {activeTab === 'weather'      && <WeatherTab      data={profile.weather}      />}
       </div>
     </div>
