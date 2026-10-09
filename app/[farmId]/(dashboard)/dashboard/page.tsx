@@ -5,6 +5,7 @@ import KPIGrid from "@/app/components/dashboard/KPIGrid";
 import WeatherStrip from "@/app/components/dashboard/WeatherStrip";
 import TodayPlan from "@/app/components/dashboard/TodayPlan";
 import BlockStatusGrid from "@/app/components/dashboard/BlockStatusGrid";
+import EngineStatus from "@/app/components/dashboard/EngineStatus";
 import UpcomingCalendar from "@/app/components/dashboard/UpcomingCalendar";
 import ActivityFeed from "@/app/components/dashboard/ActivityFeed";
 import { Layers, CalendarDays, FlaskConical, Cpu, ArrowRight } from "lucide-react";
@@ -135,6 +136,10 @@ export default async function Dashboard({ params }: { params: Promise<{ farmId: 
           </Suspense>
           <Suspense fallback={<CardSkeleton height="h-72" />}>
             <BlockStatusGrid farmId={farmId} />
+          </Suspense>
+          {/* Shown only once the decision engine has run for the farm, and only to supervisors and admins. */}
+          <Suspense fallback={null}>
+            <EngineStatus farmId={farmId} />
           </Suspense>
         </div>
         <div className="grid grid-cols-1 content-start gap-6 md:grid-cols-2 xl:grid-cols-1">

@@ -296,6 +296,8 @@ describe('runDecisionEngine', () => {
     const stored = writes.find(w => w.table === 'farm_plans')!.rows[0]
     expect(stored).toMatchObject({ farm_id: 'F1', plan_date: '2026-05-10', mode: 'shadow', status: 'OPTIMAL', horizon_days: 7, narration_source: 'rules', narration_model: null })
     expect(stored.plan).toHaveLength(4)
+    // Each entry carries the action itself and its mode, so the plan can be shown without the log.
+    expect(stored.plan[0]).toMatchObject({ mode: 'shadow', action: { blockId: expect.any(String), description: expect.any(String) } })
     expect(stored.narration.action_explanations).toHaveLength(4)
     expect(stored.notes).toContain('No daily water limit is set for the farm, so water does not limit the plan')
   })

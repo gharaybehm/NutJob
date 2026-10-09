@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { fetchKnowledgeDocuments } from '@/utils/kb-coverage'
 import { fetchFarmKnowledgeRequests } from '@/utils/kb-requests'
+import { packSchema, type Pack } from '@/engines/pack/schema'
+import { productOptions } from '@/utils/decision/pack-options'
+import { listInstalledPacks } from '@/app/actions/block-pack'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — SettingsForms lives in the old route group; its internal action imports resolve correctly
 import SettingsForms from '@/app/(dashboard)/settings/SettingsForms'
@@ -88,6 +91,41 @@ export default async function SettingsPage({
     .eq('farm_id', farmId)
     .maybeSingle()
 
+  // Decision-engine settings: read on their own, so a problem with them leaves the rest of the page working.
+  const [{ data: decisionFarm, error: decisionFarmError }, { data: decisionBlocks, error: decisionBlocksError }] = await Promise.all([
+    db.from('farm_policy')
+      .select('price_per_yield_unit, price_currency, daily_labour_hours, daily_water_m3, sprayer_count, frost_protection_method')
+      .eq('farm_id', farmId)
+      .maybeSingle(),
+    db.from('blocks')
+      .select('id, name, crop_type, variety, pack_id, pack_version, pack_variety_id, canopy_cover_fraction, canopy_height_m, canopy_measured_on, wetted_fraction, expected_yield_kg_ha, expected_yield_season')
+      .eq('farm_id', farmId)
+      .order('name'),
+  ])
+  // The product library, and what a product can be listed against: the pests and diseases of the packs the blocks are bound to.
+  const { data: productRows, error: productsError } = await db.from('farm_products').select('*').eq('farm_id', farmId).order('name')
+  const boundPacks: Pack[] = []
+  const boundKeys = new Set<string>(
+    ((decisionBlocks ?? []) as { pack_id: string | null; pack_version: string | null }[]).filter(b => b.pack_id && b.pack_version).map(b => `${b.pack_id}@${b.pack_version}`),
+  )
+  for (const key of boundKeys) {
+    const [packId, version] = key.split('@')
+    const { data: packRow } = await db.from('crop_packs').select('content').eq('pack_id', packId).eq('version', version).maybeSingle()
+    const parsed = packRow ? packSchema.safeParse(packRow.content) : null
+    if (parsed?.success) boundPacks.push(parsed.data)
+  }
+  const decisionSetup =
+    decisionFarmError || decisionBlocksError || productsError
+      ? null
+      : {
+          farm: decisionFarm ?? null,
+          blocks: decisionBlocks ?? [],
+          products: productRows ?? [],
+          productOptions: productOptions(boundPacks),
+          canEditProducts: membership?.role === 'admin',
+          installedPacks: await listInstalledPacks(farmId),
+        }
+
   // Fetch farm details for the Farm Identity and Weather sections
   const { data: farmData } = await db.from('farms')
     .select('name, address, gps_lat, gps_lng')
@@ -151,6 +189,7 @@ export default async function SettingsPage({
         farmPolicy={policyRow ?? null}
         knowledgeDocs={knowledgeDocs}
         knowledgeRequests={knowledgeRequests}
+        decisionSetup={decisionSetup}
         farmId={farmId}
         farmName={farmData?.name ?? ''}
         farmAddress={farmData?.address ?? ''}

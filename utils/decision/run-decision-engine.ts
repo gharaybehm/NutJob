@@ -312,6 +312,11 @@ export async function runDecisionEngine(admin: any, opts: DecisionRunOptions = {
     const sensorBlocks = new Set<string>((sensors ?? []).map((s: any) => s.block_id).filter(Boolean))
     const soilSince = new Date(now.getTime() - SOIL_WINDOW_HOURS * 3_600_000).toISOString()
     const farmActions: ProposedAction[] = []
+
+    // Shadow or Live per pack and engine; an engine with no row is in Shadow.
+    const { data: modeRows } = await admin.from('farm_engine_modes').select('pack_id, engine_id, mode').eq('farm_id', farm.id)
+    const liveEngines = new Set<string>((modeRows ?? []).filter((m: any) => m.mode === 'live').map((m: any) => `${m.pack_id}:${m.engine_id}`))
+    const modeOf = (a: ProposedAction): 'shadow' | 'live' => (liveEngines.has(`${a.packId}:${a.engineId}`) ? 'live' : 'shadow')
     const reentryBlockedUntil: Record<string, string | null> = {}
     const stateSummary: Record<string, unknown> = {}
 
@@ -472,7 +477,7 @@ export async function runDecisionEngine(admin: any, opts: DecisionRunOptions = {
             farm_id: farm.id,
             block_id: b.id,
             run_date: weather.localToday,
-            mode: 'shadow',
+            mode: modeOf(a),
             engine_id: a.engineId,
             rule_id: a.ruleId,
             pack_id: a.packId,
@@ -509,7 +514,7 @@ export async function runDecisionEngine(admin: any, opts: DecisionRunOptions = {
       const since = new Date(Date.parse(`${weather.localToday}T00:00:00Z`) - STANDING_LOOKBACK_DAYS * 86_400_000).toISOString().slice(0, 10)
       const { data: earlier } = await admin
         .from('engine_recommendation_log')
-        .select('block_id, run_date, action')
+        .select('id, block_id, run_date, action')
         .eq('farm_id', farm.id)
         .gte('run_date', since)
         .lt('run_date', weather.localToday)
@@ -518,12 +523,29 @@ export async function runDecisionEngine(admin: any, opts: DecisionRunOptions = {
       const key = (a: ProposedAction) => [a.blockId, a.engineId, a.ruleId, a.actionType].join(':')
       const seen = new Set(farmActions.map(key))
       const planActions = [...farmActions]
+      // The log row behind each action, so a manager's decision can be attached to it.
+      const logIdByAction = new Map<string, string>()
+      if (!opts.dryRun && farmActions.length > 0) {
+        const { data: todays } = await admin
+          .from('engine_recommendation_log')
+          .select('id, block_id, engine_id, rule_id, action_type, target_date')
+          .eq('farm_id', farm.id)
+          .eq('run_date', weather.localToday)
+        const dateOf = (a: ProposedAction) => new Date(Date.parse(`${weather.localToday}T00:00:00Z`) + a.earliestDay * 86_400_000).toISOString().slice(0, 10)
+        for (const a of farmActions) {
+          const row = (todays ?? []).find(
+            (t: any) => t.block_id === a.blockId && t.engine_id === a.engineId && t.rule_id === a.ruleId && t.action_type === a.actionType && String(t.target_date).slice(0, 10) === dateOf(a),
+          )
+          if (row?.id) logIdByAction.set(a.actionId, row.id)
+        }
+      }
       for (const row of earlier ?? []) {
         const a = row.action as ProposedAction | null
         if (!a || a.standing !== true || !blockIds.includes(a.blockId) || seen.has(key(a))) continue
         const elapsed = daysBetween(String(row.run_date).slice(0, 10), weather.localToday)
         if (a.latestDay - elapsed < 0) continue
         seen.add(key(a))
+        if (row.id) logIdByAction.set(a.actionId, row.id)
         planActions.push({ ...a, earliestDay: Math.max(0, a.earliestDay - elapsed), latestDay: a.latestDay - elapsed })
       }
 
@@ -545,6 +567,13 @@ export async function runDecisionEngine(admin: any, opts: DecisionRunOptions = {
       const narrated = await narratePlan(buildNarratorInput(plan, planActions, stateSummary), opts.narrationLanguage ?? 'en', opts.narrate === true, opts.narratorCall)
       r.narration = narrated.source
 
+      // Stored with each entry: the action itself, its log row and its mode, so the plan can be shown and decided on as it stands.
+      const actionById = new Map(planActions.map(a => [a.actionId, a]))
+      const withAction = <T extends { actionId: string }>(entry: T) => {
+        const action = actionById.get(entry.actionId) as ProposedAction
+        return { ...entry, logId: logIdByAction.get(entry.actionId) ?? null, mode: modeOf(action), action }
+      }
+
       if (!opts.dryRun) {
         const { error: planError } = await admin.from('farm_plans').upsert(
           {
@@ -553,9 +582,9 @@ export async function runDecisionEngine(admin: any, opts: DecisionRunOptions = {
             mode: 'shadow',
             status: plan.status,
             horizon_days: HORIZON_DAYS,
-            plan: plan.plan,
-            deferred: plan.deferred,
-            unscheduled_mandatory: plan.unscheduledMandatory,
+            plan: plan.plan.map(withAction),
+            deferred: plan.deferred.map(withAction),
+            unscheduled_mandatory: plan.unscheduledMandatory.map(withAction),
             safeguard_events: plan.safeguardEvents,
             notes: plan.notes,
             limits,

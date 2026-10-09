@@ -50,6 +50,7 @@ import {
   RotateCcw,
   X,
   BookOpen,
+  Sprout,
 } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter } from 'next/navigation'
@@ -66,6 +67,7 @@ import { knowledgeCoverage, type KnowledgeDocument } from '@/utils/kb-coverage'
 import { findCrop } from '@/utils/crops'
 import { findRequest, type KnowledgeRequest } from '@/utils/kb-requests'
 import RequestGuides from '@/app/components/knowledge/RequestGuides'
+import DecisionSetupTab, { type DecisionSetupData } from '@/app/components/settings/DecisionSetupTab'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -115,6 +117,8 @@ interface SettingsFormsProps {
   knowledgeDocs?: KnowledgeDocument[] | null
   /** The farm's requests for guides. Null when they could not be read, and then no request is offered. */
   knowledgeRequests?: KnowledgeRequest[] | null
+  /** Decision-engine settings of the farm and its blocks. Null when they could not be read. */
+  decisionSetup?: DecisionSetupData | null
   farmId?: string
   farmName?: string
   farmAddress?: string
@@ -125,7 +129,7 @@ interface SettingsFormsProps {
   initialSensecapAccessKey?: string | null
 }
 
-type TabId = 'profile' | 'team' | 'blocks' | 'alerts' | 'sensors' | 'weather' | 'language'
+type TabId = 'profile' | 'team' | 'blocks' | 'decision' | 'alerts' | 'sensors' | 'weather' | 'language'
 
 // ─── Notification default prefs ───────────────────────────────────────────────
 
@@ -1913,6 +1917,7 @@ export default function SettingsForms({
   farmPolicy = null,
   knowledgeDocs = null,
   knowledgeRequests = null,
+  decisionSetup = null,
   farmId,
   farmName,
   farmAddress,
@@ -1923,11 +1928,13 @@ export default function SettingsForms({
   initialSensecapAccessKey = null,
 }: SettingsFormsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('profile')
+  const tDecision = useTranslations('settings.decision')
 
   const tabs: { id: TabId; label: string; icon: React.ElementType; show: boolean }[] = [
     { id: 'profile' as TabId,  label: 'Account & Security', icon: User,       show: true },
     { id: 'team'    as TabId,  label: 'Team',               icon: Users,      show: userRole === 'admin' || userRole === 'supervisor' },
     { id: 'blocks'  as TabId,  label: 'Block Config',        icon: Layers,     show: userRole === 'admin' || userRole === 'supervisor' },
+    { id: 'decision' as TabId, label: tDecision('tabLabel'), icon: Sprout,     show: userRole === 'admin' || userRole === 'supervisor' },
     { id: 'alerts'  as TabId,  label: 'Alert Thresholds',   icon: Bell,       show: userRole === 'admin' || userRole === 'supervisor' },
     { id: 'sensors' as TabId,  label: 'Sensors',             icon: Cpu,        show: userRole === 'admin' },
     { id: 'weather' as TabId,  label: 'Weather & AI',        icon: Cloud,      show: userRole === 'admin' },
@@ -1959,6 +1966,7 @@ export default function SettingsForms({
       {activeTab === 'profile'  && <AccountTab initialProfile={initialProfile} />}
       {activeTab === 'team'     && <TeamTab userRole={userRole} currentUserId={currentUserId} allUsers={allUsers} farmId={farmId ?? ''} farmName={farmName} />}
       {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} farmId={farmId ?? ''} farmPolicy={farmPolicy} knowledgeDocs={knowledgeDocs} knowledgeRequests={knowledgeRequests} />}
+      {activeTab === 'decision' && <DecisionSetupTab farmId={farmId ?? ''} data={decisionSetup} />}
       {activeTab === 'alerts'   && <NotificationAlertsTab farmId={farmId ?? ''} />}
       {activeTab === 'sensors'  && <SensorConnectionsTab initialSensors={sensors} blocks={blocks} farmId={farmId ?? ''} initialSensecapApiId={initialSensecapApiId} initialSensecapAccessKey={initialSensecapAccessKey} />}
       {activeTab === 'weather'  && <WeatherAPITab farmId={farmId} farmName={farmName} farmAddress={farmAddress} initialLat={farmGpsLat} initialLng={farmGpsLng} />}
