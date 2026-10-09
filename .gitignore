@@ -47,6 +47,8 @@ next-env.d.ts
 # local working folders
 /design_handoff_rootloot_portal/
 /scratch/
+# photos and results for npm run test:photos
+/photo-test/
 
 # manually-downloaded RAG source PDFs (large, not for version control)
 /knowledge-base-source/
