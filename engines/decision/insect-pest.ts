@@ -193,6 +193,8 @@ export const insectPestEngine: DecisionEngine = {
             earliestDay: 0,
             latestDay: 7,
             inputsSnapshot: snapshot,
+            requiresEntry: p.outcome === 'monitor',
+            standing: true,
           }),
         )
         continue
@@ -210,6 +212,8 @@ export const insectPestEngine: DecisionEngine = {
           latestDay: options.openDays[options.openDays.length - 1] ?? 7,
           inputsSnapshot: { ...snapshot, spray_safeguards: options },
           expectedOutcome: 'Trap counts fall within 7 days of the treatment',
+          equipment: ['sprayer'],
+          requiresEntry: true,
         }),
       )
     }

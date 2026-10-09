@@ -33,25 +33,34 @@ import { frostEngine, type FrostNight } from './frost'
 import { irrigationEngine } from './irrigation'
 import { phenologyEngine, resolvePhase, type RecordedStage } from './phenology'
 import { salinityEngine } from './salinity'
+import { canopyPruningEngine, harvestEngine, pollinationEngine, weedGroundcoverEngine } from './seasonal'
 import { yieldForecastEngine } from './yield-forecast'
 import { addDays, aggregateDaily, dayOfYear, daysBetween, type DailyWeather, type HourlyWeatherPoint } from './weather'
 
 /**
  * The engines built so far, in the order they run. The order follows the
  * couplings (spec §A7): the yield forecast feeds every expected loss and the
- * nutrient budget, salinity sets the leaching fraction irrigation adds, and
- * fertigation places its doses on the irrigations proposed.
+ * nutrient budget, salinity sets the leaching fraction irrigation adds,
+ * harvest sets the pre-harvest irrigation cut-off, and fertigation places its
+ * doses on the irrigations proposed.
  */
 export const ENGINES: DecisionEngine[] = [
   phenologyEngine,
   yieldForecastEngine,
   salinityEngine,
+  harvestEngine,
   irrigationEngine,
   fertigationEngine,
   frostEngine,
   insectPestEngine,
   diseaseEngine,
+  pollinationEngine,
+  canopyPruningEngine,
+  weedGroundcoverEngine,
 ]
+
+/** Engines that evaluate every day; the rest plan a season. The arbitrator places the daily ones first. */
+export const CONTINUOUS_ENGINE_IDS: string[] = ENGINES.filter(e => e.engineClass === 'continuous').map(e => e.engineId)
 
 export interface CarriedWaterState extends WaterBalanceState {
   /** Last day included in the balance (yyyy-mm-dd). */
@@ -370,6 +379,8 @@ export function runBlockDay(input: BlockDayInput): BlockDayResult {
     water_balance_missing: water.missing,
     water_balance_days_advanced: water.daysAdvanced,
     age_years: input.ageYears,
+    canopy_cover: input.canopy.cover,
+    canopy_height_m: input.canopy.heightM,
     yield_block_estimate: input.yield.blockEstimate,
     yield_mature_target: input.yield.matureTarget,
     price_per_yield_unit: input.yield.pricePerUnit,

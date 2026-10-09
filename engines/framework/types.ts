@@ -101,4 +101,8 @@ export interface ProposedAction {
   expectedOutcome: string | null
   /** Data-quality and model flags that lowered the confidence. */
   flags: string[]
+  /** True when doing it means people entering the block (safeguard SG-SPR-5 keeps them out during a re-entry interval). */
+  requiresEntry: boolean
+  /** True for a task proposed once and left standing until its window closes; false for one proposed afresh every day. */
+  standing: boolean
 }

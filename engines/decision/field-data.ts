@@ -44,6 +44,8 @@ export interface DiseaseCarried {
 export interface CarriedModels {
   pests: Record<string, PestCarried>
   diseases: Record<string, DiseaseCarried>
+  /** Seasonal tasks already proposed, as `<engine>:<task id>` to the season year, so each is proposed once a season. */
+  seasonal?: Record<string, number>
 }
 
 export interface FieldData {
@@ -62,7 +64,7 @@ export const TRANSIENT_PREFIX = '_'
 const DATA_KEY = '_field_data'
 const CARRIED_KEY = '_carried_models'
 
-export const emptyCarriedModels = (): CarriedModels => ({ pests: {}, diseases: {} })
+export const emptyCarriedModels = (): CarriedModels => ({ pests: {}, diseases: {}, seasonal: {} })
 
 export function withFieldData(state: BlockState, data: FieldData): void {
   state[DATA_KEY] = data

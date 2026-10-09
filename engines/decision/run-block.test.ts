@@ -322,7 +322,7 @@ describe('Kcb from the pack', () => {
 })
 
 describe('with the almond pack as it stands', () => {
-  const almond = createPackContext(packSchema.parse(loadPackSource(join(__dirname, '../../packs/almond/0.1.0')).raw))
+  const almond = createPackContext(packSchema.parse(loadPackSource(join(__dirname, '../../packs/almond/0.1.1')).raw))
 
   it('cannot schedule irrigation until the crop-coefficient values are sourced, and says which', () => {
     const r = runBlockDay(input({ pack: almond, varietyId: 'vairo', recordedStage: { stage: 'nut-development', recordedAt: null, source: 'computed' } }))

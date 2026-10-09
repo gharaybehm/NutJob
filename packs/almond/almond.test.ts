@@ -1,18 +1,19 @@
+import { readdirSync } from 'fs'
 import { join } from 'path'
 import { describe, expect, it } from 'vitest'
 import { createPackContext } from '../../engines/pack/context'
 import { loadPackSource } from '../../engines/pack/load'
 import { validatePack } from '../../engines/pack/validate'
 
-const source = loadPackSource(join(__dirname, '0.1.0'))
+const source = loadPackSource(join(__dirname, '0.1.1'))
 const report = validatePack(source.raw, { digest: source.digest })
 
-describe('almond pack 0.1.0', () => {
+describe('almond pack 0.1.1 (latest)', () => {
   it('validates with no errors and a matching signature', () => {
     expect(report.errors).toEqual([])
     expect(report.ok).toBe(true)
     expect(report.packId).toBe('almond')
-    expect(report.version).toBe('0.1.0')
+    expect(report.version).toBe('0.1.1')
   })
 
   it('passes its own test suite', () => {
@@ -78,5 +79,26 @@ describe('almond pack 0.1.0', () => {
   it('says where it is valid and that Central Anatolia is unconfirmed', () => {
     expect(report.pack!.manifest.regions).toEqual(['Mediterranean climates'])
     expect(report.pack!.manifest.region_notes).toMatch(/Not confirmed for Central Anatolia/)
+  })
+})
+
+/**
+ * An installed version is never changed: a change to the pack is a new
+ * version. Every version kept here must still validate, signature included,
+ * because blocks stay bound to an old version until their farm moves them.
+ */
+describe('every almond pack version', () => {
+  const versions = readdirSync(__dirname).filter(name => /^\d+\.\d+\.\d+$/.test(name))
+
+  it.each(versions)('%s validates with a matching signature', version => {
+    const s = loadPackSource(join(__dirname, version))
+    const r = validatePack(s.raw, { digest: s.digest })
+    expect(r.errors).toEqual([])
+    expect(r.version).toBe(version)
+  })
+
+  it('includes the version installed in production on 2026-10-09', () => {
+    expect(versions).toContain('0.1.0')
+    expect(loadPackSource(join(__dirname, '0.1.0')).digest).toBe('sha256:e7c71030e2f01e45de67561ab41714b540ad76b5b591a57c384c797900e6a1b7')
   })
 })

@@ -76,6 +76,9 @@ export interface ActionInput {
   evidence: string | null
   expectedOutcome?: string | null
   flags: string[]
+  equipment?: string[]
+  requiresEntry?: boolean
+  standing?: boolean
 }
 
 /**
@@ -103,13 +106,15 @@ export function proposeAction(input: ActionInput): ProposedAction {
     cost: 0,
     labourHrs: 0,
     waterM3: input.waterM3 ?? 0,
-    equipment: [],
+    equipment: input.equipment ?? [],
     confidence: confidenceFromFlags(flags),
     mandatory: input.mandatory ?? false,
     inputsSnapshot: input.inputsSnapshot,
     evidence: input.evidence,
     expectedOutcome: input.expectedOutcome ?? null,
     flags,
+    requiresEntry: input.requiresEntry ?? false,
+    standing: input.standing ?? false,
   }
 }
 

@@ -9,8 +9,11 @@
  * Recommendations page, the alerts, or the calendar; the live daily snapshot
  * (utils/run-daily-snapshot.ts) runs beside it, unchanged.
  */
+import { buildPlan, HORIZON_DAYS, type FarmLimits, type FarmPlan } from '@/engines/arbitrator/plan'
 import type { CarriedModels, FieldObservation } from '@/engines/decision/field-data'
-import { runBlockDay, type BlockDayResult, type CarriedWaterState } from '@/engines/decision/run-block'
+import { CONTINUOUS_ENGINE_IDS, runBlockDay, type BlockDayResult, type CarriedWaterState } from '@/engines/decision/run-block'
+import type { ProposedAction } from '@/engines/framework/types'
+import { buildNarratorInput, type NarrationLanguage } from '@/engines/narrator/narration'
 import type { ProductLabel, SprayApplication } from '@/engines/safeguards/spray'
 import { daysBetween } from '@/engines/decision/weather'
 import { createPackContext, type PackContext } from '@/engines/pack/context'
@@ -19,6 +22,7 @@ import { checkSeries, SOIL_MOISTURE_RULES, usableReadings } from '@/engines/qual
 import { toHectares } from '@/utils/area'
 import { toPolicy } from '@/utils/run-daily-snapshot'
 import { fetchHourlyWeather, MAX_PAST_DAYS, type HourlyWeatherRow } from './hourly-weather'
+import { narratePlan, type NarratorCall } from './narrate'
 
 export interface DecisionFarmResult {
   farm: string
@@ -29,6 +33,13 @@ export interface DecisionFarmResult {
   recommendations: number
   /** New rows written to the recommendation log (0 in a dry run). */
   logged: number
+  /** The arbitrator's plan for the farm: its status and how many actions it placed, deferred, or could not place though mandatory. */
+  planStatus: FarmPlan['status'] | null
+  planned: number
+  deferred: number
+  unscheduledMandatory: number
+  /** Whether the plan's explanation came from the model or from the rules. */
+  narration: 'model' | 'rules' | null
   errors: string[]
 }
 
@@ -39,6 +50,13 @@ export interface DecisionRunOptions {
   farmId?: string
   /** Receives every block result, so a dry run can be inspected. */
   collect?: { blockId: string; result: BlockDayResult }[]
+  /** Receives every farm plan. */
+  collectPlans?: { farmId: string; plan: FarmPlan }[]
+  /** Ask the model to write the plan's explanation. Off by default: the rule-based text costs nothing. */
+  narrate?: boolean
+  narrationLanguage?: NarrationLanguage
+  /** Replaces the model call, for tests. */
+  narratorCall?: NarratorCall
 }
 
 /**
@@ -57,6 +75,9 @@ const SOIL_WINDOW_HOURS = 72
 const UPSERT_CHUNK = 500
 const LAB_ROWS_MAX = 200
 const OBSERVATION_ROWS_MAX = 2000
+/** How far back a standing task can have been proposed and still be open. */
+const STANDING_LOOKBACK_DAYS = 45
+const STANDING_ROWS_MAX = 1000
 
 function num(v: unknown): number | null {
   if (v === null || v === undefined || v === '') return null
@@ -121,7 +142,7 @@ export async function runDecisionEngine(admin: any, opts: DecisionRunOptions = {
   if (farmsError) throw new Error(`Could not load farms: ${farmsError.message}`)
 
   for (const farm of farms ?? []) {
-    const r: DecisionFarmResult = { farm: farm.name, blocks: 0, bound: 0, evaluated: 0, recommendations: 0, logged: 0, errors: [] }
+    const r: DecisionFarmResult = { farm: farm.name, blocks: 0, bound: 0, evaluated: 0, recommendations: 0, logged: 0, planStatus: null, planned: 0, deferred: 0, unscheduledMandatory: 0, narration: null, errors: [] }
     results.push(r)
 
     const { data: blocks, error: blocksError } = await admin
@@ -290,6 +311,9 @@ export async function runDecisionEngine(admin: any, opts: DecisionRunOptions = {
     const { data: sensors } = await admin.from('sensors').select('block_id').eq('farm_id', farm.id)
     const sensorBlocks = new Set<string>((sensors ?? []).map((s: any) => s.block_id).filter(Boolean))
     const soilSince = new Date(now.getTime() - SOIL_WINDOW_HOURS * 3_600_000).toISOString()
+    const farmActions: ProposedAction[] = []
+    const reentryBlockedUntil: Record<string, string | null> = {}
+    const stateSummary: Record<string, unknown> = {}
 
     for (const b of bound) {
       try {
@@ -416,6 +440,9 @@ export async function runDecisionEngine(admin: any, opts: DecisionRunOptions = {
         })
 
         opts.collect?.push({ blockId: b.id, result })
+        farmActions.push(...result.actions)
+        reentryBlockedUntil[b.id] = typeof result.state.reentry_blocked_until === 'string' ? result.state.reentry_blocked_until : null
+        stateSummary[b.id] = { crop: b.crop_type ?? null, variety: b.variety ?? null, phase: result.state.phase ?? null, recorded_stage: result.state.recorded_stage ?? null }
         r.evaluated++
         r.recommendations += result.actions.length
         if (opts.dryRun) continue
@@ -473,6 +500,77 @@ export async function runDecisionEngine(admin: any, opts: DecisionRunOptions = {
       } catch (e) {
         r.errors.push(`Block ${b.id}: ${e instanceof Error ? e.message : String(e)}`)
       }
+    }
+
+    // ── The arbitrator: one plan for the farm across all its blocks ──────────
+    try {
+      // Standing tasks proposed on earlier days stay in the plan until their window closes. Actions the
+      // engines propose afresh every day are not carried: if today's run did not propose one, it no longer holds.
+      const since = new Date(Date.parse(`${weather.localToday}T00:00:00Z`) - STANDING_LOOKBACK_DAYS * 86_400_000).toISOString().slice(0, 10)
+      const { data: earlier } = await admin
+        .from('engine_recommendation_log')
+        .select('block_id, run_date, action')
+        .eq('farm_id', farm.id)
+        .gte('run_date', since)
+        .lt('run_date', weather.localToday)
+        .order('run_date', { ascending: false })
+        .limit(STANDING_ROWS_MAX)
+      const key = (a: ProposedAction) => [a.blockId, a.engineId, a.ruleId, a.actionType].join(':')
+      const seen = new Set(farmActions.map(key))
+      const planActions = [...farmActions]
+      for (const row of earlier ?? []) {
+        const a = row.action as ProposedAction | null
+        if (!a || a.standing !== true || !blockIds.includes(a.blockId) || seen.has(key(a))) continue
+        const elapsed = daysBetween(String(row.run_date).slice(0, 10), weather.localToday)
+        if (a.latestDay - elapsed < 0) continue
+        seen.add(key(a))
+        planActions.push({ ...a, earliestDay: Math.max(0, a.earliestDay - elapsed), latestDay: a.latestDay - elapsed })
+      }
+
+      const limits: FarmLimits = {
+        labourHrsPerDay: num(policyRow?.daily_labour_hours),
+        waterM3PerDay: num(policyRow?.daily_water_m3),
+        sprayers: num(policyRow?.sprayer_count),
+        // What is left of the season's allocation is not tracked yet.
+        waterQuotaM3: null,
+        frostProtectionMethod: ['water', 'wind_machine', 'heater'].includes(policyRow?.frost_protection_method) ? policyRow.frost_protection_method : null,
+      }
+      const plan = buildPlan({ today: weather.localToday, actions: planActions, continuousEngines: CONTINUOUS_ENGINE_IDS, reentryBlockedUntil, limits })
+      opts.collectPlans?.push({ farmId: farm.id, plan })
+      r.planStatus = plan.status
+      r.planned = plan.plan.length
+      r.deferred = plan.deferred.length
+      r.unscheduledMandatory = plan.unscheduledMandatory.length
+
+      const narrated = await narratePlan(buildNarratorInput(plan, planActions, stateSummary), opts.narrationLanguage ?? 'en', opts.narrate === true, opts.narratorCall)
+      r.narration = narrated.source
+
+      if (!opts.dryRun) {
+        const { error: planError } = await admin.from('farm_plans').upsert(
+          {
+            farm_id: farm.id,
+            plan_date: weather.localToday,
+            mode: 'shadow',
+            status: plan.status,
+            horizon_days: HORIZON_DAYS,
+            plan: plan.plan,
+            deferred: plan.deferred,
+            unscheduled_mandatory: plan.unscheduledMandatory,
+            safeguard_events: plan.safeguardEvents,
+            notes: plan.notes,
+            limits,
+            narration: narrated.narration,
+            narration_source: narrated.source,
+            narration_model: narrated.model,
+            narration_language: narrated.language,
+            updated_at: now.toISOString(),
+          },
+          { onConflict: 'farm_id,plan_date' },
+        )
+        if (planError) r.errors.push(`Plan not saved: ${planError.message}`)
+      }
+    } catch (e) {
+      r.errors.push(`Plan: ${e instanceof Error ? e.message : String(e)}`)
     }
   }
 

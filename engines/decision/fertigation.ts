@@ -16,6 +16,7 @@
 
 import { annualNutrientDemandKgHa, splitByPhase } from '../core/nutrient-budget'
 import { classifyTissue, type TissueStatus } from '../core/tissue'
+import { capSingleDose } from '../safeguards/fertigation'
 import type { PackContext } from '../pack/context'
 import type { BlockState, DecisionEngine, EngineDiagnosis, EnginePublication, ProposedAction } from '../framework/types'
 import { proposeAction, stateFlags } from './action'
@@ -141,6 +142,7 @@ export const fertigationEngine: DecisionEngine = {
           inputsSnapshot: { last_sample: sample?.sampledAt ?? null, sampling_months: months },
           evidence: nutrition.sampling?.evidence ?? null,
           expectedOutcome: 'A tissue analysis for this season to check the nutrient budget against',
+          requiresEntry: true,
         }),
       )
     }
@@ -162,7 +164,8 @@ export const fertigationEngine: DecisionEngine = {
       if (status[n.id] === 'excessive') continue
       const remaining = planned - (applied[n.id] ?? 0)
       if (remaining <= 0) continue
-      const dose = Math.round(Math.min(remaining, maxDose) * 10) / 10
+      // SG-FERT-3: a single dose never exceeds the pack's maximum.
+      const dose = Math.round(capSingleDose(remaining, maxDose) * 10) / 10
       if (dose <= 0) continue
       actions.push(
         proposeAction({

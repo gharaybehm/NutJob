@@ -1,0 +1,30 @@
+varieties:
+  - id: makako
+    name: Makako
+    origin: CEBAS-CSIC (Spain)
+    bloom_class: extra-late
+    self_compatible: true
+    chill: { model: dynamic, unit: CP, requirement: $makako_chill_cp }
+    heat: { model: gdh, unit: GDH, requirement: $makako_heat_gdh }
+    notes: Chill requirement is intermediate in the INTA trial; the value in chill portions is still to be sourced.
+    evidence: CEBAS_MAKAKO
+
+  - id: vairo
+    name: Vairo
+    origin: IRTA (Spain)
+    bloom_class: late
+    self_compatible: true
+    chill: { model: dynamic, unit: CP, requirement: $vairo_chill_cp }
+    heat: { model: gdh, unit: GDH, requirement: $vairo_heat_gdh }
+    tolerances:
+      fusicoccum: tolerant
+      red_leaf_blotch: very tolerant
+    notes: >-
+      Self-fertile with good autogamy. Bloom similar to Guara and Ferragnes.
+      Hard shell. Chill requirement is high in the INTA trial; the value in
+      chill portions is still to be sourced.
+    evidence: IRTA_VAIRO
+    review: >-
+      Spanish CITA studies report that chill models are not well adapted to
+      almond and that values vary by method and site, so local calibration
+      matters most for the chill and heat requirements.

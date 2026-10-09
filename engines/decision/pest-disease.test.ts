@@ -407,7 +407,7 @@ describe('block state from spray records', () => {
 })
 
 describe('with the almond pack as it stands', () => {
-  const almond = createPackContext(packSchema.parse(loadPackSource(join(__dirname, '../../packs/almond/0.1.0')).raw))
+  const almond = createPackContext(packSchema.parse(loadPackSource(join(__dirname, '../../packs/almond/0.1.1')).raw))
   const eggs = (daysAgo: number, count: number, withEggs: number): FieldObservation => ({ kind: 'trap_check', subject: 'now', observedOn: addDays(TODAY, -daysAgo), values: { eggs: count, traps_checked: 4, traps_with_eggs: withEggs } })
   const fruiting = { stage: 'nut-development', recordedAt: null, source: 'computed' }
 

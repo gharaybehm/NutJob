@@ -211,6 +211,8 @@ export const diseaseEngine: DecisionEngine = {
           inputsSnapshot: { disease: model.id, model_type: model.type, phase: state.phase, accumulated: d.accumulated ?? null, threshold: d.threshold ?? null, anchor_date: d.anchorDate ?? null, window: window ?? null, spray_safeguards: options },
           evidence: model.evidence,
           expectedOutcome: 'No new symptoms of the disease at the next scouting',
+          equipment: ['sprayer'],
+          requiresEntry: true,
           flags,
         }),
       )

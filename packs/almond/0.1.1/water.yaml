@@ -1,0 +1,76 @@
+kcb:
+  method: density_coefficient
+  params: { ml: $kcb_ml, fr: $kcb_fr, kc_min: $kc_min }
+  evidence: RALLO2021
+  note: >-
+    Kcb is derived from ground cover and height. A young Spanish drip orchard
+    showed mid-season Kcb rising from 0.28 to 1.02 over four years as the
+    trees grew.
+
+depletion_fraction: $p
+root_depth_m: $root_depth_m
+
+plant_water_status:
+  indicator: midday_stem_water_potential
+  unit: bar
+  baseline:
+    expression: "-(air_temp_F / $swp_baseline_divisor)"
+    inputs: [air_temp_F]
+    evidence: UCD_SWP
+    note: Interim rule until the UC Davis baseline table (UC ANR 8503, Table 14) is coded.
+  trigger_deviation: $swp_trigger_below_baseline_bar
+
+deficit_strategies:
+  - id: rdi_kernel_fill
+    phases: [kernel_fill]
+    floor: $rdi_swp_floor_bar
+    fraction: $rdi_fraction
+    switch: rdi_enabled
+    evidence: IRTA_RDI
+
+rain_deferral_probability: $rain_prob_defer
+
+decision_table:
+  table: irrigation
+  hit_policy: first
+  rows:
+    - id: ALM-IRR-00
+      when: { phase: dormant }
+      then: { action: none }
+
+    - id: ALM-IRR-01
+      when: { rain_48h_mm_ge: "Dr", rain_prob_ge: "$rain_prob_defer" }
+      then: { action: defer, note: "Forecast rain expected to refill root zone" }
+      evidence: FAO56
+
+    - id: ALM-IRR-05
+      when: { phase: kernel_fill, rdi_enabled: true, swp_age_days_le: 4, swp_bar_lt: "$rdi_swp_floor_bar" }
+      then: { action: irrigate, amount: "$rdi_fraction * ETc_since_last", reason: "SWP below RDI floor" }
+      evidence: IRTA_RDI_VAIRO
+
+    - id: ALM-IRR-06
+      when: { phase: kernel_fill, rdi_enabled: true }
+      then: { action: irrigate_partial, amount: "$rdi_fraction * ETc_since_last" }
+      evidence: IRTA_RDI
+
+    - id: ALM-IRR-02
+      when: { phase_in: [bloom, fruit_set, fruit_growth, kernel_fill, hull_split, post_harvest], Dr_ge: "RAW" }
+      then: { action: irrigate, amount: "Dr / efficiency * (1 + leaching_fraction)" }
+      evidence: FAO56
+
+    - id: ALM-IRR-03
+      when: { swp_age_days_le: 3, swp_deviation_bar_le: "-$swp_trigger_below_baseline_bar", Dr_lt: "RAW" }
+      then: { action: irrigate, amount: "Dr / efficiency", flag: MODEL_SENSOR_DIVERGENCE }
+      evidence: UCD_SWP
+
+    - id: ALM-IRR-04
+      when: {}
+      then: { action: hold, note: "Depletion below RAW and tree water status OK" }
+
+to_be_sourced:
+  - item: Crop coefficient outside the leafy season
+    note: >-
+      Deriving Kcb from ground cover and height assumes a canopy in leaf. The
+      specification gives no value for the leafless months, so the water
+      balance overstates water use then. The irrigation table takes no action
+      in the dormant phase, but the depletion carried into spring is affected.

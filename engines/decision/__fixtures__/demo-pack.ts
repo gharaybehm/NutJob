@@ -186,9 +186,43 @@ export function demoPackRaw() {
         },
       ],
     },
-    seasonal: { pollination: { summary: 'Bees are protected while flowers are open.', bee_protection_phases: ['flowering'] } },
+    seasonal: {
+      pollination: {
+        summary: 'Bees are protected while flowers are open.',
+        bee_protection_phases: ['flowering'],
+        hive_density_per_ha: '$hive_density',
+        flight: { min_temp_c: '$flight_min_temp', max_wind_ms: '$flight_max_wind' },
+        templates: [{ id: 'place_hives', task: 'Place the hives', anchor: { type: 'phase', phase: 'flowering' } }],
+      },
+      canopy_pruning: {
+        summary: 'Shape young plants; prune in dry weather.',
+        templates: [
+          { id: 'shape_young', task: 'Shape the young plants', anchor: { type: 'months', months: [5] }, age: { max_years: 3 }, dry_days: '$prune_dry_days' },
+          { id: 'maintain', task: 'Maintenance pruning', anchor: { type: 'months', months: [5] }, age: { min_years: 4 }, dry_days: '$prune_dry_days', evidence: 'SRC' },
+        ],
+      },
+      weed_groundcover: {
+        summary: 'Clean the floor before harvest.',
+        templates: [
+          { id: 'clean_floor', task: 'Clean the floor before harvest', anchor: { type: 'event', event: 'planned_harvest', offset_days: [-21, -7] } },
+          { id: 'spring_herbicide', task: 'Spring herbicide strip', anchor: { type: 'event', event: 'petal_fall', offset_days: [0, 30] }, spray_target: 'weeds' },
+        ],
+      },
+      harvest: {
+        summary: 'Harvest at ripeness; dry the crop promptly.',
+        maturity: [{ observation: 'ripeness', field: 'pct', comparison: 'ge', ready_at: '$ripe_at' }],
+        irrigation_cutoff_days: '$cutoff_days',
+        templates: [{ id: 'dry_crop', task: 'Dry the crop to the target moisture', anchor: { type: 'event', event: 'harvest_start', offset_days: [0, 3] } }],
+      },
+    },
     parameters: {
       parameters: [
+        { id: 'hive_density', start: 2, unit: 'hives/ha', bounds: [1, 4], status: 'sourced', evidence: 'SRC' },
+        { id: 'flight_min_temp', start: 13, unit: 'degC', bounds: [10, 15], status: 'sourced', evidence: 'SRC' },
+        { id: 'flight_max_wind', start: 6, unit: 'm/s', bounds: [4, 8], status: 'sourced', evidence: 'SRC' },
+        { id: 'prune_dry_days', start: 2, unit: 'days', bounds: [1, 4], status: 'sourced', evidence: 'SRC' },
+        { id: 'ripe_at', start: 80, unit: '%', bounds: [70, 95], status: 'sourced', evidence: 'SRC' },
+        { id: 'cutoff_days', start: 10, unit: 'days', bounds: [5, 20], status: 'sourced', evidence: 'SRC' },
         { id: 'grub_dd_flight', start: 200, unit: 'degree-days C', bounds: [150, 250], status: 'sourced', evidence: 'SRC' },
         { id: 'ripeness_start', start: 1, unit: '%', bounds: [1, 5], status: 'sourced', evidence: 'SRC' },
         { id: 'blight_threshold', start: 4, unit: 'units over 7 days', bounds: [3, 6], status: 'sourced', evidence: 'SRC' },

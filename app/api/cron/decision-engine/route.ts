@@ -16,6 +16,8 @@ import { runDecisionEngine } from "@/utils/decision/run-decision-engine";
 //
 //   GET /api/cron/decision-engine?secret=CRON_SECRET
 //   optional: &dry=1 (compute and report, write nothing)  &farm=<farm id>
+//             &narrate=1 (ask the model to write the plan's explanation; one or two
+//             model calls per farm. Without it the explanation is rule-based text.)
 //
 // The response holds counts and error messages only, no recommendation text.
 
@@ -35,6 +37,7 @@ export async function GET(request: NextRequest) {
     const results = await runDecisionEngine(createAdminClient(), {
       dryRun: request.nextUrl.searchParams.get("dry") === "1",
       farmId: request.nextUrl.searchParams.get("farm") ?? undefined,
+      narrate: request.nextUrl.searchParams.get("narrate") === "1",
     });
     const failed = results.some((r) => r.errors.length > 0);
     return NextResponse.json({ ok: !failed, results }, { status: failed ? 207 : 200 });
