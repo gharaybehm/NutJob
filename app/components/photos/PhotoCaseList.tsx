@@ -1,16 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Camera, Loader2, Trash2 } from "lucide-react";
 import { deletePhotoCase, listPhotoCases, type PhotoCaseListResult, type PhotoCaseRow } from "@/app/actions/photo-cases";
 import { AddPhotosButton } from "./PhotoCaseButton";
+import PhotoCaseCauses from "./PhotoCaseCauses";
 import { usePhotoCases } from "./PhotoCaseProvider";
 
 /**
  * Photo cases of one block: what was photographed, when and by whom. A worker
- * sees their own cases; supervisors and admins see all of them.
+ * sees their own cases; supervisors and admins see all of them, each with its
+ * possible causes.
  */
+
+/** While the model is looking at a case, the list is read again this often, this many times. */
+const POLL_MS = 5000;
+const MAX_POLLS = 12;
 export default function PhotoCaseList({ blockId }: { blockId: string }) {
   const t = useTranslations("photos.list");
   const locale = useLocale();
@@ -32,6 +38,22 @@ export default function PhotoCaseList({ blockId }: { blockId: string }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch of this block's cases, again after one is sent
     void load();
   }, [load, sentCount]);
+
+  // A case just sent is still being looked at: read again until it has an answer.
+  const polls = useRef(0);
+  const waitingForCauses = data?.cases.some((c) => c.causes?.status === "pending") ?? false;
+  useEffect(() => {
+    if (!waitingForCauses) {
+      polls.current = 0;
+      return;
+    }
+    if (polls.current >= MAX_POLLS) return;
+    const timer = setTimeout(() => {
+      polls.current++;
+      void load();
+    }, POLL_MS);
+    return () => clearTimeout(timer);
+  }, [waitingForCauses, data, load]);
 
   async function remove(row: PhotoCaseRow) {
     if (!window.confirm(t("confirmDelete"))) return;
@@ -93,6 +115,7 @@ export default function PhotoCaseList({ blockId }: { blockId: string }) {
                 ))}
               </div>
               {c.note && <p className="mt-2 whitespace-pre-wrap text-sm text-ink-2">{c.note}</p>}
+              {data.canManage && <PhotoCaseCauses blockId={blockId} caseId={c.id} causes={c.causes} onChanged={load} />}
             </li>
           ))}
         </ul>

@@ -4,6 +4,9 @@
 export const PHOTO_BUCKET = "plant-photos";
 export const MAX_PHOTOS = 3;
 export const MAX_NOTE_CHARS = 1000;
+export const MAX_CONFIRMED_CHARS = 200;
+/** Stored as the confirmed cause when a supervisor says nothing was wrong. */
+export const CONFIRMED_HEALTHY = "__healthy__";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 

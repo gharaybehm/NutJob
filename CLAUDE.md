@@ -161,6 +161,19 @@ A chat drawer for supervisors and admins on every farm page. The full requiremen
 - **Operator privacy.** Admin pages get counts only; conversation text is readable by the operator only for a thread the user shared with support.
 - **Farm notes and guide text are untrusted input** to the prompt.
 
+## Photo Cases (built: `utils/photo/`, `app/actions/photo-cases.ts`, `app/components/photos/`)
+
+A field user takes 1 to 3 photos of one problem on a tree; they are checked on the device, queued on the device, sent when there is signal, and a supervisor or admin sees possible causes. The requirement is the "Photo cases" section of `Requirements.md`. Rules to hold:
+
+- **Every role can add a case; possible causes are for supervisors and admins only.** A worker reads only their own cases. `photo_case_results` is written by the server alone and has no worker or operator policy.
+- **Possible causes, never a diagnosis.** No confidence figure is stored for display or shown (the accuracy test found it the same on right and wrong answers). No product, active ingredient, dose or treatment: `toPossibleCauses` in `utils/photo/diagnose.ts` drops them in code, whatever the prompt says.
+- **One prompt, one parser.** The app and `scripts/test-photo-diagnosis.ts` both use `utils/photo/diagnose.ts`. After changing it, run `npm run test:photos`.
+- **The photo check runs on the device before any upload or model call** (`utils/photo/quality.ts`). Change a threshold only after `npx tsx scripts/calibrate-photo-quality.ts --dir=photo-test`.
+- **The queue must stay safe to repeat.** The case id is made on the device, the storage path is `<farmId>/<caseId>/<n>.jpg`, an existing photo counts as uploaded and the server ignores a case it already has. Do not add a step that is not idempotent.
+- **The drawer must work with no connection.** It is imported directly by `PhotoCaseProvider`, not lazily, and gets its block list from the farm layout. No in-page camera: the `Permissions-Policy: camera=()` header stays.
+- **Nobody reads the `plant-photos` bucket directly.** The only storage policy is insert into the member's own farm folder; photos are shown through signed links the server makes after the role check.
+- **The field note is untrusted input** to the prompt (fenced with `asUntrustedData`).
+
 ## Decision Engine (foundation and shadow run built; most engines not built)
 
 `docs/nut-job-cdss-spec.md` (v3.0) specifies a crop-agnostic, five-layer recommendation engine (science core, twelve decision engines, arbitrator, LLM narrator, hard safeguards) with a recommendation log, shadow mode and a learning loop. All crop science comes from versioned Crop Knowledge Packs; a crop number in platform code is a defect. The summary and the open points are in the "Decision engine" section of `Requirements.md`. Two decisions (2026-10-09) override the specification file:
@@ -213,6 +226,7 @@ npm run lint     # Run ESLint
 npm test         # Unit tests (vitest)
 npm run test:kb  # Live knowledge-base retrieval test (costs a few embedding calls)
 npm run test:photos -- --dir=photo-test   # Photo diagnosis accuracy test on labelled photos (2-3 model calls per case)
+npx tsx scripts/calibrate-photo-quality.ts --dir=photo-test   # On-device photo check measured on real photos (no network)
 npm run ingest:kb -- --crop=almond   # Load knowledge-base documents (--dry-run to skip DB and embedding)
 npm run validate:pack -- --pack=almond --version=0.1.0   # Check a Crop Knowledge Pack and print its report (--sign after a reviewed change)
 npm run install:pack -- --pack=almond --version=0.1.0    # Install a valid pack into crop_packs (--dry-run validates only); writes to production

@@ -961,6 +961,41 @@
         "forbidden": "You do not have access to this block.",
         "unavailable": "Photos could not be loaded."
       }
+    },
+    "causes": {
+      "title": "Possible causes",
+      "pending": "Looking at the photos…",
+      "failed": "The photos could not be checked.",
+      "rerun": "Check again",
+      "rerunning": "Checking…",
+      "off": {
+        "disabled": "Possible causes are switched off for this farm.",
+        "limit_user": "Not checked: the person who took these reached today's limit.",
+        "limit_farm": "Not checked: the farm reached today's limit.",
+        "not_run": "These photos have not been checked."
+      },
+      "notClear": "The photos are not clear enough to judge. Take them again.",
+      "photoProblem": "Photo {n}: {problem}",
+      "healthy": "Nothing wrong is visible in these photos.",
+      "none": "Nothing could be made out from these photos.",
+      "caution": "Possibilities read from the photos, most likely first. This is not a diagnosis: confirm in the field before acting. No product or dose is suggested here.",
+      "rerunErrors": {
+        "forbidden": "You do not have access to this case.",
+        "disabled": "Possible causes are switched off for this farm.",
+        "busy": "These photos are already being checked.",
+        "failed": "The photos could not be checked. Try again later."
+      },
+      "confirm": {
+        "title": "What was it?",
+        "healthy": "Nothing wrong",
+        "other": "Something else",
+        "save": "Save",
+        "confirmed": "Confirmed: {cause}",
+        "change": "Change",
+        "clear": "Remove the answer",
+        "cancel": "Cancel",
+        "failed": "Could not save."
+      }
     }
   }
 }

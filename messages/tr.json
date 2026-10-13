@@ -961,6 +961,41 @@
         "forbidden": "Bu bloğa erişiminiz yok.",
         "unavailable": "Fotoğraflar yüklenemedi."
       }
+    },
+    "causes": {
+      "title": "Olası nedenler",
+      "pending": "Fotoğraflara bakılıyor…",
+      "failed": "Fotoğraflar kontrol edilemedi.",
+      "rerun": "Yeniden kontrol et",
+      "rerunning": "Kontrol ediliyor…",
+      "off": {
+        "disabled": "Bu çiftlik için olası nedenler kapalı.",
+        "limit_user": "Kontrol edilmedi: fotoğrafı çeken kişi bugünkü sınıra ulaştı.",
+        "limit_farm": "Kontrol edilmedi: çiftlik bugünkü sınıra ulaştı.",
+        "not_run": "Bu fotoğraflar kontrol edilmedi."
+      },
+      "notClear": "Fotoğraflar değerlendirme için yeterince net değil. Yeniden çekin.",
+      "photoProblem": "Fotoğraf {n}: {problem}",
+      "healthy": "Bu fotoğraflarda bir sorun görünmüyor.",
+      "none": "Bu fotoğraflardan bir şey anlaşılamadı.",
+      "caution": "Fotoğraflardan okunan olasılıklar, en olası olan başta. Bu bir teşhis değildir: harekete geçmeden önce arazide doğrulayın. Burada ürün veya doz önerilmez.",
+      "rerunErrors": {
+        "forbidden": "Bu kayda erişiminiz yok.",
+        "disabled": "Bu çiftlik için olası nedenler kapalı.",
+        "busy": "Bu fotoğraflar zaten kontrol ediliyor.",
+        "failed": "Fotoğraflar kontrol edilemedi. Daha sonra yeniden deneyin."
+      },
+      "confirm": {
+        "title": "Neydi?",
+        "healthy": "Sorun yok",
+        "other": "Başka bir şey",
+        "save": "Kaydet",
+        "confirmed": "Doğrulandı: {cause}",
+        "change": "Değiştir",
+        "clear": "Yanıtı kaldır",
+        "cancel": "Vazgeç",
+        "failed": "Kaydedilemedi."
+      }
     }
   }
 }
