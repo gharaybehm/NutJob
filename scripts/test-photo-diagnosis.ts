@@ -7,19 +7,21 @@
 //
 // The folder holds the photos and a labels.csv:
 //
-//   case,file,expected,variety,month,notes
-//   1,leaf-close.jpg,shot hole,Vairo,May,
-//   1,leaf-under.jpg,shot hole,Vairo,May,
-//   2,blurred.jpg,poor photo,Makako,,
+//   case,file,expected,crop,variety,month,notes
+//   1,leaf-close.jpg,shot hole,almond,Vairo,May,
+//   1,leaf-under.jpg,shot hole,almond,Vairo,May,
+//   2,blurred.jpg,poor photo,almond,Makako,,
 //
 // Rows sharing a `case` are judged together. `expected` is what the user or
 // their agronomist believes it is: a problem name, `healthy`, `poor photo` or
-// `unknown`. `variety`, `month` and `notes` are optional.
+// `unknown`. `crop` defaults to almond; `variety`, `month` and `notes` are
+// optional.
 //
 // Each case is asked twice: photos only, then photos with crop, variety, month
 // and region. --single also asks each multi-photo case with its first photo
 // only, to show what the extra photos add. Costs two or three model calls per
-// case. Only the photos and that context are sent.
+// case. Only the photos and that context are sent. The prompt and the parser
+// are the app's own (utils/photo/diagnose.ts), so this measures what it runs.
 
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
@@ -27,6 +29,7 @@ import { config } from "dotenv";
 import sharp from "sharp";
 import { openrouter } from "../utils/openrouter";
 import { PRIMARY_MODEL } from "../utils/ai-models";
+import { buildMessages, contextLine, parseVerdict, type Verdict } from "../utils/photo/diagnose";
 
 config({ path: join(process.cwd(), ".env.local") });
 
@@ -40,32 +43,12 @@ interface Case {
   id: string;
   files: string[];
   expected: string;
+  crop: string;
   variety: string;
   month: string;
 }
 
-interface Verdict {
-  photos: { usable: boolean; problem: string }[];
-  healthy: boolean | null;
-  causes: { name: string; confidence: number; signs: string }[];
-}
-
 type Variant = "image" | "context" | "first";
-
-const SYSTEM_PROMPT = `You examine photos of an orchard tree taken by a farm worker and say what, if anything, is wrong with it.
-All the photos in one message show the same problem on the same tree.
-Reply with one JSON object and nothing else:
-{
-  "photos": [{ "usable": true or false, "problem": "why it cannot be judged, or empty" }],
-  "healthy": true, false, or null when it cannot be judged,
-  "causes": [{ "name": "the pest, disease or disorder", "confidence": 0 to 1, "signs": "what is visible in the photos that points to it" }]
-}
-Rules:
-- "photos" has one entry per photo, in the order given. A photo is not usable when it is blurred, too dark, overexposed, too far away, or does not show a plant.
-- Give at most three causes, most likely first. Give none when the plant looks healthy or when no photo is usable.
-- When you cannot tell, say so: set "healthy" to null and give no causes. Do not guess.
-- Confidence is how sure you are from what is visible, not how common the problem is.
-- Do not name products, active ingredients or doses.`;
 
 function arg(name: string): string | undefined {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
@@ -106,9 +89,10 @@ function loadCases(dir: string): Case[] {
   const byId = new Map<string, Case>();
   for (const r of rows) {
     if (!r.case || !r.file) continue;
-    const c = byId.get(r.case) ?? { id: r.case, files: [], expected: "", variety: "", month: "" };
+    const c = byId.get(r.case) ?? { id: r.case, files: [], expected: "", crop: "", variety: "", month: "" };
     c.files.push(r.file);
     c.expected ||= r.expected ?? "";
+    c.crop ||= r.crop ?? "";
     c.variety ||= r.variety ?? "";
     c.month ||= r.month ?? "";
     byId.set(r.case, c);
@@ -126,47 +110,14 @@ async function prepare(path: string): Promise<string> {
   return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
 }
 
-function parseVerdict(raw: string, photoCount: number): Verdict {
-  const clean = raw.trim().replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
-  const data = JSON.parse(clean) as Record<string, unknown>;
-  const photos = Array.isArray(data.photos) ? data.photos : [];
-  const causes = Array.isArray(data.causes) ? data.causes : [];
-  if (photos.length !== photoCount) {
-    throw new Error(`expected ${photoCount} photo verdicts, got ${photos.length}`);
-  }
-  return {
-    photos: photos.map((p: Record<string, unknown>) => ({
-      usable: p.usable === true,
-      problem: String(p.problem ?? ""),
-    })),
-    healthy: typeof data.healthy === "boolean" ? data.healthy : null,
-    causes: causes.slice(0, 3).map((c: Record<string, unknown>) => ({
-      name: String(c.name ?? ""),
-      confidence: Math.min(1, Math.max(0, Number(c.confidence) || 0)),
-      signs: String(c.signs ?? ""),
-    })),
-  };
-}
-
 async function ask(images: string[], context: string | null): Promise<{ verdict: Verdict; raw: string }> {
-  const text = context
-    ? `${images.length} photo(s) of one tree. Context: ${context}`
-    : `${images.length} photo(s) of one tree.`;
   const response = await openrouter.chat.completions.create(
     {
       model: PRIMARY_MODEL,
       temperature: 0,
       response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: [
-            { type: "text", text },
-            ...images.map((url) => ({ type: "image_url" as const, image_url: { url } })),
-          ],
-        },
-      ],
+      // The same messages the app sends (utils/photo/diagnose.ts).
+      messages: buildMessages({ images, context }) as never,
     },
     { timeout: 90_000 }
   );
@@ -175,11 +126,7 @@ async function ask(images: string[], context: string | null): Promise<{ verdict:
 }
 
 function contextFor(c: Case): string {
-  const parts = ["crop: almond"];
-  if (c.variety) parts.push(`variety: ${c.variety}`);
-  if (c.month) parts.push(`month taken: ${c.month}`);
-  parts.push(`region: ${REGION}`);
-  return parts.join("; ");
+  return contextLine({ crop: c.crop || "almond", variety: c.variety, month: c.month, region: REGION });
 }
 
 const isConfident = (v: Verdict) => (v.causes[0]?.confidence ?? 0) >= CONFIDENT;

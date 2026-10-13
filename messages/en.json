@@ -892,5 +892,110 @@
       "withdraw": "Withdraw",
       "failed": "That did not work. Try again."
     }
+  },
+  "photos": {
+    "title": "Photos of a problem",
+    "open": "Take photos of a problem",
+    "openWaiting": "Take photos of a problem. {count} waiting to send",
+    "close": "Close",
+    "offline": "No connection. You can still take photos; they are kept on this phone and sent when there is signal.",
+    "block": "Block",
+    "chooseBlock": "Choose the block",
+    "noBlocks": "This farm has no blocks yet",
+    "photos": "Photos ({count} of {max})",
+    "tip": "Fill the frame with the leaf, fruit or bark. Keep the sun behind you and hold still. Add the underside or the whole shoot as a second photo.",
+    "take": "Take photo",
+    "choose": "From library",
+    "checking": "Checking the photo…",
+    "photoAlt": "Photo {n}",
+    "remove": "Remove photo {n}",
+    "refused": "Not added. {reason}",
+    "warn": "Photo {n}: {reason} Retake it, or use it anyway.",
+    "retake": "Retake",
+    "useAnyway": "Use anyway",
+    "issues": {
+      "too_small": "The photo is too small to show detail.",
+      "too_dark": "The photo is too dark.",
+      "too_bright": "The photo is washed out by too much light.",
+      "blurred": "The photo looks blurred.",
+      "subject_soft": "The middle of the photo looks out of focus.",
+      "unreadable": "The file could not be read as a photo.",
+      "too_large": "The photo is too large to send."
+    },
+    "note": "Note (optional)",
+    "notePlaceholder": "What you saw, and where in the block",
+    "save": "Save",
+    "sent": "Sent.",
+    "savedOnPhone": "Saved on this phone. It will be sent when there is signal and the app is open.",
+    "saveFailed": "Could not save on this phone. Free some space and try again.",
+    "queueFull": "This phone already holds 20 cases waiting to be sent. Send them or delete one first.",
+    "firstOpen": "To take photos with no signal, the app must have been opened on this phone with signal before.",
+    "queue": {
+      "title": "On this phone ({count})",
+      "help": "Cases wait here until they reach the server. Sending happens while the app is open.",
+      "sendNow": "Send now",
+      "photoCount": "{count, plural, one {# photo} other {# photos}}",
+      "state": {
+        "waiting": "waiting",
+        "sending": "sending",
+        "failed": "not accepted"
+      },
+      "tryAgain": "Try again",
+      "delete": "Delete from this phone",
+      "confirmDelete": "Delete this case and its photos from this phone? It has not been sent."
+    },
+    "list": {
+      "title": "Photos of problems",
+      "intro": "Photos taken in this block, up to three per case.",
+      "add": "Add photos",
+      "loading": "Loading…",
+      "empty": "No photos have been taken in this block yet.",
+      "emptyOwn": "You have not taken photos in this block yet.",
+      "byYou": "you",
+      "photoAlt": "Photo {n}",
+      "delete": "Delete case",
+      "confirmDelete": "Delete this case and its photos for everyone on the farm?",
+      "deleteFailed": "The case could not be deleted.",
+      "onPhone": "{count, plural, one {# case is} other {# cases are}} still on this phone and not sent yet.",
+      "status": {
+        "forbidden": "You do not have access to this block.",
+        "unavailable": "Photos could not be loaded."
+      }
+    },
+    "causes": {
+      "title": "Possible causes",
+      "pending": "Looking at the photos…",
+      "failed": "The photos could not be checked.",
+      "rerun": "Check again",
+      "rerunning": "Checking…",
+      "off": {
+        "disabled": "Possible causes are switched off for this farm.",
+        "limit_user": "Not checked: the person who took these reached today's limit.",
+        "limit_farm": "Not checked: the farm reached today's limit.",
+        "not_run": "These photos have not been checked."
+      },
+      "notClear": "The photos are not clear enough to judge. Take them again.",
+      "photoProblem": "Photo {n}: {problem}",
+      "healthy": "Nothing wrong is visible in these photos.",
+      "none": "Nothing could be made out from these photos.",
+      "caution": "Possibilities read from the photos, most likely first. This is not a diagnosis: confirm in the field before acting. No product or dose is suggested here.",
+      "rerunErrors": {
+        "forbidden": "You do not have access to this case.",
+        "disabled": "Possible causes are switched off for this farm.",
+        "busy": "These photos are already being checked.",
+        "failed": "The photos could not be checked. Try again later."
+      },
+      "confirm": {
+        "title": "What was it?",
+        "healthy": "Nothing wrong",
+        "other": "Something else",
+        "save": "Save",
+        "confirmed": "Confirmed: {cause}",
+        "change": "Change",
+        "clear": "Remove the answer",
+        "cancel": "Cancel",
+        "failed": "Could not save."
+      }
+    }
   }
 }

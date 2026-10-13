@@ -892,5 +892,110 @@
       "withdraw": "Geri çek",
       "failed": "Olmadı. Tekrar deneyin."
     }
+  },
+  "photos": {
+    "title": "Sorun fotoğrafları",
+    "open": "Sorunun fotoğrafını çek",
+    "openWaiting": "Sorunun fotoğrafını çek. {count} kayıt gönderilmeyi bekliyor",
+    "close": "Kapat",
+    "offline": "Bağlantı yok. Yine de fotoğraf çekebilirsiniz; bu telefonda saklanır ve sinyal gelince gönderilir.",
+    "block": "Blok",
+    "chooseBlock": "Bloğu seçin",
+    "noBlocks": "Bu çiftlikte henüz blok yok",
+    "photos": "Fotoğraflar ({count} / {max})",
+    "tip": "Kadrajı yaprak, meyve veya kabukla doldurun. Güneşi arkanıza alın ve telefonu sabit tutun. İkinci fotoğraf olarak yaprağın altını veya sürgünün tamamını ekleyin.",
+    "take": "Fotoğraf çek",
+    "choose": "Galeriden seç",
+    "checking": "Fotoğraf kontrol ediliyor…",
+    "photoAlt": "Fotoğraf {n}",
+    "remove": "{n}. fotoğrafı kaldır",
+    "refused": "Eklenmedi. {reason}",
+    "warn": "Fotoğraf {n}: {reason} Yeniden çekin veya yine de kullanın.",
+    "retake": "Yeniden çek",
+    "useAnyway": "Yine de kullan",
+    "issues": {
+      "too_small": "Fotoğraf ayrıntı gösteremeyecek kadar küçük.",
+      "too_dark": "Fotoğraf çok karanlık.",
+      "too_bright": "Fotoğraf fazla ışıktan dolayı soluk çıkmış.",
+      "blurred": "Fotoğraf bulanık görünüyor.",
+      "subject_soft": "Fotoğrafın ortası net değil.",
+      "unreadable": "Dosya fotoğraf olarak okunamadı.",
+      "too_large": "Fotoğraf gönderilemeyecek kadar büyük."
+    },
+    "note": "Not (isteğe bağlı)",
+    "notePlaceholder": "Ne gördünüz, bloğun neresinde",
+    "save": "Kaydet",
+    "sent": "Gönderildi.",
+    "savedOnPhone": "Bu telefona kaydedildi. Sinyal olduğunda ve uygulama açıkken gönderilecek.",
+    "saveFailed": "Bu telefona kaydedilemedi. Yer açıp yeniden deneyin.",
+    "queueFull": "Bu telefonda gönderilmeyi bekleyen 20 kayıt var. Önce gönderin veya birini silin.",
+    "firstOpen": "Sinyal yokken fotoğraf çekebilmek için uygulamanın bu telefonda daha önce sinyal varken açılmış olması gerekir.",
+    "queue": {
+      "title": "Bu telefonda ({count})",
+      "help": "Kayıtlar sunucuya ulaşana kadar burada bekler. Gönderim uygulama açıkken yapılır.",
+      "sendNow": "Şimdi gönder",
+      "photoCount": "{count, plural, one {# fotoğraf} other {# fotoğraf}}",
+      "state": {
+        "waiting": "bekliyor",
+        "sending": "gönderiliyor",
+        "failed": "kabul edilmedi"
+      },
+      "tryAgain": "Yeniden dene",
+      "delete": "Bu telefondan sil",
+      "confirmDelete": "Bu kayıt ve fotoğrafları bu telefondan silinsin mi? Henüz gönderilmedi."
+    },
+    "list": {
+      "title": "Sorun fotoğrafları",
+      "intro": "Bu blokta çekilen fotoğraflar; kayıt başına en fazla üç.",
+      "add": "Fotoğraf ekle",
+      "loading": "Yükleniyor…",
+      "empty": "Bu blokta henüz fotoğraf çekilmedi.",
+      "emptyOwn": "Bu blokta henüz fotoğraf çekmediniz.",
+      "byYou": "siz",
+      "photoAlt": "Fotoğraf {n}",
+      "delete": "Kaydı sil",
+      "confirmDelete": "Bu kayıt ve fotoğrafları çiftlikteki herkes için silinsin mi?",
+      "deleteFailed": "Kayıt silinemedi.",
+      "onPhone": "{count, plural, one {# kayıt} other {# kayıt}} hâlâ bu telefonda, henüz gönderilmedi.",
+      "status": {
+        "forbidden": "Bu bloğa erişiminiz yok.",
+        "unavailable": "Fotoğraflar yüklenemedi."
+      }
+    },
+    "causes": {
+      "title": "Olası nedenler",
+      "pending": "Fotoğraflara bakılıyor…",
+      "failed": "Fotoğraflar kontrol edilemedi.",
+      "rerun": "Yeniden kontrol et",
+      "rerunning": "Kontrol ediliyor…",
+      "off": {
+        "disabled": "Bu çiftlik için olası nedenler kapalı.",
+        "limit_user": "Kontrol edilmedi: fotoğrafı çeken kişi bugünkü sınıra ulaştı.",
+        "limit_farm": "Kontrol edilmedi: çiftlik bugünkü sınıra ulaştı.",
+        "not_run": "Bu fotoğraflar kontrol edilmedi."
+      },
+      "notClear": "Fotoğraflar değerlendirme için yeterince net değil. Yeniden çekin.",
+      "photoProblem": "Fotoğraf {n}: {problem}",
+      "healthy": "Bu fotoğraflarda bir sorun görünmüyor.",
+      "none": "Bu fotoğraflardan bir şey anlaşılamadı.",
+      "caution": "Fotoğraflardan okunan olasılıklar, en olası olan başta. Bu bir teşhis değildir: harekete geçmeden önce arazide doğrulayın. Burada ürün veya doz önerilmez.",
+      "rerunErrors": {
+        "forbidden": "Bu kayda erişiminiz yok.",
+        "disabled": "Bu çiftlik için olası nedenler kapalı.",
+        "busy": "Bu fotoğraflar zaten kontrol ediliyor.",
+        "failed": "Fotoğraflar kontrol edilemedi. Daha sonra yeniden deneyin."
+      },
+      "confirm": {
+        "title": "Neydi?",
+        "healthy": "Sorun yok",
+        "other": "Başka bir şey",
+        "save": "Kaydet",
+        "confirmed": "Doğrulandı: {cause}",
+        "change": "Değiştir",
+        "clear": "Yanıtı kaldır",
+        "cancel": "Vazgeç",
+        "failed": "Kaydedilemedi."
+      }
+    }
   }
 }

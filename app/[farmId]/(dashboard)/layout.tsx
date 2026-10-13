@@ -2,6 +2,7 @@ import Sidebar from "@/app/components/Sidebar";
 import TopNav from "@/app/components/TopNav";
 import BottomNav from "@/app/components/BottomNav";
 import AssistantProvider from "@/app/components/assistant/AssistantProvider";
+import PhotoCaseProvider from "@/app/components/photos/PhotoCaseProvider";
 import { atLeast } from "@/utils/supabase/farm-access";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
@@ -90,9 +91,13 @@ export default async function DashboardLayout({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: farmBlocks } = await (db as any)
     .from('blocks')
-    .select('id')
+    .select('id, name')
     .eq('farm_id', farmId)
-  const blockIds: string[] = ((farmBlocks ?? []) as { id: string }[]).map((b) => b.id)
+    .order('name')
+  // Also the block list of the photo drawer: it arrives with the page, so the
+  // drawer can offer it with no connection.
+  const photoBlocks = ((farmBlocks ?? []) as { id: string; name: string }[]).map((b) => ({ id: b.id, name: b.name }))
+  const blockIds: string[] = photoBlocks.map((b) => b.id)
   let unresolvedAlertCount = 0
   if (blockIds.length > 0) {
     const { count } = await supabase
@@ -118,8 +123,9 @@ export default async function DashboardLayout({
     getDataFreshness(farmId, blockIds),
   ]);
 
+  // Photo cases are for every role: workers do the scouting.
   const page = (
-    <>
+    <PhotoCaseProvider farmId={farmId} userId={user.id} blocks={photoBlocks}>
       <Sidebar
         userEmail={user.email}
         userName={profile.full_name ?? fullName}
@@ -137,7 +143,7 @@ export default async function DashboardLayout({
         </main>
         <BottomNav userRole={effectiveRole} farmId={farmId} farms={allFarms} />
       </div>
-    </>
+    </PhotoCaseProvider>
   );
 
   // Field assistant: supervisors and admins only. Without the provider every
