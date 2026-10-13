@@ -7,14 +7,15 @@
 //
 // The folder holds the photos and a labels.csv:
 //
-//   case,file,expected,variety,month,notes
-//   1,leaf-close.jpg,shot hole,Vairo,May,
-//   1,leaf-under.jpg,shot hole,Vairo,May,
-//   2,blurred.jpg,poor photo,Makako,,
+//   case,file,expected,crop,variety,month,notes
+//   1,leaf-close.jpg,shot hole,almond,Vairo,May,
+//   1,leaf-under.jpg,shot hole,almond,Vairo,May,
+//   2,blurred.jpg,poor photo,almond,Makako,,
 //
 // Rows sharing a `case` are judged together. `expected` is what the user or
 // their agronomist believes it is: a problem name, `healthy`, `poor photo` or
-// `unknown`. `variety`, `month` and `notes` are optional.
+// `unknown`. `crop` defaults to almond; `variety`, `month` and `notes` are
+// optional.
 //
 // Each case is asked twice: photos only, then photos with crop, variety, month
 // and region. --single also asks each multi-photo case with its first photo
@@ -40,6 +41,7 @@ interface Case {
   id: string;
   files: string[];
   expected: string;
+  crop: string;
   variety: string;
   month: string;
 }
@@ -106,9 +108,10 @@ function loadCases(dir: string): Case[] {
   const byId = new Map<string, Case>();
   for (const r of rows) {
     if (!r.case || !r.file) continue;
-    const c = byId.get(r.case) ?? { id: r.case, files: [], expected: "", variety: "", month: "" };
+    const c = byId.get(r.case) ?? { id: r.case, files: [], expected: "", crop: "", variety: "", month: "" };
     c.files.push(r.file);
     c.expected ||= r.expected ?? "";
+    c.crop ||= r.crop ?? "";
     c.variety ||= r.variety ?? "";
     c.month ||= r.month ?? "";
     byId.set(r.case, c);
@@ -175,7 +178,7 @@ async function ask(images: string[], context: string | null): Promise<{ verdict:
 }
 
 function contextFor(c: Case): string {
-  const parts = ["crop: almond"];
+  const parts = [`crop: ${c.crop || "almond"}`];
   if (c.variety) parts.push(`variety: ${c.variety}`);
   if (c.month) parts.push(`month taken: ${c.month}`);
   parts.push(`region: ${REGION}`);
