@@ -58,6 +58,7 @@
     "dotenv": "^16.6.1",
     "eslint": "^9",
     "eslint-config-next": "^16.2.10",
+    "fake-indexeddb": "^6.2.5",
     "playwright": "^1.60.0",
     "png-to-ico": "^3.0.1",
     "tailwindcss": "^4",

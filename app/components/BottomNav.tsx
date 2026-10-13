@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import SignOutButton from "./auth/SignOutButton";
 import { useAssistant } from "./assistant/AssistantProvider";
+import { PhotoCaseFab } from "./photos/PhotoCaseButton";
 import type { FarmWithMeta } from "@/utils/supabase/farm-types";
 
 interface BottomNavProps {
@@ -71,6 +72,9 @@ export default function BottomNav({ userRole, farmId, farms = [] }: BottomNavPro
           onClick={() => setDrawerOpen(false)}
         />
       )}
+
+      {/* Take photos of a problem: every role, out of the way while More is open */}
+      <PhotoCaseFab hidden={drawerOpen} />
 
       {/* More drawer — floats above the nav bar */}
       <div

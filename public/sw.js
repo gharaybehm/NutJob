@@ -1,14 +1,18 @@
 // NutJob Service Worker
 // Strategy:
 //   /_next/static/ + public images  → cache-first  (safe: content-hashed)
-//   /dashboard, /blocks, /calendar  → network-first (fresh data, offline fallback)
+//   /<farm>/dashboard, blocks, calendar, activity
+//                                   → network-first (fresh data, offline fallback)
 //   Everything else                 → network-only
 
-const STATIC_CACHE = 'nutjob-static-v2';
-const PAGE_CACHE   = 'nutjob-pages-v2';
+const STATIC_CACHE = 'nutjob-static-v3';
+const PAGE_CACHE   = 'nutjob-pages-v3';
 const ALL_CACHES   = [STATIC_CACHE, PAGE_CACHE];
 
-const OFFLINE_PAGES = ['/dashboard', '/blocks', '/calendar'];
+// Farm pages live under /<farm id>/<page>. A page opened once with signal
+// opens again without it, and with it the photo drawer (which then keeps
+// cases on the device until there is signal).
+const OFFLINE_PAGE = /^\/[0-9a-f-]{36}\/(dashboard|blocks|calendar|activity)(\/|$)/;
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 
@@ -55,9 +59,7 @@ self.addEventListener('fetch', (event) => {
 
   // 3. Key dashboard pages (HTML only) → network-first with offline fallback
   const isHtml = request.headers.get('accept')?.includes('text/html');
-  const isKeyPage = OFFLINE_PAGES.some(
-    (p) => url.pathname === p || url.pathname.startsWith(p + '/')
-  );
+  const isKeyPage = OFFLINE_PAGE.test(url.pathname);
 
   if (isHtml && isKeyPage) {
     event.respondWith(networkFirst(PAGE_CACHE, request));
@@ -164,7 +166,7 @@ function offlineFallback() {
   <div>
     <h1>You&#8217;re offline</h1>
     <p>This page hasn&#8217;t been cached yet.<br/>Visit it once while online and it will work offline.</p>
-    <a href="/dashboard">Go to Dashboard</a>
+    <a href="/farms">Try again</a>
   </div>
 </body>
 </html>`,
