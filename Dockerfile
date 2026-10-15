@@ -2,19 +2,11 @@
 #
 # Production image for the rootloot / NutJob Next.js app.
 #
-# Node 24 (npm 11), matching the dev machine that produces package-lock.json.
-#
-# This started as node:20-alpine, to match the NODE_VERSION pinned in
-# netlify.toml. That failed: node:20 ships npm 10, and package-lock.json is
-# written by npm 11. The two disagree about a real peer conflict —
-# @swc/helpers is pinned to 0.5.15 by one dependency while another declares a
-# >=0.5.17 peer. npm 11 accepts the resulting tree; npm 10 resolves the peer to
-# 0.5.23, finds it absent from the lock, and aborts `npm ci` with EUSAGE.
-#
-# Pinning the image to the same npm major as the lock's author removes that
-# whole class of failure, and matching dev to prod is worth more here than
-# matching a Netlify setting we are in the process of abandoning. If the dev
-# machine's Node major changes, change it here too.
+# Node 24 so the image's npm major matches the one that writes
+# package-lock.json. On 2026-08-30 a mismatch broke the build: npm 10 resolved
+# a peer of @swc/helpers differently from npm 11 and `npm ci` aborted with
+# EUSAGE. That conflict went away with next 16.4.1 (2026-10-15), but the
+# rule stands: if the dev machine's Node major changes, change it here too.
 #
 # Relies on `output: 'standalone'` in next.config.ts.
 

@@ -33,12 +33,17 @@ export async function getOrCreateOrganizationForUser(): Promise<{ organization?:
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { error: 'Not authenticated' };
 
-  const { data: membership } = await (supabase as any)
+  // A failed read is an error, never "no organization": treating it as none
+  // made a new organization (with free seats) on every farm created while the
+  // read policy was broken (fixed in 20261015000000_fix_organization_policies.sql).
+  const { data: membership, error: membershipError } = await (supabase as any)
     .from('organization_members')
     .select('organization_id')
     .eq('user_id', user.id)
+    .order('created_at')
     .limit(1)
     .maybeSingle();
+  if (membershipError) return { error: `Could not read your organization: ${membershipError.message}` };
 
   if (membership?.organization_id) {
     const { data: org, error } = await (supabase as any)
@@ -77,7 +82,14 @@ export async function getOrCreateOrganizationForUser(): Promise<{ organization?:
     user_id: user.id,
     role: 'owner',
   });
-  if (memberError) return { error: memberError.message };
+  if (memberError) {
+    // Leave no organization without a member behind.
+    await (admin as any).from('organizations').delete().eq('id', org!.id);
+    // A concurrent call for the same user got there first: a user owns at most
+    // one organization (organization_members_one_owned_per_user). Use theirs.
+    if (memberError.code === '23505') return getOrCreateOrganizationForUser();
+    return { error: memberError.message };
+  }
 
   return { organization: org as Organization };
 }
@@ -87,12 +99,14 @@ export async function getOrganizationForUser(): Promise<Organization | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: membership } = await (supabase as any)
+  const { data: membership, error } = await (supabase as any)
     .from('organization_members')
     .select('organization_id')
     .eq('user_id', user.id)
+    .order('created_at')
     .limit(1)
     .maybeSingle();
+  if (error) throw new Error(`Could not read your organization: ${error.message}`);
   if (!membership?.organization_id) return null;
 
   const { data: org } = await (supabase as any)
@@ -116,12 +130,13 @@ export async function createCheckoutSession(organizationId: string): Promise<{ u
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { error: 'Not authenticated' };
 
-  const { data: membership } = await (supabase as any)
+  const { data: membership, error: membershipError } = await (supabase as any)
     .from('organization_members')
     .select('role')
     .eq('organization_id', organizationId)
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
+  if (membershipError) return { error: `Could not read your organization: ${membershipError.message}` };
   if (membership?.role !== 'owner') return { error: 'Only the organization owner can manage billing' };
 
   const { data: org, error: orgError } = await (admin as any)
