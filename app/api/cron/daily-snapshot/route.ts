@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rejectUnauthorizedCron } from "@/utils/cron-auth";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { runDailySnapshot } from "@/utils/run-daily-snapshot";
 
@@ -10,20 +11,12 @@ import { runDailySnapshot } from "@/utils/run-daily-snapshot";
 // Meant to run once a day, shortly after /api/cron/weather and
 // /api/cron/compute-fields, so it sees a fresh forecast and stage.
 //
-//   GET /api/cron/daily-snapshot?secret=CRON_SECRET
-//   optional: &dry=1 (compute and report, write nothing)  &farm=<farm id>
+//   GET /api/cron/daily-snapshot  (Authorization: Bearer CRON_SECRET)
+//   optional: ?dry=1 (compute and report, write nothing)  &farm=<farm id>
 
 export async function GET(request: NextRequest) {
-  const secret = request.nextUrl.searchParams.get("secret");
-  const cronSecret = process.env.CRON_SECRET;
-  // Fail closed: a missing CRON_SECRET must not leave the endpoint open in production
-  if (!cronSecret) {
-    if (process.env.NODE_ENV === "production") {
-      return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 503 });
-    }
-  } else if (secret !== cronSecret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const refused = rejectUnauthorizedCron(request);
+  if (refused) return refused;
 
   try {
     const results = await runDailySnapshot(createAdminClient(), {

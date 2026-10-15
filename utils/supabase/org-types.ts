@@ -5,6 +5,32 @@
 
 export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete';
 
+/**
+ * Stripe's subscription status as one the organizations.subscription_status
+ * CHECK accepts. Stripe also sends 'unpaid', 'paused' and
+ * 'incomplete_expired'; written as they are, the update fails and the
+ * organization keeps a stale status. Only 'trialing' and 'active' grant seats
+ * (createFarm), so each is mapped to the closest status that does not, and
+ * a status Stripe adds later fails closed as 'past_due' (no seats, read-only).
+ */
+export function toStoredSubscriptionStatus(stripeStatus: string): SubscriptionStatus {
+  switch (stripeStatus) {
+    case 'trialing':
+    case 'active':
+    case 'past_due':
+    case 'canceled':
+    case 'incomplete':
+      return stripeStatus;
+    case 'unpaid':
+    case 'paused':
+      return 'past_due';
+    case 'incomplete_expired':
+      return 'canceled';
+    default:
+      return 'past_due';
+  }
+}
+
 export interface Organization {
   id: string;
   name: string;

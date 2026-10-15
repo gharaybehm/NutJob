@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rejectUnauthorizedCron } from "@/utils/cron-auth";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { runDecisionEngine } from "@/utils/decision/run-decision-engine";
 
@@ -14,24 +15,16 @@ import { runDecisionEngine } from "@/utils/decision/run-decision-engine";
 // Meant to run once a day, early in the farm's morning, after the previous
 // local day is complete.
 //
-//   GET /api/cron/decision-engine?secret=CRON_SECRET
-//   optional: &dry=1 (compute and report, write nothing)  &farm=<farm id>
+//   GET /api/cron/decision-engine  (Authorization: Bearer CRON_SECRET)
+//   optional: ?dry=1 (compute and report, write nothing)  &farm=<farm id>
 //             &narrate=1 (ask the model to write the plan's explanation; one or two
 //             model calls per farm. Without it the explanation is rule-based text.)
 //
 // The response holds counts and error messages only, no recommendation text.
 
 export async function GET(request: NextRequest) {
-  const secret = request.nextUrl.searchParams.get("secret");
-  const cronSecret = process.env.CRON_SECRET;
-  // Fail closed: a missing CRON_SECRET must not leave the endpoint open in production
-  if (!cronSecret) {
-    if (process.env.NODE_ENV === "production") {
-      return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 503 });
-    }
-  } else if (secret !== cronSecret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const refused = rejectUnauthorizedCron(request);
+  if (refused) return refused;
 
   try {
     const results = await runDecisionEngine(createAdminClient(), {

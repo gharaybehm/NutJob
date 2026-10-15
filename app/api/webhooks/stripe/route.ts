@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/utils/stripe";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { toStoredSubscriptionStatus } from "@/utils/supabase/org-types";
 
 // Stripe webhook — syncs organizations.subscription_status/farm_seats and
 // caches paid invoices for the super-admin payment-history view.
@@ -34,8 +35,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Signature is verified past this point — always return 200 even if a
-  // downstream DB write fails, so Stripe doesn't retry-storm on a bug here.
+  // Signature is verified past this point. A failed write answers 500 so
+  // Stripe retries the event (with backoff, for up to three days); answering
+  // 200 marked it delivered and left the organization on a stale status.
+  // Every write below sets the same values again on a retry, so a retry is
+  // harmless.
   try {
     const admin = createAdminClient();
 
@@ -44,12 +48,12 @@ export async function POST(request: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session;
         const organizationId = session.metadata?.organization_id;
         if (organizationId && session.customer && session.subscription) {
-          await (admin as any).from("organizations").update({
+          await written((admin as any).from("organizations").update({
             stripe_customer_id: session.customer as string,
             stripe_subscription_id: session.subscription as string,
             subscription_status: "active",
             updated_at: new Date().toISOString(),
-          }).eq("id", organizationId);
+          }).eq("id", organizationId));
         }
         break;
       }
@@ -59,11 +63,11 @@ export async function POST(request: NextRequest) {
         const organizationId = subscription.metadata?.organization_id;
         const seats = subscription.items.data[0]?.quantity;
         if (organizationId) {
-          await (admin as any).from("organizations").update({
-            subscription_status: subscription.status,
+          await written((admin as any).from("organizations").update({
+            subscription_status: toStoredSubscriptionStatus(subscription.status),
             ...(seats != null ? { farm_seats: seats } : {}),
             updated_at: new Date().toISOString(),
-          }).eq("id", organizationId);
+          }).eq("id", organizationId));
         }
         break;
       }
@@ -73,10 +77,10 @@ export async function POST(request: NextRequest) {
         const organizationId = subscription.metadata?.organization_id;
         if (organizationId) {
           // Status flip only — never delete the org or its farms.
-          await (admin as any).from("organizations").update({
+          await written((admin as any).from("organizations").update({
             subscription_status: "canceled",
             updated_at: new Date().toISOString(),
-          }).eq("id", organizationId);
+          }).eq("id", organizationId));
         }
         break;
       }
@@ -85,10 +89,10 @@ export async function POST(request: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice;
         const organizationId = await resolveOrganizationId(admin, invoice);
         if (organizationId) {
-          await (admin as any).from("organizations").update({
+          await written((admin as any).from("organizations").update({
             subscription_status: "past_due",
             updated_at: new Date().toISOString(),
-          }).eq("id", organizationId);
+          }).eq("id", organizationId));
         }
         break;
       }
@@ -97,7 +101,7 @@ export async function POST(request: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice;
         const organizationId = await resolveOrganizationId(admin, invoice);
         if (organizationId) {
-          await (admin as any).from("stripe_invoices").upsert({
+          await written((admin as any).from("stripe_invoices").upsert({
             id: invoice.id,
             organization_id: organizationId,
             amount_paid: invoice.amount_paid,
@@ -106,7 +110,7 @@ export async function POST(request: NextRequest) {
             hosted_invoice_url: invoice.hosted_invoice_url,
             created_at: new Date(invoice.created * 1000).toISOString(),
             synced_at: new Date().toISOString(),
-          });
+          }));
         }
         break;
       }
@@ -115,10 +119,17 @@ export async function POST(request: NextRequest) {
         break;
     }
   } catch (err) {
-    console.error("Stripe webhook handler error:", err);
+    console.error("Stripe webhook handler error:", event.type, event.id, err);
+    return NextResponse.json({ error: "Handler failed" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
+}
+
+/** supabase-js returns a database error instead of throwing it; this throws it. */
+async function written(query: PromiseLike<{ error: { message: string } | null }>): Promise<void> {
+  const { error } = await query;
+  if (error) throw new Error(error.message);
 }
 
 // Invoices carry the subscription's metadata, not their own — resolve the

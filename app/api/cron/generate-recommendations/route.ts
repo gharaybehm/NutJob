@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rejectUnauthorizedCron } from "@/utils/cron-auth";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { generateFarmRecommendations, OPENROUTER_MODEL } from "@/utils/generate-recommendations";
 
@@ -10,20 +11,12 @@ import { generateFarmRecommendations, OPENROUTER_MODEL } from "@/utils/generate-
 // Scheduler: Coolify Scheduled Task, cron 0 4 * * 1 (Monday 04:00 UTC).
 // This replaced the Trigger.dev `generate-recommendations` task on 2026-09-30.
 //
-//   GET /api/cron/generate-recommendations?secret=CRON_SECRET
-//   optional: &farm=<farm id>  (one farm only)
+//   GET /api/cron/generate-recommendations  (Authorization: Bearer CRON_SECRET)
+//   optional: ?farm=<farm id>  (one farm only)
 
 export async function GET(request: NextRequest) {
-  const secret = request.nextUrl.searchParams.get("secret");
-  const cronSecret = process.env.CRON_SECRET;
-  // Fail closed: a missing CRON_SECRET must not leave the endpoint open in production
-  if (!cronSecret) {
-    if (process.env.NODE_ENV === "production") {
-      return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 503 });
-    }
-  } else if (secret !== cronSecret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const refused = rejectUnauthorizedCron(request);
+  if (refused) return refused;
 
   if (!process.env.OPENROUTER_API_KEY) {
     return NextResponse.json({ error: "OPENROUTER_API_KEY not configured" }, { status: 503 });

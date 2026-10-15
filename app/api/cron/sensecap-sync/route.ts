@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rejectUnauthorizedCron } from "@/utils/cron-auth";
 import { createAdminClient } from "@/utils/supabase/admin";
 import {
   createSensecapClient,
@@ -25,7 +26,7 @@ import {
 //   - Coolify Scheduled Task, cron 0 * * * * (the production scheduler since
 //     2026-09-30; it replaced the Trigger.dev schedule)
 //   - External cron service (e.g. cron-job.org)
-//   - Manual: GET /api/cron/sensecap-sync?secret=YOUR_CRON_SECRET
+//   - Manual: GET /api/cron/sensecap-sync  (Authorization: Bearer YOUR_CRON_SECRET)
 
 // How far back to look when a sensor has no stored readings at all. Bounded so
 // a newly-registered device does not pull an unbounded backfill on first sync.
@@ -89,17 +90,8 @@ async function existingTimestamps(
 }
 
 export async function GET(request: NextRequest) {
-  // Auth: same CRON_SECRET pattern as /api/cron/weather
-  const secret = request.nextUrl.searchParams.get("secret");
-  const cronSecret = process.env.CRON_SECRET;
-  // Fail closed: a missing CRON_SECRET must not leave the endpoint open in production
-  if (!cronSecret) {
-    if (process.env.NODE_ENV === "production") {
-      return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 503 });
-    }
-  } else if (secret !== cronSecret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const refused = rejectUnauthorizedCron(request);
+  if (refused) return refused;
 
   const admin = createAdminClient();
   const now = new Date().toISOString();

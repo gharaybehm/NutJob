@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rejectUnauthorizedCron } from "@/utils/cron-auth";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 // Scheduled weather fetch — designed to run every 3 hours.
@@ -11,7 +12,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 //   - Coolify Scheduled Task, cron 0 0,3,6,9,12,15,18,21 * * * (the production scheduler)
 //   - Supabase pg_cron calling this endpoint
 //   - External cron service (e.g. cron-job.org)
-//   - Manual: GET /api/cron/weather?secret=YOUR_CRON_SECRET
+//   - Manual: GET /api/cron/weather  (Authorization: Bearer YOUR_CRON_SECRET)
 
 const OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast";
 
@@ -39,18 +40,8 @@ function windDegreesToDirection(degrees: number): string {
 }
 
 export async function GET(request: NextRequest) {
-  // Verify cron secret to prevent unauthorized calls
-  const secret = request.nextUrl.searchParams.get("secret");
-  const cronSecret = process.env.CRON_SECRET;
-
-  // Fail closed: a missing CRON_SECRET must not leave the endpoint open in production
-  if (!cronSecret) {
-    if (process.env.NODE_ENV === "production") {
-      return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 503 });
-    }
-  } else if (secret !== cronSecret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const refused = rejectUnauthorizedCron(request);
+  if (refused) return refused;
 
   const admin = createAdminClient();
 

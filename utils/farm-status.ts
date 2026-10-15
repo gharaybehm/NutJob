@@ -7,7 +7,8 @@
 
 import type { SubscriptionStatus } from "@/utils/supabase/org-types";
 
-const READ_ONLY: ReadonlySet<string> = new Set<SubscriptionStatus | "unpaid">(["past_due", "canceled", "unpaid"]);
+// Stripe's "unpaid" and "paused" are stored as past_due (toStoredSubscriptionStatus).
+const READ_ONLY: ReadonlySet<string> = new Set<SubscriptionStatus>(["past_due", "canceled"]);
 
 export function isReadOnlyStatus(status: string | null | undefined): boolean {
   return status != null && READ_ONLY.has(status);

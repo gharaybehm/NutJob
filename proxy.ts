@@ -32,7 +32,10 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // sw.js is public like manifest.json: behind the sign-in check, a browser
+  // that is not signed in got a redirect to /login instead of the service
+  // worker, so offline pages depended on being signed in when it was fetched.
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icon.png|logo-full.png|farm-bg.png|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico$|icon\\.png$|logo-full\\.png$|farm-bg\\.png$|manifest\\.json$|sw\\.js$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

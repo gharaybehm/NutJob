@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rejectUnauthorizedCron } from "@/utils/cron-auth";
 import { createAdminClient } from "@/utils/supabase/admin";
 import {
   hargreavesETo,
@@ -29,7 +30,7 @@ import { heatModelFor, inferGrowthStage, type HeatModel } from "@/engines/heat-m
 //
 // Trigger options:
 //   - Coolify Scheduled Task, daily at 00:00 UTC (the production scheduler)
-//   - Manual: GET /api/cron/compute-fields?secret=YOUR_CRON_SECRET
+//   - Manual: GET /api/cron/compute-fields  (Authorization: Bearer YOUR_CRON_SECRET)
 
 const OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast";
 
@@ -134,16 +135,8 @@ async function predictForBlock(
 }
 
 export async function GET(request: NextRequest) {
-  const secret = request.nextUrl.searchParams.get("secret");
-  const cronSecret = process.env.CRON_SECRET;
-  // Fail closed: a missing CRON_SECRET must not leave the endpoint open in production
-  if (!cronSecret) {
-    if (process.env.NODE_ENV === "production") {
-      return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 503 });
-    }
-  } else if (secret !== cronSecret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const refused = rejectUnauthorizedCron(request);
+  if (refused) return refused;
 
   const admin = createAdminClient();
   const now = new Date();
