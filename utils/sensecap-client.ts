@@ -38,8 +38,8 @@ interface SensecapStatusResponse {
 }
 
 interface SensecapOrgResponse {
-  code: string;
-  data: { org_id: string };
+  code: string | number;
+  data: { org_id: string | number };
 }
 
 /** One measurement at one instant, flattened out of whatever shape the API used. */
@@ -170,6 +170,17 @@ export const MEASUREMENT_MAP: Record<string, MeasurementDef> = {
 
 // ─── Client ───────────────────────────────────────────────────────────────────
 
+/**
+ * SenseCAP reports success as `code` 0. The live API sends it as a number,
+ * older docs show the string "0"; accept both.
+ */
+export function assertSensecapOk<T>(json: { code?: unknown; msg?: string }): T {
+  if (String(json.code) !== "0") {
+    throw new Error(`SenseCAP error ${json.code}: ${json.msg ?? "unknown"}`);
+  }
+  return json as T;
+}
+
 export class SensecapClient {
   private authHeader: string;
 
@@ -185,11 +196,7 @@ export class SensecapClient {
     if (!res.ok) {
       throw new Error(`SenseCAP API error ${res.status}: ${await res.text()}`);
     }
-    const json = await res.json();
-    if (json.code !== "0") {
-      throw new Error(`SenseCAP error ${json.code}: ${json.msg ?? "unknown"}`);
-    }
-    return json as T;
+    return assertSensecapOk<T>(await res.json());
   }
 
   private async post<T>(path: string, body: unknown): Promise<T> {
@@ -205,17 +212,13 @@ export class SensecapClient {
     if (!res.ok) {
       throw new Error(`SenseCAP API error ${res.status}: ${await res.text()}`);
     }
-    const json = await res.json();
-    if (json.code !== "0") {
-      throw new Error(`SenseCAP error ${json.code}: ${json.msg ?? "unknown"}`);
-    }
-    return json as T;
+    return assertSensecapOk<T>(await res.json());
   }
 
   /** Verify credentials — returns org ID or throws. */
   async verifyConnection(): Promise<string> {
     const res = await this.get<SensecapOrgResponse>("/view_organization");
-    return res.data.org_id;
+    return String(res.data.org_id);
   }
 
   /**
