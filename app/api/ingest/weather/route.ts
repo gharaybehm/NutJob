@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- untyped Supabase client casts */
 import { NextResponse } from 'next/server'
+import { HEAT_STRESS_FLAG_ABOVE_C } from '@/engines/weather-flags'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { authenticateSensor, updateSensorHeartbeat } from '../_auth'
 import type { WeatherIngestPayload } from '@/types/sensors'
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
     wind_kmh: wind_kmh ?? null,
     wind_direction: wind_direction ?? null,
     frost_risk: temp_c != null ? temp_c <= 0 : false,
-    heat_stress_risk: temp_c != null ? temp_c > 38 : false,
+    heat_stress_risk: temp_c != null ? temp_c > HEAT_STRESS_FLAG_ABOVE_C : false,
     source: 'sensor',
     recorded_at: body.recorded_at ?? new Date().toISOString(),
   })

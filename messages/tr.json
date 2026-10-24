@@ -841,6 +841,102 @@
           "failed": "Değişiklik kaydedilemedi. Yeniden deneyin."
         }
       }
+    },
+    "thresholds": {
+      "tabLabel": "Eşikler",
+      "title": "Uyarı eşikleri",
+      "intro": "Bu çiftlikte uyarıların ve sulama önerilerinin kullandığı sınırlar ve her birinin kaynağı. Değiştirebileceğiniz değerler Parsel Ayarları’nda belirlenir; sistem bunları kendisi asla değiştirmez.",
+      "notAvailable": "Eşikler okunamadı. Hiçbir şey değiştirilmedi.",
+      "editInBlockConfig": "Bunları Parsel Ayarları’nda değiştirin",
+      "source": {
+        "farm": "Çiftlik ayarı",
+        "default": "Başlangıç değeri",
+        "block": "Parsel ayarı",
+        "farmDefault": "Çiftlik varsayılanı",
+        "notSet": "Belirlenmedi",
+        "builtIn": "Uygulamada yerleşik"
+      },
+      "status": {
+        "sourced": "Kaynaklı",
+        "expert": "Uzman tahmini",
+        "toBeSourced": "Kaynak bekleniyor"
+      },
+      "farm": {
+        "title": "Çiftlik",
+        "depletion": "İzin verilen tüketim",
+        "depletionHint": "Şimdi sula uyarısından önce kullanılabilecek su rezervi payı.",
+        "frostMargin": "Don uyarısı payı",
+        "frostMarginHint": "Tahmini en düşük sıcaklık hasar sıcaklığına bu pay kadar yaklaştığında don uyarısı verilir.",
+        "sensorHours": "Sensör arızası süresi",
+        "sensorHoursHint": "Bu süre boyunca okuma göndermeyen toprak sensörü arızalı sayılır ve önerilerin dışında tutulur.",
+        "hours": "{n} sa",
+        "effectiveRain": "Etkili yağış",
+        "effectiveRainValue": "{min} mm altındaki yağış yok sayılır; kalanın % {pct} kadarı sayılır",
+        "effectiveRainHint": "Parselin şimdi sula noktasına ne zaman ulaşacağını öngörmek için kullanılır. Sulamayı atla uyarısı yoktur.",
+        "heat": "Sıcaklık stresi",
+        "heatValue": "{temp} °C üzerinde işaret",
+        "heatHint": "Hava verisiyle saklanır ve yapay zekâya gösterilir. Uyarı verilmez ve değer bir kaynaktan gelmez."
+      },
+      "block": {
+        "title": "Parseller",
+        "noBlocks": "Henüz parsel yok.",
+        "fieldCapacity": "Tarla kapasitesi",
+        "wiltingPoint": "Solma noktası",
+        "rootDepth": "Kök derinliği",
+        "reserve": "Su rezervi {reserve} mm: bunun {trigger} mm’si kullanıldığında şimdi sula uyarısı verilir.",
+        "noReserve": "Bu parsel için şimdi sula uyarısı yok: tarla kapasitesi, solma noktası ve kök derinliği gerekir.",
+        "frostTitle": "Don hasar sıcaklıkları",
+        "frostNone": "Bu ürün için don verisi yüklü değil, bu yüzden don uyarısı çalışmaz.",
+        "frostStage": {
+          "bloom": "Tam çiçeklenme",
+          "fruit_set": "Meyve tutumu"
+        },
+        "frostValues": "{lt10} °C’de % 10 hasar; {warn} °C’den itibaren uyarı",
+        "frostLt90": "{lt90} °C’de % 90 hasar",
+        "basis": {
+          "variety_tested": "Bu çeşit için ölçülmüş",
+          "species_mean": "Test edilen çeşitlerin ortalaması: bu çeşit test edilmedi",
+          "species_stage": "Tür için değer, bu çeşit için değil"
+        }
+      },
+      "soil": {
+        "title": "Toprak analizinden",
+        "none": "Kum ve kil değerleri olan bir toprak analizi yok. Öneri almak için parsele bir analiz girin.",
+        "test": "{date} tarihli toprak analizi",
+        "farmScope": "tüm çiftlik",
+        "suggests": "Tarla kapasitesi % {fc} ve solma noktası % {wp} öneriyor.",
+        "method": "Saxton ve Rawls 2006, kum, kil ve organik maddeden. Yalnızca bir öneri: kullanmadan önce kontrol edin.",
+        "differs": "Parsel için kayıtlı: tarla kapasitesi {fc}, solma noktası {wp}.",
+        "use": "Bu değerleri kullan",
+        "used": "Dolduruldu. Kontrol edip Kaydet’e basın.",
+        "reasons": {
+          "missing_sand": "Analizde tahminin gerektirdiği kum değeri yok.",
+          "missing_clay": "Analizde tahminin gerektirdiği kil değeri yok.",
+          "missing_organic_matter": "Analizde tahminin gerektirdiği organik madde değeri yok.",
+          "invalid_texture": "Analizin kum ve kil değerleri tutarlı değil.",
+          "outside_fitted_range": "Bu toprak, tahminin yapıldığı aralığın dışında (en çok % 60 kil ve % 8 organik madde)."
+        }
+      },
+      "pack": {
+        "title": "{crop} paketi {version}",
+        "intro": "Parsellerin bağlı olduğu ürün paketindeki değerler. Bunları yalnızca yeni karar motoru arka planda kullanır; yukarıdaki uyarılar henüz kullanmaz.",
+        "none": "Hiçbir parsel bir ürün paketine bağlı değil.",
+        "depletion": "İzin verilen tüketim",
+        "range": "aralık {min} ile {max}",
+        "outside": "Çiftlik ayarı bu aralığın dışında. Aralığa girene kadar çiftlik politikası kaydedilemez.",
+        "rootDepth": "Kök derinliği",
+        "rainDefer": "Sulamayı erteleyen yağış olasılığı",
+        "frost": "Kritik don sıcaklıkları",
+        "varieties": "Kendi değerleri olanlar: {names}",
+        "pests": "Zararlı gün-derece eşikleri",
+        "notGiven": "Pakette yok"
+      },
+      "notAlerted": {
+        "title": "Henüz uyarı yok",
+        "heat": "Sıcaklık stresi: uyarı yok. Ürün paketinde sıcaklık stresi sınırı yok.",
+        "pests": "Zararlılar: henüz gün-derece uyarısı yok. Yukarıdaki paket eşiklerini yalnızca yeni karar motoru kullanır.",
+        "deficit": "Su açığı: bir sayı olarak gösterilir, uyarı yoktur."
+      }
     }
   },
   "auth": {

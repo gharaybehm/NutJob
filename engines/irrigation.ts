@@ -92,9 +92,12 @@ export interface IrrigationResult {
   dataGaps: string[]
 }
 
-/** Rain below 5 mm is assumed lost to interception and evaporation. */
+/** Rain below 5 mm is assumed lost to interception and evaporation; 80 % of the rest counts. */
+export const EFFECTIVE_RAIN_MIN_MM = 5
+export const EFFECTIVE_RAIN_FRACTION = 0.8
+
 function effectiveRain(mm: number): number {
-  return mm >= 5 ? mm * 0.8 : 0
+  return mm >= EFFECTIVE_RAIN_MIN_MM ? mm * EFFECTIVE_RAIN_FRACTION : 0
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10

@@ -841,6 +841,102 @@
           "failed": "The change could not be saved. Try again."
         }
       }
+    },
+    "thresholds": {
+      "tabLabel": "Thresholds",
+      "title": "Alert thresholds",
+      "intro": "The limits the alerts and the irrigation advice use on this farm, and where each one comes from. The values you can change are set in Block Config; the system never changes them itself.",
+      "notAvailable": "The thresholds could not be read. Nothing has been changed.",
+      "editInBlockConfig": "Change these in Block Config",
+      "source": {
+        "farm": "Farm setting",
+        "default": "Starting value",
+        "block": "Block setting",
+        "farmDefault": "Farm default",
+        "notSet": "Not set",
+        "builtIn": "Built into the app"
+      },
+      "status": {
+        "sourced": "Sourced",
+        "expert": "Expert estimate",
+        "toBeSourced": "To be sourced"
+      },
+      "farm": {
+        "title": "Farm",
+        "depletion": "Allowable depletion",
+        "depletionHint": "Share of the water reserve that may be used before the irrigate-now alert.",
+        "frostMargin": "Frost alert margin",
+        "frostMarginHint": "A frost warning is raised when the forecast minimum comes within this margin of the damage temperature.",
+        "sensorHours": "Sensor failure after",
+        "sensorHoursHint": "A soil sensor with no reading for this long is treated as failed and left out of the advice.",
+        "hours": "{n} h",
+        "effectiveRain": "Effective rain",
+        "effectiveRainValue": "Rain under {min} mm is ignored; {pct} % of the rest counts",
+        "effectiveRainHint": "Used to project when a block reaches the irrigate-now point. There is no skip-irrigation alert.",
+        "heat": "Heat stress",
+        "heatValue": "Flag above {temp} °C",
+        "heatHint": "Stored with the weather and shown to the AI. No alert is raised, and the value is not from a source."
+      },
+      "block": {
+        "title": "Blocks",
+        "noBlocks": "No blocks yet.",
+        "fieldCapacity": "Field capacity",
+        "wiltingPoint": "Wilting point",
+        "rootDepth": "Root depth",
+        "reserve": "Water reserve {reserve} mm: the irrigate-now alert fires once {trigger} mm of it is used.",
+        "noReserve": "No irrigate-now alert for this block: it needs field capacity, wilting point and a root depth.",
+        "frostTitle": "Frost damage temperatures",
+        "frostNone": "No frost data is loaded for this crop, so no frost alert runs.",
+        "frostStage": {
+          "bloom": "Full bloom",
+          "fruit_set": "Fruit set"
+        },
+        "frostValues": "10 % damage at {lt10} °C; warning from {warn} °C",
+        "frostLt90": "90 % damage at {lt90} °C",
+        "basis": {
+          "variety_tested": "Measured for this variety",
+          "species_mean": "Mean of the tested varieties: this variety was not tested",
+          "species_stage": "Value for the species, not for this variety"
+        }
+      },
+      "soil": {
+        "title": "From the soil test",
+        "none": "No soil test with sand and clay values. Log one on the block to get a suggestion.",
+        "test": "Soil test of {date}",
+        "farmScope": "whole farm",
+        "suggests": "Suggests field capacity {fc} % and wilting point {wp} %.",
+        "method": "Saxton & Rawls 2006, from sand, clay and organic matter. A suggestion only: check it before using it.",
+        "differs": "Saved for the block: field capacity {fc}, wilting point {wp}.",
+        "use": "Use these values",
+        "used": "Filled in. Check them and press Save.",
+        "reasons": {
+          "missing_sand": "The test has no sand value, which the estimate needs.",
+          "missing_clay": "The test has no clay value, which the estimate needs.",
+          "missing_organic_matter": "The test has no organic matter value, which the estimate needs.",
+          "invalid_texture": "The sand and clay values of the test do not add up.",
+          "outside_fitted_range": "This soil is outside the range the estimate was made for (up to 60 % clay and 8 % organic matter)."
+        }
+      },
+      "pack": {
+        "title": "{crop} pack {version}",
+        "intro": "The values in the crop pack the blocks are bound to. Only the new decision engine uses them, in the background; the alerts above do not use them yet.",
+        "none": "No block is bound to a crop pack.",
+        "depletion": "Allowable depletion",
+        "range": "range {min} to {max}",
+        "outside": "The farm setting is outside this range. Saving the farm policy is refused until it is inside.",
+        "rootDepth": "Root depth",
+        "rainDefer": "Rain probability that delays irrigation",
+        "frost": "Frost critical temperatures",
+        "varieties": "Own values for: {names}",
+        "pests": "Pest degree-day triggers",
+        "notGiven": "Not in the pack"
+      },
+      "notAlerted": {
+        "title": "Not alerted yet",
+        "heat": "Heat stress: no alert. The crop pack has no heat-stress limit.",
+        "pests": "Pests: no degree-day alert yet. The pack triggers above are used only by the new decision engine.",
+        "deficit": "Water deficit: shown as a figure, with no alert."
+      }
     }
   },
   "auth": {

@@ -10,6 +10,8 @@ import { createSensecapClient } from '@/utils/sensecap-client'
 import { sendInviteEmail } from '@/utils/email'
 import { requireFarmRole } from '@/utils/supabase/farm-access'
 import { validateBlockConfig, validateFarmPolicy } from '@/utils/farm-policy'
+import { depletionBoundsViolation } from '@/utils/alert-thresholds'
+import { packSchema, type Pack } from '@/engines/pack/schema'
 
 export async function setLocale(locale: string) {
   if (!routing.locales.includes(locale as Locale)) {
@@ -534,6 +536,24 @@ export async function updateBlockConfig(
 
 // ─── Farm policy (irrigation strategy, well licence, alert margins) ───────────
 
+/** The installed packs this farm's blocks are bound to. */
+async function loadBoundPacks(supabase: Awaited<ReturnType<typeof createClient>>, farmId: string): Promise<{ ok: true; packs: Pack[] } | { ok: false }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any
+  const { data: rows, error } = await db.from('blocks').select('pack_id, pack_version').eq('farm_id', farmId).not('pack_id', 'is', null)
+  if (error) return { ok: false }
+  const keys = new Set<string>(((rows ?? []) as { pack_id: string; pack_version: string | null }[]).filter(r => r.pack_version).map(r => `${r.pack_id}@${r.pack_version}`))
+  const packs: Pack[] = []
+  for (const key of keys) {
+    const [packId, version] = key.split('@')
+    const { data: packRow, error: packError } = await db.from('crop_packs').select('content').eq('pack_id', packId).eq('version', version).maybeSingle()
+    if (packError) return { ok: false }
+    const parsed = packRow ? packSchema.safeParse(packRow.content) : null
+    if (parsed?.success) packs.push(parsed.data)
+  }
+  return { ok: true, packs }
+}
+
 export async function updateFarmPolicy(farmId: string, input: unknown) {
   const gate = await requireFarmRole(farmId, 'supervisor')
   if (!gate.ok) return { error: gate.error }
@@ -543,6 +563,16 @@ export async function updateFarmPolicy(farmId: string, input: unknown) {
   const p = v.value
 
   const supabase = await createClient()
+
+  // Allowable depletion must stay inside the bounds of every pack the farm's blocks are bound to.
+  const boundPacks = await loadBoundPacks(supabase, farmId)
+  if (!boundPacks.ok) return { error: 'The crop packs of this farm could not be read, so nothing was saved.' }
+  const outside = depletionBoundsViolation(p.allowableDepletion, boundPacks.packs)
+  if (outside) {
+    return {
+      error: `Allowable depletion must be between ${outside.bounds[0]} and ${outside.bounds[1]}: the range the ${outside.cropName} pack ${outside.version} allows.`,
+    }
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any).from('farm_policy').upsert(
     {

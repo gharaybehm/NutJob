@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { subscribeToPush, unsubscribeFromPush } from '@/app/components/ServiceWorkerRegistration'
 import {
   updateProfile,
@@ -33,9 +33,6 @@ import {
   Cloud,
   Check,
   Copy,
-  Droplets,
-  Thermometer,
-  Wind,
   AlertTriangle,
   Info,
   Wifi,
@@ -68,6 +65,8 @@ import { findCrop } from '@/utils/crops'
 import { findRequest, type KnowledgeRequest } from '@/utils/kb-requests'
 import RequestGuides from '@/app/components/knowledge/RequestGuides'
 import DecisionSetupTab, { type DecisionSetupData } from '@/app/components/settings/DecisionSetupTab'
+import ThresholdsTab, { SoilSuggestionNote } from '@/app/components/settings/ThresholdsTab'
+import type { SoilSuggestion, ThresholdView } from '@/utils/alert-thresholds'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -119,6 +118,8 @@ interface SettingsFormsProps {
   knowledgeRequests?: KnowledgeRequest[] | null
   /** Decision-engine settings of the farm and its blocks. Null when they could not be read. */
   decisionSetup?: DecisionSetupData | null
+  /** Every limit the alerts use, with its source. Null when it could not be read. */
+  thresholdView?: ThresholdView | null
   farmId?: string
   farmName?: string
   farmAddress?: string
@@ -130,30 +131,6 @@ interface SettingsFormsProps {
 }
 
 type TabId = 'profile' | 'team' | 'blocks' | 'decision' | 'alerts' | 'sensors' | 'weather' | 'language'
-
-// ─── Notification default prefs ───────────────────────────────────────────────
-
-const DEFAULT_PREFS = {
-  soilMoistureLow: 25,     // % — alert when below this
-  waterDeficitHigh: 40,    // mm — alert when above this
-  tempHeatStress: 36,      // °C — alert when above this
-  rainSkipIrrigation: 10,  // mm/day — skip irrigation if above
-  pestRiskHigh: 70,        // % confidence — alert when pest risk above this
-}
-type NotifPrefs = typeof DEFAULT_PREFS
-
-const STORAGE_KEY_PREFS = 'rootloot:notification_prefs'
-
-function loadFromStorage<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback
-  try {
-    const raw = localStorage.getItem(key)
-    if (!raw) return fallback
-    return { ...fallback, ...JSON.parse(raw) } as T
-  } catch {
-    return fallback
-  }
-}
 
 // ─── Shared UI helpers ────────────────────────────────────────────────────────
 
@@ -499,13 +476,14 @@ function TeamTab({
 
 // ── Tab 3: Block Configuration ────────────────────────────────────────────────
 
-function BlockRow({ block }: { block: Block }) {
+function BlockRow({ block, soil }: { block: Block; soil: SoilSuggestion | null }) {
   const [fieldCapacity, setFieldCapacity] = useState(block.field_capacity?.toString() ?? '')
   const [wiltingPoint, setWiltingPoint] = useState(block.wilting_point?.toString() ?? '')
   const [rootDepth, setRootDepth] = useState(block.root_depth_m?.toString() ?? '')
   const [notes, setNotes] = useState(block.notes ?? '')
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [isPending, setIsPending] = useState(false)
+  const [usedSuggestion, setUsedSuggestion] = useState(false)
 
   async function handleSave() {
     setIsPending(true); setStatus(null)
@@ -517,7 +495,7 @@ function BlockRow({ block }: { block: Block }) {
         notes: notes.trim() || null,
       })
       if (res.error) setStatus({ type: 'error', message: res.error })
-      else setStatus({ type: 'success', message: 'Saved' })
+      else { setStatus({ type: 'success', message: 'Saved' }); setUsedSuggestion(false) }
     } catch { setStatus({ type: 'error', message: 'Save failed' }) }
     setIsPending(false)
     setTimeout(() => setStatus(null), 3000)
@@ -596,6 +574,13 @@ function BlockRow({ block }: { block: Block }) {
           <p className="mt-1 text-[11px] text-ink-4">Soil depth the roots draw water from. Blank uses the farm default below.</p>
         </div>
       </div>
+
+      <SoilSuggestionNote
+        soil={soil}
+        saved={{ fc: fieldCapacity ? parseFloat(fieldCapacity) : null, wp: wiltingPoint ? parseFloat(wiltingPoint) : null }}
+        used={usedSuggestion}
+        onUse={(fc, wp) => { setFieldCapacity(String(fc)); setWiltingPoint(String(wp)); setUsedSuggestion(true) }}
+      />
 
       {(() => {
         const reserve = totalAvailableWaterMm(
@@ -706,7 +691,7 @@ function FarmPolicyCard({ farmId, policy }: { farmId: string; policy: FarmPolicy
         <PolicyField label="Irrigation strategy" hint="A label for the strategy you follow, such as full or planned deficit. Advice is reported against it.">
           <input type="text" maxLength={40} value={strategy} onChange={e => setStrategy(e.target.value)} className={POLICY_INPUT} />
         </PolicyField>
-        <PolicyField label="Allowable depletion (0 to 1)" hint="Share of the water reserve that may be used before irrigating. 0.40 is the FAO-56 starting value for almond; use a higher value only for a planned deficit strategy.">
+        <PolicyField label="Allowable depletion (0 to 1)" hint="Share of the water reserve that may be used before irrigating. 0.40 is the FAO-56 starting value for almond. It must stay inside the range of the crop pack the blocks are bound to (see the Thresholds tab).">
           <input type="number" min="0.05" max="1" step="0.05" value={depletion} onChange={e => setDepletion(e.target.value)} className={POLICY_INPUT} />
         </PolicyField>
         <PolicyField label="Application efficiency (0 to 1)" hint="Share of applied water that reaches the roots. Drip is typically about 0.90.">
@@ -836,7 +821,7 @@ function KnowledgeCoverageCard({ blocks, docs, requests, farmId }: { blocks: Blo
   )
 }
 
-function BlockConfigTab({ blocks, farmId, farmPolicy, knowledgeDocs, knowledgeRequests }: { blocks: Block[]; farmId: string; farmPolicy: FarmPolicyRow | null; knowledgeDocs: KnowledgeDocument[] | null; knowledgeRequests: KnowledgeRequest[] | null }) {
+function BlockConfigTab({ blocks, farmId, farmPolicy, knowledgeDocs, knowledgeRequests, thresholdView }: { blocks: Block[]; farmId: string; farmPolicy: FarmPolicyRow | null; knowledgeDocs: KnowledgeDocument[] | null; knowledgeRequests: KnowledgeRequest[] | null; thresholdView: ThresholdView | null }) {
   if (blocks.length === 0) {
     return (
       <SectionCard title="Block Configuration" icon={Layers} description="Set water thresholds and notes for each block. These values are used by the AI recommendation engine.">
@@ -853,41 +838,13 @@ function BlockConfigTab({ blocks, farmId, farmPolicy, knowledgeDocs, knowledgeRe
       <FarmPolicyCard farmId={farmId} policy={farmPolicy} />
       <KnowledgeCoverageCard blocks={blocks} docs={knowledgeDocs} requests={knowledgeRequests} farmId={farmId} />
       <div className="space-y-4">
-        {blocks.map(b => <BlockRow key={b.id} block={b} />)}
+        {blocks.map(b => <BlockRow key={b.id} block={b} soil={thresholdView?.blocks.find(x => x.id === b.id)?.soil ?? null} />)}
       </div>
     </SectionCard>
   )
 }
 
-// ── Tab 4: Notification Alerts ────────────────────────────────────────────────
-
-function ThresholdSlider({ id, label, description, icon: Icon, value, onChange, min, max, step, unit, colorClass }: {
-  id: string; label: string; description: string; icon: React.ElementType
-  value: number; onChange: (v: number) => void; min: number; max: number; step: number; unit: string; colorClass: string
-}) {
-  const pct = ((value - min) / (max - min)) * 100
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label htmlFor={id} className="flex items-center gap-2 text-sm font-medium text-ink">
-          <Icon className={`h-4 w-4 ${colorClass}`} />
-          {label}
-        </label>
-        <div className="flex items-center gap-1">
-          <input type="number" value={value} min={min} max={max} step={step}
-            onChange={e => onChange(parseFloat(e.target.value) || min)}
-            className="w-16 text-right px-2 py-1 rounded-lg border border-line bg-surface text-sm text-ink focus:outline-none focus:ring-1 focus:ring-green" />
-          <span className="text-xs text-ink-3 w-8">{unit}</span>
-        </div>
-      </div>
-      <input id={id} type="range" min={min} max={max} step={step} value={value}
-        onChange={e => onChange(parseFloat(e.target.value))}
-        style={{ background: `linear-gradient(to right, var(--color-green) ${pct}%, #e2e8f0 ${pct}%)` }}
-        className="w-full h-1.5 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-green [&::-webkit-slider-thumb]:shadow-sm" />
-      <p className="text-xs text-ink-4">{description}</p>
-    </div>
-  )
-}
+// ── Tab 4: Thresholds and notifications ───────────────────────────────────────
 
 type PushStatus = 'unknown' | 'subscribed' | 'unsubscribed' | 'denied' | 'unsupported'
 
@@ -1009,58 +966,15 @@ function PushNotificationToggle({ farmId }: { farmId: string }) {
   )
 }
 
-function NotificationAlertsTab({ farmId }: { farmId: string }) {
-  const [prefs, setPrefs] = useState<NotifPrefs>(() => loadFromStorage(STORAGE_KEY_PREFS, DEFAULT_PREFS))
-  const [saved, setSaved] = useState(false)
-
-  const update = useCallback((key: keyof NotifPrefs, val: number) => {
-    setPrefs(prev => ({ ...prev, [key]: val }))
-  }, [])
-
-  function handleSave() {
-    localStorage.setItem(STORAGE_KEY_PREFS, JSON.stringify(prefs))
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
-  }
-
-  function handleReset() {
-    setPrefs(DEFAULT_PREFS)
-    localStorage.removeItem(STORAGE_KEY_PREFS)
-    setSaved(false)
-  }
-
+function NotificationAlertsTab({ farmId, view }: { farmId: string; view: ThresholdView | null }) {
+  const t = useTranslations('settings.thresholds')
   return (
-    <SectionCard title="Notification Alert Thresholds" icon={Bell}
-      description="Configure when alerts fire across the dashboard and block panels. These settings are stored locally on this device.">
-      <div className="space-y-8 max-w-xl">
-        <PushNotificationToggle farmId={farmId} />
-        <ThresholdSlider id="soil-moisture-low" label="Soil Moisture — Low Alert" description="Alert fires when a block's soil moisture reading falls below this level."
-          icon={Droplets} colorClass="text-blue-ink" value={prefs.soilMoistureLow} onChange={v => update('soilMoistureLow', v)} min={5} max={50} step={1} unit="%" />
-        <ThresholdSlider id="water-deficit-high" label="Water Deficit — Critical" description="Alert fires when estimated water deficit exceeds this amount."
-          icon={Droplets} colorClass="text-amber-ink" value={prefs.waterDeficitHigh} onChange={v => update('waterDeficitHigh', v)} min={10} max={100} step={5} unit="mm" />
-        <ThresholdSlider id="temp-heat-stress" label="Heat Stress Temperature" description="Alert fires when the forecast high exceeds this temperature."
-          icon={Thermometer} colorClass="text-red" value={prefs.tempHeatStress} onChange={v => update('tempHeatStress', v)} min={28} max={48} step={1} unit="°C" />
-        <ThresholdSlider id="rain-skip" label="Rainfall — Skip Irrigation" description="If forecast or recorded rainfall exceeds this, the AI will recommend skipping irrigation."
-          icon={Wind} colorClass="text-teal-ink" value={prefs.rainSkipIrrigation} onChange={v => update('rainSkipIrrigation', v)} min={2} max={30} step={1} unit="mm" />
-        <ThresholdSlider id="pest-risk" label="Pest Risk — High Alert" description="Alert fires when AI pest risk score exceeds this confidence threshold."
-          icon={AlertTriangle} colorClass="text-gold-ink" value={prefs.pestRiskHigh} onChange={v => update('pestRiskHigh', v)} min={40} max={95} step={5} unit="%" />
-
-        <div className="flex items-center gap-3 pt-2">
-          <button onClick={handleSave} className="flex items-center gap-2 rounded-xl bg-green px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-105 transition-all">
-            {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-            {saved ? 'Saved!' : 'Save Thresholds'}
-          </button>
-          <button onClick={handleReset} className="flex items-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-medium text-ink-2 hover:bg-tile transition-colors">
-            <RefreshCw className="h-4 w-4" />
-            Reset to Defaults
-          </button>
+    <SectionCard title={t('title')} icon={Bell}>
+      <div className="space-y-8">
+        <div className="max-w-xl">
+          <PushNotificationToggle farmId={farmId} />
         </div>
-        <div className="flex items-start gap-2 rounded-lg bg-tile p-3">
-          <Info className="h-4 w-4 text-ink-4 mt-0.5 shrink-0" />
-          <p className="text-xs text-ink-3">
-            Alert thresholds are currently stored in your browser. They will persist across page reloads but not across different devices or browsers.
-          </p>
-        </div>
+        <ThresholdsTab view={view} />
       </div>
     </SectionCard>
   )
@@ -1918,6 +1832,7 @@ export default function SettingsForms({
   knowledgeDocs = null,
   knowledgeRequests = null,
   decisionSetup = null,
+  thresholdView = null,
   farmId,
   farmName,
   farmAddress,
@@ -1929,13 +1844,14 @@ export default function SettingsForms({
 }: SettingsFormsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('profile')
   const tDecision = useTranslations('settings.decision')
+  const tThresholds = useTranslations('settings.thresholds')
 
   const tabs: { id: TabId; label: string; icon: React.ElementType; show: boolean }[] = [
     { id: 'profile' as TabId,  label: 'Account & Security', icon: User,       show: true },
     { id: 'team'    as TabId,  label: 'Team',               icon: Users,      show: userRole === 'admin' || userRole === 'supervisor' },
     { id: 'blocks'  as TabId,  label: 'Block Config',        icon: Layers,     show: userRole === 'admin' || userRole === 'supervisor' },
     { id: 'decision' as TabId, label: tDecision('tabLabel'), icon: Sprout,     show: userRole === 'admin' || userRole === 'supervisor' },
-    { id: 'alerts'  as TabId,  label: 'Alert Thresholds',   icon: Bell,       show: userRole === 'admin' || userRole === 'supervisor' },
+    { id: 'alerts'  as TabId,  label: tThresholds('tabLabel'), icon: Bell,       show: userRole === 'admin' || userRole === 'supervisor' },
     { id: 'sensors' as TabId,  label: 'Sensors',             icon: Cpu,        show: userRole === 'admin' },
     { id: 'weather' as TabId,  label: 'Weather & AI',        icon: Cloud,      show: userRole === 'admin' },
     { id: 'language' as TabId, label: 'Language',            icon: Globe,      show: true },
@@ -1965,9 +1881,9 @@ export default function SettingsForms({
       {/* Tab content */}
       {activeTab === 'profile'  && <AccountTab initialProfile={initialProfile} />}
       {activeTab === 'team'     && <TeamTab userRole={userRole} currentUserId={currentUserId} allUsers={allUsers} farmId={farmId ?? ''} farmName={farmName} />}
-      {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} farmId={farmId ?? ''} farmPolicy={farmPolicy} knowledgeDocs={knowledgeDocs} knowledgeRequests={knowledgeRequests} />}
+      {activeTab === 'blocks'   && <BlockConfigTab blocks={blocks} farmId={farmId ?? ''} farmPolicy={farmPolicy} knowledgeDocs={knowledgeDocs} knowledgeRequests={knowledgeRequests} thresholdView={thresholdView} />}
       {activeTab === 'decision' && <DecisionSetupTab farmId={farmId ?? ''} data={decisionSetup} />}
-      {activeTab === 'alerts'   && <NotificationAlertsTab farmId={farmId ?? ''} />}
+      {activeTab === 'alerts'   && <NotificationAlertsTab farmId={farmId ?? ''} view={thresholdView} />}
       {activeTab === 'sensors'  && <SensorConnectionsTab initialSensors={sensors} blocks={blocks} farmId={farmId ?? ''} initialSensecapApiId={initialSensecapApiId} initialSensecapAccessKey={initialSensecapAccessKey} />}
       {activeTab === 'weather'  && <WeatherAPITab farmId={farmId} farmName={farmName} farmAddress={farmAddress} initialLat={farmGpsLat} initialLng={farmGpsLng} />}
       {activeTab === 'language' && <LanguageTab />}

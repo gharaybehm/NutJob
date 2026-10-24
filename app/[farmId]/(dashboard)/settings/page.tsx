@@ -7,6 +7,7 @@ import { fetchFarmKnowledgeRequests } from '@/utils/kb-requests'
 import { packSchema, type Pack } from '@/engines/pack/schema'
 import { productOptions } from '@/utils/decision/pack-options'
 import { listInstalledPacks } from '@/app/actions/block-pack'
+import { buildThresholdView, packKey, type ThresholdBlockRow, type SoilTestRow } from '@/utils/alert-thresholds'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — SettingsForms lives in the old route group; its internal action imports resolve correctly
 import SettingsForms from '@/app/(dashboard)/settings/SettingsForms'
@@ -105,6 +106,7 @@ export default async function SettingsPage({
   // The product library, and what a product can be listed against: the pests and diseases of the packs the blocks are bound to.
   const { data: productRows, error: productsError } = await db.from('farm_products').select('*').eq('farm_id', farmId).order('name')
   const boundPacks: Pack[] = []
+  const packsByKey = new Map<string, Pack>()
   const boundKeys = new Set<string>(
     ((decisionBlocks ?? []) as { pack_id: string | null; pack_version: string | null }[]).filter(b => b.pack_id && b.pack_version).map(b => `${b.pack_id}@${b.pack_version}`),
   )
@@ -112,7 +114,10 @@ export default async function SettingsPage({
     const [packId, version] = key.split('@')
     const { data: packRow } = await db.from('crop_packs').select('content').eq('pack_id', packId).eq('version', version).maybeSingle()
     const parsed = packRow ? packSchema.safeParse(packRow.content) : null
-    if (parsed?.success) boundPacks.push(parsed.data)
+    if (parsed?.success) {
+      boundPacks.push(parsed.data)
+      packsByKey.set(packKey(packId, version), parsed.data)
+    }
   }
   const decisionSetup =
     decisionFarmError || decisionBlocksError || productsError
@@ -125,6 +130,21 @@ export default async function SettingsPage({
           canEditProducts: membership?.role === 'admin',
           installedPacks: await listInstalledPacks(farmId),
         }
+
+  // The Thresholds tab: every limit the alerts use, with its source. Soil tests give the field capacity and wilting point suggestion.
+  const { data: soilTests, error: soilTestsError } = await db.from('soil_water_readings')
+    .select('id, block_id, recorded_at, parameters')
+    .eq('farm_id', farmId)
+    .eq('test_type', 'soil')
+  const blockFields = new Map(((blocks ?? []) as ThresholdBlockRow[]).map(b => [b.id, b]))
+  const thresholdView = decisionBlocksError || soilTestsError
+    ? null
+    : buildThresholdView({
+        policy: policyRow ?? null,
+        blocks: ((decisionBlocks ?? []) as ThresholdBlockRow[]).map(b => ({ ...b, ...blockFields.get(b.id), pack_id: b.pack_id, pack_version: b.pack_version, pack_variety_id: b.pack_variety_id })),
+        packs: packsByKey,
+        soilTests: (soilTests ?? []) as SoilTestRow[],
+      })
 
   // Fetch farm details for the Farm Identity and Weather sections
   const { data: farmData } = await db.from('farms')
@@ -190,6 +210,7 @@ export default async function SettingsPage({
         knowledgeDocs={knowledgeDocs}
         knowledgeRequests={knowledgeRequests}
         decisionSetup={decisionSetup}
+        thresholdView={thresholdView}
         farmId={farmId}
         farmName={farmData?.name ?? ''}
         farmAddress={farmData?.address ?? ''}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { HEAT_STRESS_FLAG_ABOVE_C } from "@/engines/weather-flags";
 import { rejectUnauthorizedCron } from "@/utils/cron-auth";
 import { createAdminClient } from "@/utils/supabase/admin";
 
@@ -105,7 +106,7 @@ export async function GET(request: NextRequest) {
       );
 
       // Determine risk flags
-      const heatStress = current.temperature_2m > 38;
+      const heatStress = current.temperature_2m > HEAT_STRESS_FLAG_ABOVE_C;
       const frostRisk = daily.temperature_2m_min.some((t: number) => t <= 0);
 
       // Build forecast JSON for the AI engine and the Weather tab
