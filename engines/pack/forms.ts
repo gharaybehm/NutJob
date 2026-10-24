@@ -16,6 +16,10 @@ export interface ObservationField {
   /** The label the pack gives the field; null for a platform field the interface names. */
   label: string | null
   type: 'number' | 'boolean' | 'text'
+  /** A number that may be below zero, such as a water potential or a temperature. */
+  signed?: boolean
+  /** The entry is refused without it. */
+  required?: boolean
 }
 
 export interface ObservationForm {
@@ -30,6 +34,10 @@ export interface ObservationForm {
 /** Observation kinds the platform's own rules read. */
 export const BIOFIX_KIND = 'biofix'
 export const HIVES_KIND = 'hives'
+/** A plant water status reading, for packs that model it. */
+export const WATER_STATUS_KIND = 'plant_water_status'
+/** The field holding the reading itself; the other fields are the baseline's inputs. */
+export const WATER_STATUS_READING = 'reading'
 
 export function observationForms(pack: Pack): ObservationForm[] {
   const forms: ObservationForm[] = []
@@ -53,6 +61,19 @@ export function observationForms(pack: Pack): ObservationForm[] {
   }
   for (const m of maturity) {
     add({ kind: m.observation, subject: null, subjectName: null, fields: [{ id: m.field, label: null, type: 'number' }] })
+  }
+  // The irrigation and disease tables read plant water status; the reading and the weather its baseline needs.
+  const waterStatus = pack.water?.plant_water_status
+  if (waterStatus) {
+    add({
+      kind: WATER_STATUS_KIND,
+      subject: null,
+      subjectName: null,
+      fields: [
+        { id: WATER_STATUS_READING, label: null, type: 'number', signed: true, required: true },
+        ...waterStatus.baseline.inputs.map(id => ({ id, label: null, type: 'number' as const, signed: true })),
+      ],
+    })
   }
   if (pack.seasonal?.pollination) {
     add({ kind: HIVES_KIND, subject: null, subjectName: null, fields: [{ id: 'present', label: null, type: 'boolean' }] })
@@ -89,10 +110,13 @@ export function validateObservation(forms: ObservationForm[], input: Observation
   const values: Record<string, number | boolean | string> = {}
   for (const field of form.fields) {
     const raw = input.values?.[field.id]
-    if (raw === undefined || raw === null || raw === '') continue
+    if (raw === undefined || raw === null || raw === '') {
+      if (field.required) return { ok: false, error: 'value', field: field.id }
+      continue
+    }
     if (field.type === 'number') {
       const n = typeof raw === 'number' ? raw : Number(String(raw).trim().replace(',', '.'))
-      if (!Number.isFinite(n) || n < 0 || n > MAX_NUMBER) return { ok: false, error: 'value', field: field.id }
+      if (!Number.isFinite(n) || (n < 0 && !field.signed) || Math.abs(n) > MAX_NUMBER) return { ok: false, error: 'value', field: field.id }
       values[field.id] = n
     } else if (field.type === 'boolean') {
       if (typeof raw !== 'boolean') return { ok: false, error: 'value', field: field.id }

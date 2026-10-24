@@ -1,0 +1,110 @@
+# Cases for the models the pack defines.
+
+# --- Degree-days (temperatures in the model's units, degF) ---
+- id: now-dd-between-thresholds
+  kind: degree_days
+  pest: now
+  tmin: 60
+  tmax: 80
+  expect: 15
+
+- id: now-dd-capped-at-upper
+  kind: degree_days
+  pest: now
+  tmin: 95
+  tmax: 105
+  expect: 39
+
+- id: now-dd-below-lower
+  kind: degree_days
+  pest: now
+  tmin: 35
+  tmax: 54
+  expect: 0
+
+- id: ptb-dd-between-thresholds
+  kind: degree_days
+  pest: ptb
+  tmin: 55
+  tmax: 75
+  expect: 15
+
+# --- Alternaria severity values (specification acceptance test A4.6) ---
+- id: alternaria-10-wet-hours-at-70F
+  kind: infection
+  disease: alternaria
+  hours:
+    - { count: 10, temp: 70, wet: true }
+    - { count: 13, temp: 70, wet: false }
+  expect: 2
+
+- id: alternaria-22-wet-hours-at-70F
+  kind: infection
+  disease: alternaria
+  hours:
+    - { count: 22, temp: 70, wet: true }
+    - { count: 1, temp: 70, wet: false }
+  expect: 4
+
+- id: alternaria-5-wet-hours-at-60F
+  kind: infection
+  disease: alternaria
+  hours:
+    - { count: 5, temp: 60, wet: true }
+    - { count: 18, temp: 60, wet: false }
+  expect: 0
+
+# --- Salinity (specification acceptance test A4.8) ---
+- id: salinity-relative-yield-at-ece-3
+  kind: relative_yield
+  ece: 3.0
+  expect: 71.5
+
+# --- Nitrogen ---
+- id: nitrogen-demand-for-2000-kg-kernels
+  kind: nutrient_demand
+  nutrient: N
+  expected_yield_kg_ha: 2000
+  expect: 194.286
+
+- id: nitrogen-phase-shares-sum-to-one
+  kind: phase_shares
+  nutrient: N
+
+# --- Frost ---
+- id: frost-vairo-bloom-interpolates-damage
+  kind: frost
+  stage: full_bloom
+  variety: vairo
+  forecast_min_c: -4.0
+  uncertainty_c: 1
+  warning_margin_c: 1
+  watch_margin_c: 3
+  tolerance: 0.001
+  expect: { level: critical, critical_c: -3.46, damage_fraction: 0.2554 }
+
+- id: frost-makako-bloom-uses-general-value
+  kind: frost
+  stage: full_bloom
+  variety: makako
+  forecast_min_c: -2.0
+  uncertainty_c: 1
+  warning_margin_c: 1
+  watch_margin_c: 3
+  expect: { level: warning, critical_c: -2.7, damage_fraction: null }
+
+- id: frost-young-fruit-critical
+  kind: frost
+  stage: young_fruit
+  forecast_min_c: -1.5
+  uncertainty_c: 1
+  warning_margin_c: 1
+  watch_margin_c: 3
+  expect: { level: critical, critical_c: -1.1 }
+
+# --- Stem water potential baseline ---
+- id: swp-baseline-at-90F
+  kind: water_status
+  reading: -12.5
+  weather: { air_temp_F: 90 }
+  expect: { baseline: -9, deviation: -3.5 }

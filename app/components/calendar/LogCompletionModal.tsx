@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X, CheckCircle, Clock, MapPin } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { CalendarEvent, ACTIVITY_COLORS, ACTIVITY_LABELS } from './types';
+import SprayProductPicker, { type SprayChoice } from '@/app/components/activity/SprayProductPicker';
 
 type MaterialActualState = {
   consumableId: string;
@@ -18,8 +19,10 @@ type MaterialActual = { consumableId: string; actualQuantity: number; currentBal
 
 interface LogCompletionModalProps {
   event: CalendarEvent;
+  farmId: string;
   onClose: () => void;
-  onComplete: (eventId: string, actualStart: Date, actualEnd: Date, notes: string, materialActuals: MaterialActual[]) => void;
+  /** `spray`: the library product a spray used, when one was chosen. */
+  onComplete: (eventId: string, actualStart: Date, actualEnd: Date, notes: string, materialActuals: MaterialActual[], spray: SprayChoice | null) => void;
 }
 
 function pad2(n: number) { return String(n).padStart(2, '0'); }
@@ -27,13 +30,14 @@ function toDatetimeLocal(d: Date) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
-export default function LogCompletionModal({ event, onClose, onComplete }: LogCompletionModalProps) {
+export default function LogCompletionModal({ event, farmId, onClose, onComplete }: LogCompletionModalProps) {
   const t = useTranslations('calendar.logCompletion');
   const colors = ACTIVITY_COLORS[event.type];
 
   const [actualStart, setActualStart] = useState(toDatetimeLocal(event.startDate));
   const [actualEnd,   setActualEnd]   = useState(toDatetimeLocal(event.endDate));
   const [notes,       setNotes]       = useState('');
+  const [sprayChoice, setSprayChoice] = useState<SprayChoice>({ productId: '', targetId: '' });
 
   const [materialActuals, setMaterialActuals] = useState<MaterialActualState[]>(() =>
     (event.materials ?? []).map((m) => ({
@@ -54,7 +58,7 @@ export default function LogCompletionModal({ event, onClose, onComplete }: LogCo
     const actuals: MaterialActual[] = materialActuals
       .map((m) => ({ consumableId: m.consumableId, actualQuantity: Number(m.actualQuantity), currentBalance: m.currentBalance }))
       .filter((m) => m.actualQuantity > 0);
-    onComplete(event.id, new Date(actualStart), new Date(actualEnd), notes, actuals);
+    onComplete(event.id, new Date(actualStart), new Date(actualEnd), notes, actuals, sprayChoice.productId ? sprayChoice : null);
     onClose();
   }
 
@@ -153,6 +157,10 @@ export default function LogCompletionModal({ event, onClose, onComplete }: LogCo
                 })}
               </div>
             </div>
+          )}
+
+          {event.type === 'spraying' && (
+            <SprayProductPicker farmId={farmId} value={sprayChoice} onChange={(v) => setSprayChoice(v)} selectClassName={fieldCls} labelClassName={labelCls} />
           )}
 
           <div>

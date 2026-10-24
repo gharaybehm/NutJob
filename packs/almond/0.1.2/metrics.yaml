@@ -1,0 +1,9 @@
+metrics:
+  phenology:
+    - { id: stage_date_error, description: Predicted against observed stage dates, unit: days }
+  irrigation:
+    - { id: water_status_in_band, description: Share of readings with water status inside the target band, unit: "%" }
+  insect_pest:
+    - { id: spray_timing_error, description: Spray timing against observed pest events, unit: days }
+  yield_forecast:
+    - { id: yield_forecast_error, description: Forecast against harvested yield, unit: "%" }

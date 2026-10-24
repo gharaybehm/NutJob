@@ -10,7 +10,7 @@ import {
   type FieldObservationRow,
   type ObservationFormsResult,
 } from '@/app/actions/field-observations'
-import { BIOFIX_KIND, HIVES_KIND, type ObservationForm } from '@/engines/pack/forms'
+import { BIOFIX_KIND, HIVES_KIND, WATER_STATUS_KIND, WATER_STATUS_READING, type ObservationForm } from '@/engines/pack/forms'
 
 const INPUT =
   'w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green'
@@ -52,7 +52,7 @@ export default function FieldObservations({ blockId }: { blockId: string }) {
   }, [load])
 
   const kindLabel = (f: { kind: string; subject: string | null; subjectName?: string | null }, forms: ObservationForm[]) => {
-    const kind = f.kind === BIOFIX_KIND ? t('kinds.biofix') : f.kind === HIVES_KIND ? t('kinds.hives') : words(f.kind)
+    const kind = f.kind === BIOFIX_KIND ? t('kinds.biofix') : f.kind === HIVES_KIND ? t('kinds.hives') : f.kind === WATER_STATUS_KIND ? t('kinds.plantWaterStatus') : words(f.kind)
     const subjectName = f.subjectName ?? forms.find(x => x.subject === f.subject && x.subjectName)?.subjectName ?? f.subject
     return subjectName ? `${kind}: ${subjectName}` : kind
   }
@@ -143,11 +143,13 @@ export default function FieldObservations({ blockId }: { blockId: string }) {
               </div>
 
               {form && form.kind === BIOFIX_KIND && <p className="text-xs text-ink-3">{t('biofixHint')}</p>}
+              {form && form.kind === WATER_STATUS_KIND && <p className="text-xs text-ink-3">{t('waterStatusHint')}</p>}
 
               {form && form.fields.length > 0 && (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {form.fields.map(field => {
-                    const label = form.kind === HIVES_KIND ? t('hivesPresent') : field.label ?? words(field.id)
+                    const label =
+                      form.kind === HIVES_KIND ? t('hivesPresent') : form.kind === WATER_STATUS_KIND && field.id === WATER_STATUS_READING ? t('waterStatusReading') : field.label ?? words(field.id)
                     return (
                       <label key={field.id} className="block text-xs font-semibold uppercase tracking-wider text-ink-3">
                         {label}
@@ -160,9 +162,10 @@ export default function FieldObservations({ blockId }: { blockId: string }) {
                         ) : (
                           <input
                             type={field.type === 'number' ? 'number' : 'text'}
-                            min={field.type === 'number' ? 0 : undefined}
+                            min={field.type === 'number' && !field.signed ? 0 : undefined}
                             step="any"
-                            inputMode={field.type === 'number' ? 'decimal' : undefined}
+                            // A decimal keypad has no minus key on some phones, so a value that can be negative gets the full one.
+                            inputMode={field.type === 'number' && !field.signed ? 'decimal' : undefined}
                             value={entries[field.id] ?? ''}
                             onChange={e => setEntries(s => ({ ...s, [field.id]: e.target.value }))}
                             className={`${INPUT} mt-1.5 font-normal normal-case tracking-normal`}

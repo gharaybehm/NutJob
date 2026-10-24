@@ -202,7 +202,8 @@
       "biofixHint": "Zararlının gelişiminin sayılmaya başlandığı tarih. Buraya girilen tarih, sistemin tuzak kontrollerinden bulduğu tarihin yerine geçer.",
       "kinds": {
         "biofix": "Biofix",
-        "hives": "Kovanlar"
+        "hives": "Kovanlar",
+        "plantWaterStatus": "Bitki su durumu"
       },
       "hivesPresent": "Parselde şu anda kovan var mı?",
       "hivesYes": "Parselde kovan var",
@@ -226,7 +227,9 @@
         "forbidden": "Bu parsele erişiminiz yok.",
         "notBound": "Bu parsel bir ürün paketine bağlı değil.",
         "failed": "Gözlem kaydedilemedi. Yeniden deneyin."
-      }
+      },
+      "waterStatusReading": "Okuma",
+      "waterStatusHint": "Ürün paketinin kullandığı birimde okuma (su potansiyeli sıfırın altındadır) ve iyi sulanmış bir ağaçla karşılaştırma için gereken, ölçüm anındaki hava sıcaklığı. Bir okuma birkaç gün geçerlidir."
     }
   },
   "activityTypes": {
@@ -317,6 +320,33 @@
       "notesPlaceholder": "Yapılanlar, gözlemler, karşılaşılan sorunlar…",
       "cancel": "İptal",
       "markComplete": "Tamamlandı Olarak İşaretle"
+    },
+    "engine": {
+      "toggle": "Motor planı ({count})",
+      "reentry": "{block}: girilmez",
+      "preharvest": "{block}: hasat yapılmaz (hasat öncesi süre)",
+      "harvestPlanned": "{block}: planlanan hasat",
+      "frostNight": "{block}: don ({level})",
+      "levels": {
+        "none": "risk yok",
+        "watch": "izleme",
+        "warning": "uyarı",
+        "critical": "kritik"
+      },
+      "kinds": {
+        "planned": "Motor planı",
+        "season_task": "Zamanı gelen sezon görevi",
+        "reentry": "Yeniden giriş süresi",
+        "preharvest": "Hasat öncesi süre",
+        "harvest_planned": "Planlanan hasat",
+        "frost_night": "Don gecesi"
+      },
+      "range": "{from} – {to}",
+      "live": "Canlı: takvime eklemek için Öneriler sayfasında kabul edin.",
+      "shadow": "Gölge: karşılaştırma için kaydedilir, takvime eklenmez.",
+      "readOnly": "Karar motorundan. Takvim etkinliği değildir.",
+      "openPlan": "Motor planını aç",
+      "close": "Kapat"
     }
   },
   "inventory": {
@@ -471,8 +501,23 @@
           "note": "Bunun yerine ne yapıldığını yazın veya \"Diğer\"i açıklayın.",
           "forbidden": "Kararı yalnızca bu çiftliğin sorumlusu veya yöneticisi kaydedebilir.",
           "notFound": "Bu işlem artık kayıtta yok.",
-          "failed": "Karar kaydedilemedi. Yeniden deneyin."
-        }
+          "failed": "Karar kaydedilemedi. Yeniden deneyin.",
+          "schedule": "Bir başlangıç saati ve süre seçin.",
+          "notLive": "Bu motor Gölge modunda; eylemleri takvime eklenmez.",
+          "booked": "Bu eylem zaten takvimde."
+        },
+        "acceptSchedule": "Kabul et ve planla",
+        "changeSchedule": "Değiştir ve planla",
+        "skipLive": "Atla",
+        "book": "Takvime ekle",
+        "noteChanged": "Bunun yerine ne yapılacak",
+        "booked": "{date} için planlandı.",
+        "bookedDone": "{date} tarihinde yapıldı.",
+        "openCalendar": "Takvimi aç",
+        "acceptedLive": "Kabul edildi",
+        "editedLive": "Değiştirildi",
+        "skippedLive": "Atlandı",
+        "notBooked": "Karar verildi, planlanmadı"
       },
       "modes": {
         "title": "Motor başına Gölge veya Canlı",
@@ -515,6 +560,73 @@
         "LEACHING_NOT_ASSESSED": "Tuzları yıkamak için ek su eklenmiyor.",
         "NUTRIENT_CREDITS_NOT_ASSESSED": "Su, toprak ve organik maddeden gelen besinler hesaba katılmıyor.",
         "VALUE_NOT_ESTIMATED": "İşlemin henüz parasal değeri yok, bu yüzden maliyetiyle karşılaştırılmıyor."
+      },
+      "frostCheck": {
+        "title": "Don kontrolü, iki saatte bir",
+        "coldest": "En soğuk gece {date}: {value} °C",
+        "noNights": "Tahminde gece yok",
+        "station": "istasyon {value} °C",
+        "checkedAt": "kontrol {time}",
+        "levels": {
+          "none": "Risk yok",
+          "watch": "İzleme",
+          "warning": "Uyarı",
+          "critical": "Kritik"
+        }
+      },
+      "pinned": {
+        "title": "Onaylanacak güvenlik bulguları ({count})",
+        "days": "gün {days}",
+        "acknowledge": "Gördüm",
+        "note": "Onay yalnızca gördüğünüzü kaydeder. Güvenlik kuralı geçerliliğini korur.",
+        "errors": {
+          "forbidden": "Bir güvenlik bulgusunu yalnızca bu çiftliğin sorumlusu veya yöneticisi onaylayabilir.",
+          "notFound": "Bu bulgu artık planda değil.",
+          "failed": "Kaydedilemedi. Tekrar deneyin."
+        }
+      },
+      "calibrations": {
+        "title": "Kalibre edilmiş değerler (öğrenme döngüsü)",
+        "empty": "Henüz kalibre edilmiş değer yok. Ürün paketi değerleri geçerli. Bir değer ancak yeterli sonuç kaydedildikten sonra (okumalar, gözlenen olaylar, hasatlar) önerilir; bu yüzden ilk sezonundaki genç ağaçlar için öneri yapılmaz.",
+        "unavailable": "Kalibre edilmiş değerler okunamadı.",
+        "intro": "Bu çiftlik için ürün paketinin üzerine kalibre edilen değerler. Önerilen bir değer yalnızca paket sınırları içindeyse ve kayıtlı geçmişte geçerli değerden daha iyi sonuç verdiyse yürürlüğe alınabilir. Yürürlüğe alma tek adımda geri alınabilir.",
+        "adminOnly": "Kalibre edilmiş bir değeri yalnızca çiftlik yöneticisi yürürlüğe alabilir, reddedebilir veya geri alabilir.",
+        "wholeFarm": "Tüm çiftlik",
+        "variety": "Çeşit {variety}",
+        "inForce": "Geçerli",
+        "packValue": "{value} (ürün paketi)",
+        "bounds": "paket sınırları {low} – {high}",
+        "backtest": "{metric}: şu anki {champion} yerine {challenger}, {n} sonuç üzerinden",
+        "status": {
+          "challenger": "önerildi",
+          "in_force": "geçerli",
+          "superseded": "değiştirildi",
+          "rejected": "reddedildi",
+          "rolled_back": "geri alındı"
+        },
+        "refusals": {
+          "notChallenger": "zaten karara bağlandı",
+          "unknownParameter": "kullanılan paketin bir parametresi değil",
+          "fixed": "paket bu değeri sabitliyor",
+          "bounds": "paket sınırlarının dışında, incelemeye bekletiliyor",
+          "noBacktest": "kayıtlı sonuçlarda geriye dönük test yok",
+          "notBetter": "geçerli değerden daha iyi sonuç vermedi"
+        },
+        "promote": "Yürürlüğe al",
+        "reject": "Reddet",
+        "rollback": "Geri al",
+        "errors": {
+          "forbidden": "Kalibre edilmiş değerlere yalnızca çiftlik yöneticisi karar verebilir.",
+          "notFound": "Bu değer artık kayıtta değil.",
+          "notAllowed": "Bu işlem bu değere uygulanamaz.",
+          "notChallenger": "Bu değer zaten karara bağlandı.",
+          "unknownParameter": "Kullanılan ürün paketinde böyle bir parametre yok.",
+          "fixed": "Ürün paketi bu değeri sabitliyor.",
+          "bounds": "Değer ürün paketi sınırlarının dışında.",
+          "noBacktest": "Değerin kayıtlı sonuçlarda geriye dönük testi yok.",
+          "notBetter": "Değer geçerli olandan daha iyi sonuç vermedi.",
+          "failed": "Kaydedilemedi. Tekrar deneyin."
+        }
       }
     }
   },
@@ -534,7 +646,14 @@
     "offlineBanner": "{count} aktivite çevrimdışı kaydedildi — yeniden bağlandığınızda otomatik senkronize edilecek.",
     "syncingBanner": "Çevrimdışı aktiviteler senkronize ediliyor…",
     "syncedBanner": "{count} aktivite başarıyla senkronize edildi.",
-    "pendingSyncBadge": "Senkronizasyon bekliyor"
+    "pendingSyncBadge": "Senkronizasyon bekliyor",
+    "sprayLibrary": {
+      "product": "Kütüphaneden ürün",
+      "none": "Kütüphanede yok",
+      "notApproved": "{name} (onaylanmadı)",
+      "target": "Kullanıldığı hedef",
+      "anyTarget": "Belirtilmedi"
+    }
   },
   "settings": {
     "title": "Ayarlar",

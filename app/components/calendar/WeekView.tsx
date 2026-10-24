@@ -7,6 +7,8 @@ interface WeekViewProps {
   currentDate: Date;
   events: CalendarEvent[];
   onEventClick: (event: CalendarEvent) => void;
+  /** Extra content under a day's heading: the decision engine's layer. */
+  renderDayExtra?: (day: Date) => React.ReactNode;
 }
 
 // Visible hours: 05:00 – 21:00
@@ -43,7 +45,7 @@ function eventHeight(start: Date, end: Date): number {
   return Math.max(24, duration * HOUR_HEIGHT);
 }
 
-export default function WeekView({ currentDate, events, onEventClick }: WeekViewProps) {
+export default function WeekView({ currentDate, events, onEventClick, renderDayExtra }: WeekViewProps) {
   const locale = useLocale();
   const DAY_LABELS = [0,1,2,3,4,5,6].map(i =>
     new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2024, 0, 7 + i))
@@ -69,6 +71,7 @@ export default function WeekView({ currentDate, events, onEventClick }: WeekView
               <p className={`mt-0.5 font-heading text-xl font-semibold ${isToday ? 'text-green' : 'text-ink'}`}>
                 {day.getDate()}
               </p>
+              {renderDayExtra && <div className="mt-1 px-1">{renderDayExtra(day)}</div>}
             </div>
           );
         })}

@@ -8,13 +8,15 @@
  */
 export interface DataFreshness {
   sensorsMin: number | null;
+  /** Age past which the sensors count as stale, from the slowest sensor's own reading interval; null when it cannot be read. */
+  sensorsStaleAfterMin: number | null;
   weatherMin: number | null;
   irrigationLogMin: number | null;
 }
 
 /** Past these ages a source is flagged as stale. */
 export const STALE_AFTER_MIN = {
-  sensors: 3 * 60,          // sensors report every 15 min
+  sensors: 3 * 60,          // the floor; a sensor set to report less often gets longer (sensorsStaleAfterMin)
   weather: 6 * 60,          // forecast refreshes every 3 h
   irrigationLog: 7 * 24 * 60,
 } as const;

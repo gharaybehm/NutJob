@@ -1,0 +1,47 @@
+duration_basis: Maximum temperature tolerated for 30 minutes
+unit: degC
+active_phases: [bloom, fruit_set]
+stages:
+  - id: closed_buds
+    name: Closed buds
+    phase: null
+    critical:
+      - { temp_c: $frost_closed_buds_c, damage_fraction: null }
+    evidence: SAUNIER1960
+
+  - id: full_bloom
+    name: Full bloom
+    phase: bloom
+    critical:
+      - { temp_c: $frost_full_bloom_c, damage_fraction: null }
+    by_variety:
+      vairo:
+        - { temp_c: $frost_vairo_bloom_lt10_c, damage_fraction: 0.1 }
+        - { temp_c: $frost_vairo_bloom_lt50_c, damage_fraction: 0.5 }
+        - { temp_c: $frost_vairo_bloom_lt90_c, damage_fraction: 0.9 }
+    evidence: SAUNIER1960
+    review: >-
+      Two sources disagree. The general value is the older tolerance limit
+      (-2.7 degC, Saunier 1960). For Vairo the pack uses the measured 10, 50
+      and 90 % damage temperatures from Calle et al. 2025 (10 % at -3.46 degC),
+      which the live app already uses. The live app also holds a mean of the
+      20 cultivars in that study for untested varieties (10 % at -3.21 degC);
+      it is not in this pack, so Makako uses the general value.
+
+  - id: young_fruit
+    name: Young fruit
+    phase: fruit_set
+    critical:
+      - { temp_c: $frost_young_fruit_c, damage_fraction: null }
+    evidence: SAUNIER1960
+    review: >-
+      The live app uses species-level fruitlet values from Miranda et al. 2005
+      (10 % at -2.4 degC, 90 % at -3.6 degC); this pack uses -1.1 degC.
+
+damage_function:
+  loss_fraction_per_degree: $frost_loss_fraction_per_degree
+
+to_be_sourced:
+  - item: 10 % and 90 % damage temperatures per BBCH stage
+    note: Until then the single values act as the warning level and the damage fraction is unavailable, except for Vairo at full bloom.
+  - item: BBCH stage range for each frost stage

@@ -3,6 +3,7 @@ import RecommendationsClient from "@/app/components/recommendations/Recommendati
 import { getRecommendations } from "./actions";
 import EnginePlan from "@/app/components/recommendations/EnginePlan";
 import { getEnginePlan } from "@/app/actions/engine-plan";
+import { getCalibrations } from "@/app/actions/calibrations";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -44,9 +45,10 @@ export default async function RecommendationsPage({
     redirect(`/${farmId}/dashboard?error=Unauthorized`);
   }
 
-  const [recommendations, enginePlan, t] = await Promise.all([
+  const [recommendations, enginePlan, calibrations, t] = await Promise.all([
     getRecommendations(farmId),
     getEnginePlan(farmId),
+    getCalibrations(farmId),
     getTranslations('recommendations'),
   ]);
 
@@ -62,7 +64,7 @@ export default async function RecommendationsPage({
       </div>
 
       {/* The decision engine's plan. Shown once the farm has a block linked to a crop pack or a plan on record. */}
-      {(enginePlan.status === 'ok' || enginePlan.modes.length > 0) && <EnginePlan farmId={farmId} view={enginePlan} />}
+      {(enginePlan.status === 'ok' || enginePlan.modes.length > 0) && <EnginePlan farmId={farmId} view={enginePlan} calibrations={calibrations} />}
 
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <RecommendationsClient initialRecommendations={recommendations as any} farmId={farmId} />

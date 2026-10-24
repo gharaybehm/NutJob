@@ -145,6 +145,8 @@ const waterSchema = z.object({
       unit: z.string(),
       baseline: z.object({ expression: z.string().nullable(), inputs: z.array(z.string()), evidence: z.string(), note: z.string().optional() }),
       trigger_deviation: paramRef,
+      /** The state keys the pack's tables read the reading, its age in days and its deviation under. Without them, the generic water_status_* keys only. */
+      state_keys: z.object({ reading: z.string(), age_days: z.string(), deviation: z.string() }).partial().optional(),
     })
     .optional(),
   deficit_strategies: z

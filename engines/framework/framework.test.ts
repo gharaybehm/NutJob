@@ -7,7 +7,7 @@ import { engineAvailability, packSection } from './availability'
 import { actionVerdict, expectedLossAvoided, projectedLoss } from './expected-loss'
 import type { DecisionEngine, ProposedAction } from './types'
 
-const almond = packSchema.parse(loadPackSource(join(__dirname, '../../packs/almond/0.1.1')).raw)
+const almond = packSchema.parse(loadPackSource(join(__dirname, '../../packs/almond/0.1.2')).raw)
 
 describe('engineAvailability', () => {
   const engine = (requirements: string[]): Pick<DecisionEngine, 'engineId' | 'packRequirements'> => ({
@@ -113,7 +113,7 @@ describe('engine contract', () => {
  * name or phenology phase in platform code is a defect. It belongs in a pack.
  */
 describe('golden rule: no crop content in platform code', () => {
-  const platformDirs = ['core', 'rules', 'pack', 'framework', 'decision', 'safeguards', 'arbitrator', 'narrator'].map(d => join(__dirname, '..', d))
+  const platformDirs = ['core', 'rules', 'pack', 'framework', 'decision', 'safeguards', 'arbitrator', 'narrator', 'learning'].map(d => join(__dirname, '..', d))
 
   const stripComments = (source: string) => source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
 

@@ -1,6 +1,7 @@
 import CalendarPage from '@/app/components/calendar/CalendarPage';
 import { createClient } from '@/utils/supabase/server';
 import { CalendarEvent, ActivityType, MaterialLine } from '@/app/components/calendar/types';
+import { loadEngineCalendarLayer } from '@/utils/decision/engine-calendar';
 
 export const metadata = {
   title: 'Calendar — RootLoot',
@@ -103,5 +104,13 @@ export default async function CalendarRoute({ params }: { params: Promise<{ farm
     materials: materialsMap.get(row.id) ?? [],
   }));
 
-  return <CalendarPage initialEvents={initialEvents} consumables={consumables} userRole={effectiveRole || 'worker'} farmId={farmId} />;
+  // The decision engine's plan is for supervisors and admins, as on the Recommendations page; RLS enforces the same.
+  const engineLayer = effectiveRole === 'admin' || effectiveRole === 'supervisor'
+    ? await loadEngineCalendarLayer(supabase, farmId).catch((e: unknown) => {
+        console.error('[Calendar] Engine layer not loaded:', e instanceof Error ? e.message : e);
+        return null;
+      })
+    : null;
+
+  return <CalendarPage initialEvents={initialEvents} consumables={consumables} userRole={effectiveRole || 'worker'} farmId={farmId} engineLayer={engineLayer} />;
 }

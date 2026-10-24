@@ -9,6 +9,8 @@ interface DayViewProps {
   events: CalendarEvent[];
   onEventClick: (event: CalendarEvent) => void;
   onLogCompletion: (event: CalendarEvent) => void;
+  /** Extra content under the day's heading: the decision engine's layer. */
+  renderDayExtra?: (day: Date) => React.ReactNode;
 }
 
 // Visible hours: 05:00 – 21:00
@@ -27,7 +29,7 @@ function fmt(d: Date) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function DayView({ currentDate, events, onEventClick, onLogCompletion }: DayViewProps) {
+export default function DayView({ currentDate, events, onEventClick, onLogCompletion, renderDayExtra }: DayViewProps) {
   const locale = useLocale();
   const t = useTranslations('calendar.dayView');
 
@@ -54,6 +56,7 @@ export default function DayView({ currentDate, events, onEventClick, onLogComple
         <p className="text-sm text-ink-2">
           {dayEvents.length === 0 ? t('noEvents') : eventCountStr}
         </p>
+        {renderDayExtra && <div className="mt-2 max-w-md">{renderDayExtra(currentDate)}</div>}
       </div>
 
       {/* Time grid */}

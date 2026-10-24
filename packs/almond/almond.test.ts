@@ -5,15 +5,15 @@ import { createPackContext } from '../../engines/pack/context'
 import { loadPackSource } from '../../engines/pack/load'
 import { validatePack } from '../../engines/pack/validate'
 
-const source = loadPackSource(join(__dirname, '0.1.1'))
+const source = loadPackSource(join(__dirname, '0.1.2'))
 const report = validatePack(source.raw, { digest: source.digest })
 
-describe('almond pack 0.1.1 (latest)', () => {
+describe('almond pack 0.1.2 (latest)', () => {
   it('validates with no errors and a matching signature', () => {
     expect(report.errors).toEqual([])
     expect(report.ok).toBe(true)
     expect(report.packId).toBe('almond')
-    expect(report.version).toBe('0.1.1')
+    expect(report.version).toBe('0.1.2')
   })
 
   it('passes its own test suite', () => {

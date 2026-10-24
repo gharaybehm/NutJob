@@ -1,0 +1,77 @@
+nutrients:
+  - id: N
+    removal_kg_per_kg_yield: $n_removal_kg_per_kg
+    growth_requirement_kg_ha: $n_growth_young_kg_ha
+    phase_shares:
+      - { phase: fruit_set, share: $n_share_fruit_set, label: End of bloom to full leaf expansion }
+      - { phase: fruit_growth, share: $n_share_fruit_growth, label: To shell hardening }
+      - { phase: kernel_fill, share: $n_share_kernel_fill, label: Kernel fill to early hull split }
+      - { phase: hull_split, share: $n_share_hull_split, label: Hull split to early post-harvest }
+    notes: Excess nitrogen at hull split raises hull rot risk.
+    evidence: CDFA_UC
+    review: >-
+      The live app budgets nitrogen differently: a fertiliser-applied figure
+      (UC 250 lb N/ac at 2,800 lb/ac kernel) with a three-part split, no
+      credits and no efficiency factor. This pack uses removal per yield, a
+      four-part split, credits and efficiency. The mapping of the four source
+      periods onto the phases above also needs confirming.
+  - id: P
+    removal_kg_per_kg_yield: $p_removal_kg_per_kg
+    evidence: CDFA_UC
+  - id: K
+    removal_kg_per_kg_yield: $k_removal_kg_per_kg
+    evidence: CDFA_UC
+
+efficiency: $fert_efficiency
+
+sampling:
+  tissue: leaf
+  timing: July
+  months: [7]
+  trees: 28
+  min_spurs_per_tree: 8
+  note: A spring sample can predict the July nitrogen value.
+  evidence: CDFA_UC
+
+tissue_bands:
+  - nutrient: N
+    tissue: leaf
+    unit: "%"
+    deficient_below: 2.0
+    adequate_from: 2.2
+    adequate_to: 2.5
+    excessive_above: 2.7
+    evidence: CDFA_UC
+    review: The live app uses 2.6 % as the ceiling for leaf nitrogen; this pack uses 2.7 %.
+  - nutrient: P
+    tissue: leaf
+    unit: "%"
+    adequate_from: 0.1
+    adequate_to: 0.3
+    evidence: CDFA_UC
+  - nutrient: K
+    tissue: leaf
+    unit: "%"
+    deficient_below: 1.0
+    adequate_from: 1.4
+    evidence: CDFA_UC
+    review: The live app treats potassium as adequate from 1.0 %; this pack from 1.4 %.
+  - nutrient: B
+    tissue: hull
+    unit: ppm
+    deficient_below: 80
+    adequate_from: 80
+    adequate_to: 150
+    excessive_above: 200
+    note: Above 200 ppm, possible toxicity.
+    evidence: CDFA_UC
+    review: The live app judges boron on leaves (30 to 80 ppm); this pack judges it on hulls.
+
+max_single_dose_kg_ha: $max_single_dose_kg_ha
+
+to_be_sourced:
+  - item: Leaf bands for Zn, Mn, Cu and Fe
+  - item: How much to raise or cut the remaining doses after a leaf analysis
+    note: The specification says to raise them when deficient and cut them when excessive, within bounds, and gives no figure.
+  - item: Fertigation decision table
+    note: Part C of the specification gives the budget and the bands but no rule table.

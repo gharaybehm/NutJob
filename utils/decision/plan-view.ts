@@ -4,6 +4,7 @@
  */
 
 import type { ProposedAction } from '@/engines/framework/types'
+import type { RecommendationCategory } from '@/utils/recommendation-effects'
 
 export const DECISIONS = ['accepted', 'edited', 'skipped'] as const
 export type Decision = (typeof DECISIONS)[number]
@@ -168,4 +169,86 @@ export function waitingEngines(engines: Record<string, EngineResult> | null | un
     if (e.diagnosis && e.diagnosis.outcome === null) return [{ engineId, notes: e.diagnosis.notes }]
     return []
   })
+}
+
+/**
+ * The calendar category of an engine action, for booking a Live action. Read
+ * from the action type's form (spray_*, irrigate*, *_sampling, monitor_*,
+ * ...), which is the same for every crop, then from the engine; anything
+ * else is booked as "other".
+ */
+export function categoryForAction(action: Pick<ProposedAction, 'engineId' | 'actionType'>): RecommendationCategory {
+  const type = action.actionType
+  if (type.startsWith('spray')) return 'spray'
+  if (type.startsWith('irrigate')) return 'irrigate'
+  if (/(^|_)(sampling|scouting|measurement|observe|monitor)(_|$)/.test(type)) return 'scout'
+  if (action.engineId === 'fertigation') return 'fertilize'
+  if (action.engineId === 'canopy_pruning') return 'prune'
+  return 'other'
+}
+
+/** What the manager sends to accept or change a Live action and book it. */
+export interface ScheduleDecisionValue extends DecisionValue {
+  decision: 'accepted' | 'edited'
+  start: string
+  durationHours: number | null
+}
+
+/** Only accepting or changing books work; a skip is recorded with recordEngineDecision. */
+export function validateScheduleDecision(input: unknown): { ok: true; value: ScheduleDecisionValue } | { ok: false; error: DecisionError | 'schedule' } {
+  const raw = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>
+  if (raw.decision !== 'accepted' && raw.decision !== 'edited') return { ok: false, error: 'decision' }
+  const v = validateDecision(raw)
+  if (!v.ok) return v
+  const start = typeof raw.start === 'string' ? raw.start : ''
+  if (Number.isNaN(Date.parse(start))) return { ok: false, error: 'schedule' }
+  const hours = raw.durationHours === null || raw.durationHours === undefined || raw.durationHours === '' ? null : Number(raw.durationHours)
+  if (hours !== null && !(Number.isFinite(hours) && hours > 0 && hours <= 24 * 14)) return { ok: false, error: 'schedule' }
+  return { ok: true, value: { ...v.value, decision: raw.decision, start, durationHours: hours } }
+}
+
+export interface SafeguardEvent {
+  actionId: string
+  day: number
+  safeguardId: string
+  reason: string
+}
+
+/**
+ * What identifies a safeguard finding across days and plans: the safeguard,
+ * the action it stopped (block, engine, rule, type) and the reason as
+ * recorded. The same finding on several days of the plan, or in tomorrow's
+ * plan, has the same key, so one acknowledgement covers it; a new reason is a
+ * new finding.
+ */
+export function safeguardEventKey(event: Pick<SafeguardEvent, 'safeguardId' | 'reason'>, action: Pick<ProposedAction, 'blockId' | 'engineId' | 'ruleId' | 'actionType'>): string {
+  return [event.safeguardId, action.blockId, action.engineId, action.ruleId, action.actionType, event.reason].join('|')
+}
+
+export interface PinnedSafeguard {
+  key: string
+  safeguardId: string
+  reason: string
+  blockId: string
+  actionId: string
+  /** Plan days the finding applies to. */
+  days: number[]
+}
+
+/** The findings not yet acknowledged, one per key, in the order the plan recorded them. */
+export function pinnedSafeguards(events: SafeguardEvent[], actions: Map<string, Pick<ProposedAction, 'blockId' | 'engineId' | 'ruleId' | 'actionType'>>, acknowledged: Set<string>): PinnedSafeguard[] {
+  const byKey = new Map<string, PinnedSafeguard>()
+  for (const e of events) {
+    const action = actions.get(e.actionId)
+    if (!action) continue
+    const key = safeguardEventKey(e, action)
+    if (acknowledged.has(key)) continue
+    const seen = byKey.get(key)
+    if (seen) {
+      if (!seen.days.includes(e.day)) seen.days.push(e.day)
+      continue
+    }
+    byKey.set(key, { key, safeguardId: e.safeguardId, reason: e.reason, blockId: action.blockId, actionId: e.actionId, days: [e.day] })
+  }
+  return [...byKey.values()]
 }

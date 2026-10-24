@@ -18,7 +18,12 @@ export interface FrostNight {
   date: string
   /** Days from today. */
   dayIndex: number
+  /** The minimum the night is judged on: the forecast, or a colder station reading taken today. */
   minC: number
+  /** The forecast minimum, when a station reading replaced it in `minC`. */
+  forecastMinC?: number
+  /** A validated station reading colder than the forecast for the rest of today. */
+  station?: { tempC: number; at: string }
 }
 
 interface Assessment {
@@ -108,7 +113,9 @@ export const frostEngine: DecisionEngine = {
           variety: state.variety ?? null,
           frost_stage: a.stageId,
           night: night.date,
-          forecast_min_c: night.minC,
+          forecast_min_c: night.forecastMinC ?? night.minC,
+          station_c: night.station?.tempC ?? null,
+          station_at: night.station?.at ?? null,
           critical_c: risk.criticalC,
           margin_c: Math.round(risk.marginC * 100) / 100,
           damage_fraction: risk.damageFraction,
@@ -120,7 +127,9 @@ export const frostEngine: DecisionEngine = {
           watch_margin_c: state.frost_watch_margin_c,
         },
       }
-      const when = `Forecast minimum ${night.minC} degC on ${night.date}; critical temperature ${risk.criticalC} degC`
+      const when = night.station
+        ? `Station reading ${night.station.tempC} degC at ${night.station.at}, colder than the forecast minimum ${night.forecastMinC ?? night.minC} degC for ${night.date}; critical temperature ${risk.criticalC} degC`
+        : `Forecast minimum ${night.minC} degC on ${night.date}; critical temperature ${risk.criticalC} degC`
 
       if (risk.level === 'watch') {
         actions.push(

@@ -11,6 +11,10 @@ const AddEventModal = dynamic(() => import('./AddEventModal'), { ssr: false });
 const LogCompletionModal = dynamic(() => import('./LogCompletionModal'), { ssr: false });
 import { CalendarEvent, PlannedMaterial, MaterialLine, ACTIVITY_COLORS, ACTIVITY_LABELS } from './types';
 import { createEvent, logEventCompletion } from '@/app/[farmId]/(dashboard)/calendar/actions';
+import { EngineDayItems, EngineItemPanel, EngineLayerToggle } from './EngineLayer';
+import type { EngineCalendarLayer } from '@/utils/decision/engine-calendar';
+import type { LayerItem } from '@/utils/decision/calendar-layer';
+import type { SprayChoice } from '@/app/components/activity/SprayProductPicker';
 
 type ConsumableSummary = { id: string; name: string; unit: string; currentBalance: number; category: string };
 type MaterialActual = { consumableId: string; actualQuantity: number; currentBalance: number };
@@ -159,12 +163,15 @@ export default function CalendarPage({
   consumables = [],
   userRole = "worker",
   farmId,
+  engineLayer = null,
 }: {
   initialEvents?: CalendarEvent[];
   consumables?: ConsumableSummary[];
   userRole?: "admin" | "supervisor" | "worker";
   /** Required: writes are scoped and role-gated on the farm. */
   farmId: string;
+  /** The decision engine's read-only layer; null for workers. */
+  engineLayer?: EngineCalendarLayer | null;
 }) {
   const locale = useLocale();
   const t = useTranslations('calendar.page');
@@ -178,6 +185,12 @@ export default function CalendarPage({
   const [addDefaultDate, setAddDefaultDate]               = useState<Date | undefined>();
   const [detailEvent, setDetailEvent]                     = useState<CalendarEvent | null>(null);
   const [completionEvent, setCompletionEvent]             = useState<CalendarEvent | null>(null);
+  const [showEngine, setShowEngine]                       = useState(true);
+  const [engineItem, setEngineItem]                       = useState<LayerItem | null>(null);
+
+  const renderDayExtra = engineLayer && showEngine && engineLayer.items.length > 0
+    ? (day: Date) => <EngineDayItems items={engineLayer.items} day={day} blockNames={engineLayer.blockNames} onSelect={setEngineItem} max={view === 'day' ? 20 : 2} />
+    : undefined;
 
   const label = getLabel(view, currentDate, locale);
 
@@ -243,7 +256,7 @@ export default function CalendarPage({
     });
   }, [consumables, farmId]);
 
-  const handleLogCompletion = useCallback((eventId: string, actualStart: Date, actualEnd: Date, notes: string, materialActuals: MaterialActual[]) => {
+  const handleLogCompletion = useCallback((eventId: string, actualStart: Date, actualEnd: Date, notes: string, materialActuals: MaterialActual[], spray: SprayChoice | null) => {
     setEvents((prev) =>
       prev.map((e) =>
         e.id === eventId
@@ -253,7 +266,7 @@ export default function CalendarPage({
     );
     startTransition(async () => {
       try {
-        await logEventCompletion(eventId, actualStart, actualEnd, notes, farmId, materialActuals);
+        await logEventCompletion(eventId, actualStart, actualEnd, notes, farmId, materialActuals, spray);
       } catch (err) {
         console.error('[Calendar] Failed to log completion:', err);
       }
@@ -281,6 +294,11 @@ export default function CalendarPage({
             {ACTIVITY_LABELS[type].toUpperCase()}
           </div>
         ))}
+        {engineLayer && (
+          <span className="ms-auto font-sans tracking-normal">
+            <EngineLayerToggle shown={showEngine} onChange={setShowEngine} count={engineLayer.items.length} />
+          </span>
+        )}
       </div>
 
       {/* Header */}
@@ -301,6 +319,7 @@ export default function CalendarPage({
             events={events}
             onDayClick={userRole !== "worker" ? handleDayClick : undefined}
             onEventClick={handleEventClick}
+            renderDayExtra={renderDayExtra}
           />
         )}
         {view === 'week' && (
@@ -308,6 +327,7 @@ export default function CalendarPage({
             currentDate={currentDate}
             events={events}
             onEventClick={handleEventClick}
+            renderDayExtra={renderDayExtra}
           />
         )}
         {view === 'day' && (
@@ -316,6 +336,7 @@ export default function CalendarPage({
             events={events}
             onEventClick={handleEventClick}
             onLogCompletion={(e) => setCompletionEvent(e)}
+            renderDayExtra={renderDayExtra}
           />
         )}
       </div>
@@ -336,9 +357,13 @@ export default function CalendarPage({
           locale={locale}
         />
       )}
+      {engineItem && engineLayer && (
+        <EngineItemPanel item={engineItem} blockNames={engineLayer.blockNames} farmId={farmId} onClose={() => setEngineItem(null)} />
+      )}
       {completionEvent && (
         <LogCompletionModal
           event={completionEvent}
+          farmId={farmId}
           onClose={() => setCompletionEvent(null)}
           onComplete={handleLogCompletion}
         />

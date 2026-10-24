@@ -256,7 +256,7 @@ describe('harvest engine', () => {
 })
 
 describe('with the almond pack as it stands', () => {
-  const almond = createPackContext(packSchema.parse(loadPackSource(join(__dirname, '../../packs/almond/0.1.1')).raw))
+  const almond = createPackContext(packSchema.parse(loadPackSource(join(__dirname, '../../packs/almond/0.1.2')).raw))
   const fruiting = { stage: 'nut-development', recordedAt: null, source: 'computed' }
 
   it('has no seasonal tasks yet, and says what each engine waits for', () => {

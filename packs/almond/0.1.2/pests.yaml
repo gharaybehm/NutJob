@@ -1,0 +1,115 @@
+pests:
+  - id: now
+    name: Navel orangeworm
+    scientific_name: Amyelois transitella
+    monitoring:
+      method: Egg traps with almond meal bait
+      frequency: Once or twice weekly
+    biofix:
+      rule: Egg counts rise across 2 consecutive checks, or at least 50 % of traps have eggs.
+    degree_days:
+      method: single_sine
+      cutoff: horizontal
+      lower: 55
+      upper: 94
+      units: F
+      evidence: UCIPM_NOW
+    observations:
+      - kind: trap_check
+        fields:
+          - { id: eggs, label: Eggs counted on all traps, type: number }
+          - { id: traps_checked, label: Traps checked, type: number }
+          - { id: traps_with_eggs, label: Traps with eggs, type: number }
+      - kind: hull_split
+        fields:
+          - { id: pct, label: Nuts with hull split (%), type: number }
+    derived:
+      - { key: egg_counts_rising_consecutive_checks, stat: rising_run, observation: trap_check, field: eggs }
+      - { key: share_traps_with_eggs, stat: latest_ratio, observation: trap_check, field: traps_with_eggs, over: traps_checked }
+      - { key: hull_split_pct, stat: latest, observation: hull_split, field: pct }
+    events:
+      - { id: first_hatch, name: First-brood hatch, dd: $now_dd_first_hatch_F }
+      - { id: second_flight, name: Second-flight egg laying, dd: $now_dd_second_flight_F }
+    treatment_rule: >-
+      Treat at the later of predicted egg-lay start or hull split start, only
+      if the expected loss avoided is greater than the cost.
+    evidence: UCIPM_NOW
+    decision_table:
+      table: now
+      hit_policy: first
+      rows:
+        - id: ALM-NOW-01
+          when: { biofix_set: false, egg_counts_rising_consecutive_checks_ge: 2 }
+          then: { action: set_biofix, date: "first_of_rising_checks" }
+          evidence: UCIPM_NOW
+        - id: ALM-NOW-01b
+          when: { biofix_set: false, share_traps_with_eggs_ge: 0.5 }
+          then: { action: set_biofix, date: "check_date" }
+          evidence: UCIPM_NOW
+        - id: ALM-NOW-02
+          when: { biofix_set: false }
+          then: { action: monitor, task: "Check egg traps twice weekly" }
+        - id: ALM-NOW-03
+          when: { dd_F_ge: "$now_dd_second_flight_F", hull_split_pct_ge: "$hull_split_start_pct", expected_loss_avoided_gt: "cost" }
+          then: { action: spray, timing: "now" }
+          evidence: UCIPM_NOW
+        - id: ALM-NOW-04
+          when: { dd_F_ge: "$now_dd_second_flight_F", hull_split_pct_lt: "$hull_split_start_pct", expected_loss_avoided_gt: "cost" }
+          then: { action: spray_scheduled, timing: "at hull split start" }
+          evidence: UCIPM_NOW
+        - id: ALM-NOW-05
+          when: { dd_F_ge: "$now_dd_second_flight_F - 150" }
+          then: { action: prepare, task: "Confirm product, sprayer, labour; increase hull split checks" }
+        - id: ALM-NOW-06
+          when: {}
+          then: { action: monitor, task: "Continue trap checks; verify DD predictions against trap counts" }
+
+  - id: ptb
+    name: Peach twig borer
+    scientific_name: Anarsia lineatella
+    monitoring:
+      method: Pheromone traps
+      starts: Mid-March
+      density: 1 per about 8 ha, minimum 2 per orchard
+      frequency: Twice weekly
+      also: Shoot-strike checks in mid-April
+    biofix:
+      rule: First male trapped, with captures on at least 2 consecutive checks.
+    degree_days:
+      method: single_sine
+      cutoff: horizontal
+      lower: 50
+      upper: 88
+      units: F
+      evidence: UCIPM_PTB
+      review: The method (single sine, horizontal cutoff) is assumed from the UC IPM convention; confirm.
+    observations:
+      - kind: trap_check
+        fields:
+          - { id: moths, label: Male moths caught, type: number }
+      - kind: shoot_strikes
+        fields:
+          - { id: per_tree, label: Shoot strikes per tree, type: number }
+    events:
+      - { id: treatment, name: Treatment timing for most products, dd: $ptb_dd_treat_F }
+    control_timings:
+      - { product_class: Most products, dd_after_biofix_F: [400, 400] }
+      - { product_class: Insect growth regulators, dd_after_biofix_F: [300, 400] }
+      - { product_class: "Bt, first application", dd_after_biofix_F: [300, 350] }
+      - { product_class: "Bt, second application", dd_after_biofix_F: [450, 500] }
+    threshold:
+      rule: Several shoot strikes per tree by late April.
+      shoot_strikes_per_tree: $ptb_shoot_strikes_per_tree
+      note: A spring spray is usually unnecessary if dormant or bloom treatments worked, or with no history of the pest.
+    evidence: UCIPM_PTB
+    to_be_sourced:
+      - item: Decision table
+        note: Part C of the specification gives the model and timings but no rule table.
+
+to_be_sourced:
+  - item: Regional pest models
+    note: >-
+      Capnodis, the almond lace bug (Monosteira unicostata), aphids and mites,
+      from Spanish sources. Each needs a monitoring method, a threshold and a
+      timing before activation.
+  - item: Damage functions and control efficacy for each pest

@@ -3,10 +3,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- the decision-engine tables postdate the generated Supabase types */
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { requireFarmRole } from '@/utils/supabase/farm-access'
 import { ENGINE_IDS, type EngineId } from '@/engines/pack/schema'
 import type { Narration } from '@/engines/narrator/narration'
-import { liveReadiness, validateDecision, waitingEngines, type Decision, type DecisionError, type DecisionReason, type LiveReadiness, type StoredPlanEntry } from '@/utils/decision/plan-view'
+import { categoryForAction, liveReadiness, pinnedSafeguards, safeguardEventKey, validateDecision, validateScheduleDecision, waitingEngines, type PinnedSafeguard, type SafeguardEvent, type Decision, type DecisionError, type DecisionReason, type LiveReadiness, type StoredPlanEntry } from '@/utils/decision/plan-view'
+import { bookCalendarEvent } from '@/utils/recommendation-schedule'
+import type { ProposedAction } from '@/engines/framework/types'
 
 /**
  * The decision engine's plan for a farm, as the Recommendations page shows
@@ -49,6 +52,28 @@ export interface EnginePlanView {
   modes: EngineModeView[]
   /** Only a farm admin switches an engine between Shadow and Live. */
   canSetModes: boolean
+  /** Calendar events booked from Live actions, by log row. */
+  bookings: Record<string, Booking>
+  /** Safeguard findings in the plan nobody has acknowledged yet. */
+  pinned: PinnedSafeguard[]
+  /** The latest frost check of each block checked in the last day (every two hours while frost is assessed). */
+  frostChecks: FrostCheckView[]
+}
+
+export interface Booking {
+  eventId: string
+  start: string
+  completedAt: string | null
+}
+
+export interface FrostCheckView {
+  blockId: string
+  checkedAt: string
+  level: 'none' | 'watch' | 'warning' | 'critical'
+  worstNight: string | null
+  worstMinC: number | null
+  /** The station reading the check used, when it was colder than the forecast. */
+  stationC: number | null
 }
 
 const EMPTY: Omit<EnginePlanView, 'status'> = {
@@ -66,6 +91,9 @@ const EMPTY: Omit<EnginePlanView, 'status'> = {
   waiting: [],
   modes: [],
   canSetModes: false,
+  bookings: {},
+  frostChecks: [],
+  pinned: [],
 }
 
 const list = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : [])
@@ -102,7 +130,26 @@ export async function getEnginePlan(farmId: string): Promise<EnginePlanView> {
       ...liveReadiness(packReports, engineId),
     })),
   )
-  const base = { ...EMPTY, blockNames, modes, canSetModes: gate.actor.role === 'admin' }
+  const since = new Date(Date.now() - 24 * 3_600_000).toISOString()
+  const { data: checkRows } = await supabase
+    .from('frost_checks')
+    .select('block_id, checked_at, level, worst_night, worst_min_c, station')
+    .eq('farm_id', farmId)
+    .gte('checked_at', since)
+    .order('checked_at', { ascending: false })
+  const frostChecks: FrostCheckView[] = []
+  for (const c of checkRows ?? []) {
+    if (frostChecks.some(f => f.blockId === c.block_id)) continue
+    frostChecks.push({
+      blockId: c.block_id,
+      checkedAt: c.checked_at,
+      level: c.level,
+      worstNight: c.worst_night ? String(c.worst_night).slice(0, 10) : null,
+      worstMinC: c.worst_min_c === null ? null : Number(c.worst_min_c),
+      stationC: c.station && typeof c.station.tempC === 'number' ? c.station.tempC : null,
+    })
+  }
+  const base = { ...EMPTY, blockNames, modes, canSetModes: gate.actor.role === 'admin', frostChecks }
 
   const { data: plan, error } = await supabase.from('farm_plans').select('*').eq('farm_id', farmId).order('plan_date', { ascending: false }).limit(1).maybeSingle()
   if (error) return { status: 'unavailable', ...base }
@@ -126,6 +173,24 @@ export async function getEnginePlan(farmId: string): Promise<EnginePlanView> {
     }
   }
 
+  const bookings: Record<string, Booking> = {}
+  if (logIds.length > 0) {
+    const { data: events } = await supabase
+      .from('calendar_events')
+      .select('id, start_date, completed_at, details')
+      .eq('farm_id', farmId)
+      .in('details->>engine_log_id', logIds)
+    for (const e of events ?? []) {
+      const logId = e.details?.engine_log_id
+      if (typeof logId === 'string') bookings[logId] = { eventId: e.id, start: e.start_date, completedAt: e.completed_at ?? null }
+    }
+  }
+
+  const safeguardEvents = list<SafeguardEvent>(plan.safeguard_events)
+  const actionsById = new Map([...planned, ...deferred, ...unscheduledMandatory].map(e => [e.actionId, e.action]))
+  const { data: acks } = await supabase.from('safeguard_acknowledgements').select('event_key').eq('farm_id', farmId)
+  const pinned = pinnedSafeguards(safeguardEvents, actionsById, new Set((acks ?? []).map((a: any) => a.event_key)))
+
   const { data: states } = await supabase.from('block_engine_state').select('block_id, engines').eq('farm_id', farmId).eq('state_date', plan.plan_date)
   const waiting = (states ?? []).map((s: any) => ({ blockId: s.block_id as string, engines: waitingEngines(s.engines) })).filter((w: { engines: unknown[] }) => w.engines.length > 0)
 
@@ -137,13 +202,52 @@ export async function getEnginePlan(farmId: string): Promise<EnginePlanView> {
     planned,
     deferred,
     unscheduledMandatory,
-    safeguardEvents: list(plan.safeguard_events),
+    safeguardEvents,
     notes: list<string>(plan.notes),
     narration: plan.narration ?? null,
     narrationSource: plan.narration_source ?? null,
     decisions,
     waiting,
+    bookings,
+    pinned,
   }
+}
+
+export type AcknowledgeResult = { ok: true } | { ok: false; error: 'forbidden' | 'notFound' | 'failed' }
+
+/**
+ * Acknowledges a safeguard finding of the farm's latest plan, so it is no
+ * longer pinned. The safeguard still applies; this records only that someone
+ * has seen it.
+ */
+export async function acknowledgeSafeguard(farmId: string, key: string): Promise<AcknowledgeResult> {
+  const gate = await requireFarmRole(farmId, 'supervisor')
+  if (!gate.ok) return { ok: false, error: 'forbidden' }
+  const supabase = (await createClient()) as any
+  const { data: plan } = await supabase.from('farm_plans').select('plan_date, plan, deferred, unscheduled_mandatory, safeguard_events').eq('farm_id', farmId).order('plan_date', { ascending: false }).limit(1).maybeSingle()
+  if (!plan) return { ok: false, error: 'notFound' }
+  const entries = [...list<StoredPlanEntry>(plan.plan), ...list<StoredPlanEntry>(plan.deferred), ...list<StoredPlanEntry>(plan.unscheduled_mandatory)].filter(e => e.action)
+  const actionsById = new Map(entries.map(e => [e.actionId, e.action]))
+  // Only a finding the plan actually holds can be acknowledged.
+  const event = list<SafeguardEvent>(plan.safeguard_events).find(e => {
+    const action = actionsById.get(e.actionId)
+    return action && safeguardEventKey(e, action) === key
+  })
+  const action = event ? actionsById.get(event.actionId) : undefined
+  if (!event || !action) return { ok: false, error: 'notFound' }
+
+  const { error } = await supabase.from('safeguard_acknowledgements').insert({
+    farm_id: farmId,
+    block_id: action.blockId,
+    event_key: key,
+    safeguard_id: event.safeguardId,
+    plan_date: String(plan.plan_date).slice(0, 10),
+    acknowledged_by: gate.actor.userId,
+  })
+  // 23505: someone acknowledged it already, which is the outcome asked for.
+  if (error && error.code !== '23505') return { ok: false, error: 'failed' }
+  revalidatePath(`/${farmId}/recommendations`)
+  return { ok: true }
 }
 
 export type DecisionResult = { ok: true } | { ok: false; error: DecisionError | 'forbidden' | 'notFound' | 'failed' }
@@ -172,6 +276,70 @@ export async function recordEngineDecision(farmId: string, logId: string, input:
   })
   if (error) return { ok: false, error: 'failed' }
   revalidatePath(`/${farmId}/recommendations`)
+  return { ok: true }
+}
+
+export type ScheduleResult = { ok: true } | { ok: false; error: DecisionError | 'schedule' | 'forbidden' | 'notFound' | 'notLive' | 'booked' | 'failed' }
+
+/**
+ * Accepts or changes a Live action and books it on the calendar, through the
+ * same booking as an accepted weekly card. Only an engine the farm has
+ * switched to Live can book work; a Shadow action is recorded with
+ * recordEngineDecision and never reaches the calendar. Nothing about the
+ * block changes until the event is logged as done.
+ */
+export async function scheduleEngineAction(farmId: string, logId: string, input: unknown): Promise<ScheduleResult> {
+  const gate = await requireFarmRole(farmId, 'supervisor')
+  if (!gate.ok) return { ok: false, error: 'forbidden' }
+  const v = validateScheduleDecision(input)
+  if (!v.ok) return { ok: false, error: v.error }
+
+  const supabase = (await createClient()) as any
+  const { data: log } = await supabase.from('engine_recommendation_log').select('id, block_id, pack_id, engine_id, action').eq('id', logId).eq('farm_id', farmId).maybeSingle()
+  if (!log) return { ok: false, error: 'notFound' }
+  const { data: mode } = await supabase.from('farm_engine_modes').select('mode').eq('farm_id', farmId).eq('pack_id', log.pack_id).eq('engine_id', log.engine_id).maybeSingle()
+  if (mode?.mode !== 'live') return { ok: false, error: 'notLive' }
+  const { data: existing } = await supabase.from('calendar_events').select('id').eq('farm_id', farmId).eq('details->>engine_log_id', log.id).limit(1)
+  if ((existing ?? []).length > 0) return { ok: false, error: 'booked' }
+
+  const action = log.action as ProposedAction
+  // A changed action is booked under what the manager says will be done instead.
+  const title = v.value.decision === 'edited' && v.value.note ? v.value.note : action.description
+  let eventId: string
+  try {
+    eventId = await bookCalendarEvent(
+      farmId,
+      gate.actor.userId,
+      {
+        title: title.slice(0, 200),
+        category: categoryForAction(action),
+        block_id: log.block_id,
+        notes: `${action.description} (${action.ruleId}, ${action.packId} ${action.packVersion})`,
+        details: { source: 'engine', engine_log_id: log.id, engine_id: action.engineId, rule_id: action.ruleId },
+      },
+      { start: v.value.start, durationHours: v.value.durationHours ?? undefined },
+    )
+  } catch {
+    return { ok: false, error: 'failed' }
+  }
+
+  const { error } = await supabase.from('engine_recommendation_decisions').insert({
+    farm_id: farmId,
+    log_id: log.id,
+    block_id: log.block_id,
+    decision: v.value.decision,
+    reason: v.value.reason,
+    note: v.value.note,
+    mode: 'live',
+    decided_by: gate.actor.userId,
+  })
+  if (error) {
+    // No booking without its decision.
+    await (createAdminClient().from('calendar_events') as any).delete().eq('id', eventId).eq('farm_id', farmId)
+    return { ok: false, error: 'failed' }
+  }
+  revalidatePath(`/${farmId}/recommendations`)
+  revalidatePath(`/${farmId}/calendar`)
   return { ok: true }
 }
 

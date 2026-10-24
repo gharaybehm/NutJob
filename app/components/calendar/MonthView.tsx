@@ -9,6 +9,8 @@ interface MonthViewProps {
   events: CalendarEvent[];
   onDayClick?: (date: Date) => void;
   onEventClick: (event: CalendarEvent) => void;
+  /** Extra content under a day's events: the decision engine's layer. */
+  renderDayExtra?: (day: Date) => React.ReactNode;
 }
 
 function isSameDay(a: Date, b: Date) {
@@ -17,7 +19,7 @@ function isSameDay(a: Date, b: Date) {
     a.getDate() === b.getDate();
 }
 
-export default function MonthView({ currentDate, events, onDayClick, onEventClick }: MonthViewProps) {
+export default function MonthView({ currentDate, events, onDayClick, onEventClick, renderDayExtra }: MonthViewProps) {
   const locale = useLocale();
   // Jan 7–13, 2024 = Sun–Sat reference week; Intl handles abbreviation for every locale
   const DAY_NAMES = [0,1,2,3,4,5,6].map(i =>
@@ -114,6 +116,7 @@ export default function MonthView({ currentDate, events, onDayClick, onEventClic
                     +{overflow}
                   </p>
                 )}
+                {renderDayExtra?.(day)}
               </div>
             </div>
           );

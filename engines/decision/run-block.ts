@@ -28,6 +28,7 @@ import { reentryStatus, type ProductLabel, type SprayApplication } from '../safe
 import { diseaseEngine } from './disease'
 import { fertigationEngine, type TissueSample } from './fertigation'
 import { carriedModels, emptyCarriedModels, storableState, withFieldData, type CarriedModels, type FieldObservation } from './field-data'
+import { withWaterStatus } from './water-status'
 import { insectPestEngine } from './insect-pest'
 import { frostEngine, type FrostNight } from './frost'
 import { irrigationEngine } from './irrigation'
@@ -415,6 +416,11 @@ export function runBlockDay(input: BlockDayInput): BlockDayResult {
   for (const strategy of pack.pack.water?.deficit_strategies ?? []) {
     state[strategy.switch] = input.settings.switches[strategy.switch] ?? false
   }
+
+  // The latest plant water status reading, with its deviation from a well-watered plant, for the irrigation and disease tables.
+  const waterStatus = withWaterStatus(state, pack, input.field?.observations ?? [], today)
+  flags.push(...waterStatus.flags)
+  if (waterStatus.notes.length > 0) state.water_status_notes = waterStatus.notes
 
   if (water.carried) {
     const c = water.carried

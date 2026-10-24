@@ -87,7 +87,7 @@ export async function runDailySnapshot(admin: any, opts: RunOptions = {}): Promi
 
     const { data: blocks, error: blocksError } = await admin
       .from('blocks')
-      .select('id, crop_type, variety, rootstock, field_capacity, wilting_point, root_depth_m, area, area_unit, planting_date, planting_year')
+      .select('id, crop_type, variety, rootstock, field_capacity, wilting_point, root_depth_m, area, area_unit, planting_date, planting_year, pack_id')
       .eq('farm_id', farm.id)
     if (blocksError) {
       r.errors.push(`Could not load blocks: ${blocksError.message}`)
@@ -104,6 +104,11 @@ export async function runDailySnapshot(admin: any, opts: RunOptions = {}): Promi
     const stageByBlock = new Map<string, { stage: string; source: string }>(
       (phenology ?? []).map((p: any) => [p.block_id, { stage: p.current_stage, source: p.source }]),
     )
+
+    // A block whose pack's frost engine the farm switched to Live gets its frost alerts from the
+    // frost check (utils/decision/run-frost-check.ts); this older rule stops for it, so a night is not alerted twice.
+    const { data: frostModes } = await admin.from('farm_engine_modes').select('pack_id').eq('farm_id', farm.id).eq('engine_id', 'frost').eq('mode', 'live')
+    const liveFrostPacks = new Set<string>((frostModes ?? []).map((m: any) => m.pack_id))
 
     const { data: sensors } = await admin.from('sensors').select('block_id').eq('farm_id', farm.id)
     const sensorBlocks = new Set<string>((sensors ?? []).map((s: any) => s.block_id).filter(Boolean))
@@ -216,7 +221,8 @@ export async function runDailySnapshot(admin: any, opts: RunOptions = {}): Promi
           },
           now,
         )
-        const candidates = [...alertsFromSnapshot(snapshot, hasSensor), ...alertsFromLeafAssessment(leaf, now), ...reminder]
+        const frostByEngine = b.pack_id ? liveFrostPacks.has(b.pack_id) : false
+        const candidates = [...alertsFromSnapshot(snapshot, hasSensor).filter(c => !(frostByEngine && c.ruleId === 'frost')), ...alertsFromLeafAssessment(leaf, now), ...reminder]
         const { create, resolve } = reconcileAlerts(candidates, openByBlock.get(b.id) ?? [])
 
         if (opts.dryRun) {

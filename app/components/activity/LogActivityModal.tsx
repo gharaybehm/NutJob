@@ -22,6 +22,7 @@ import {
   type ScoutingDetails,
   type PruningDetails,
 } from "@/app/[farmId]/(dashboard)/activity/actions";
+import SprayProductPicker, { type SprayChoice } from "./SprayProductPicker";
 
 export interface QueuedActivity {
   id: string;
@@ -99,6 +100,7 @@ export default function LogActivityModal({ blocks, farmId, onClose, onSaved, onS
   const [sprayRate, setSprayRate] = useState("");
   const [sprayTarget, setSprayTarget] = useState("");
   const [sprayPHI, setSprayPHI] = useState("");
+  const [sprayChoice, setSprayChoice] = useState<SprayChoice>({ productId: "", targetId: "" });
 
   // ── Scouting fields ────────────────────────────────────────────────────────
   const [scoutRisk, setScoutRisk] = useState<ScoutingDetails["overall_risk"]>("green");
@@ -120,7 +122,7 @@ export default function LogActivityModal({ blocks, farmId, onClose, onSaved, onS
   function resetDetailFields() {
     setIrrDuration(""); setIrrVolume(""); setIrrMethod("Drip");
     setFertProduct(""); setFertAmount(""); setFertUnit("kg"); setFertGrowthNote("");
-    setSprayProduct(""); setSprayRate(""); setSprayTarget(""); setSprayPHI("");
+    setSprayProduct(""); setSprayRate(""); setSprayTarget(""); setSprayPHI(""); setSprayChoice({ productId: "", targetId: "" });
     setScoutRisk("green"); setScoutObs(""); setScoutNext("");
     setPruneType("Maintenance"); setPruneIntensity("Moderate");
   }
@@ -156,6 +158,8 @@ export default function LogActivityModal({ blocks, farmId, onClose, onSaved, onS
           ...(sprayRate ? { rate_l_per_ha: parseFloat(sprayRate) } : {}),
           ...(sprayTarget ? { target: sprayTarget } : {}),
           ...(sprayPHI ? { phi_days: parseInt(sprayPHI, 10) } : {}),
+          ...(sprayChoice.productId ? { product_id: sprayChoice.productId } : {}),
+          ...(sprayChoice.productId && sprayChoice.targetId ? { target_id: sprayChoice.targetId } : {}),
         };
       case "scouting":
         return {
@@ -428,6 +432,16 @@ export default function LogActivityModal({ blocks, farmId, onClose, onSaved, onS
                 {/* SPRAYING */}
                 {activityType === "spraying" && (
                   <>
+                    <SprayProductPicker
+                      farmId={farmId}
+                      value={sprayChoice}
+                      onChange={(v, name) => {
+                        setSprayChoice(v);
+                        if (name) setSprayProduct(name);
+                      }}
+                      selectClassName={inputCls}
+                      labelClassName={labelSmCls}
+                    />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className={labelSmCls}>Product Name</label>

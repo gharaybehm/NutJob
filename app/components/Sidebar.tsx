@@ -46,7 +46,7 @@ export default function Sidebar({
 
   const freshnessRows = freshness
     ? [
-        { key: "sensors", label: tf("sensors"), min: freshness.sensorsMin, staleAfter: STALE_AFTER_MIN.sensors },
+        { key: "sensors", label: tf("sensors"), min: freshness.sensorsMin, staleAfter: Math.max(STALE_AFTER_MIN.sensors, freshness.sensorsStaleAfterMin ?? 0) },
         { key: "weather", label: tf("weather"), min: freshness.weatherMin, staleAfter: STALE_AFTER_MIN.weather },
         { key: "irrigation", label: tf("irrigationLog"), min: freshness.irrigationLogMin, staleAfter: STALE_AFTER_MIN.irrigationLog },
       ]

@@ -6,6 +6,7 @@ import { requireFarmRole } from '@/utils/supabase/farm-access';
 import { revalidatePath } from 'next/cache';
 import { Database } from '@/utils/supabase/types';
 import { applyCompletedRecommendationEffects, type RecommendationCategory } from '@/utils/recommendation-effects';
+import { checkSprayEntry, type SprayEntryInput } from '@/utils/decision/spray-entry';
 
 type InsertEvent = Database['public']['Tables']['calendar_events']['Insert'];
 
@@ -64,6 +65,7 @@ export async function logEventCompletion(
   notes: string,
   farmId: string,
   materialActuals: MaterialActualInput[] = [],
+  spray: SprayEntryInput | null = null,
 ) {
   // Any member may close out work assigned to them, so 'worker' is the floor.
   const gate = await requireFarmRole(farmId, 'worker');
@@ -93,6 +95,10 @@ export async function logEventCompletion(
     throw new Error('That event belongs to another farm.');
   }
 
+  // The library product a spray used, for the decision engine's spray safeguards. Checked before
+  // anything is written, so a refused product leaves the event as it was.
+  const sprayEntry = existing?.type === 'spraying' ? await checkSprayEntry(admin, farmId, spray) : null;
+
   const mergedDetails = {
     ...(existing?.details as Record<string, unknown> ?? {}),
     actual_start: actualStart.toISOString(),
@@ -121,6 +127,8 @@ export async function logEventCompletion(
       : 'other';
 
     const recommendationId = (existing.details as { recommendation_id?: string } | null)?.recommendation_id;
+    // An event booked from a Live action of the decision engine keeps the link to its log entry.
+    const engineLogId = (existing.details as { engine_log_id?: string } | null)?.engine_log_id;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- farm_id predates the generated types
     const { data: logRow, error: logError } = await (admin.from('activity_log') as any).insert({
@@ -133,6 +141,8 @@ export async function logEventCompletion(
         actual_start: actualStart.toISOString(),
         actual_end: actualEnd.toISOString(),
         ...(recommendationId ? { source: 'recommendation', recommendation_id: recommendationId } : {}),
+        ...(engineLogId ? { source: 'engine', engine_log_id: engineLogId } : {}),
+        ...(sprayEntry ? { product_id: sprayEntry.product_id, product_name: sprayEntry.product_name, ...(sprayEntry.target_id ? { target_id: sprayEntry.target_id } : {}) } : {}),
       },
       performed_at: actualEnd.toISOString(),
       performed_by: user.id,

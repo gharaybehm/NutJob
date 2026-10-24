@@ -4,10 +4,12 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { requireFarmRole } from "@/utils/supabase/farm-access";
 import { revalidatePath } from "next/cache";
+import { checkSprayEntry } from "@/utils/decision/spray-entry";
 
 export type IrrigationDetails  = { source: "manual"; activity: "irrigation";  duration_hours?: number; volume_per_tree_l?: number; method?: "Drip" | "Sprinkler" | "Flood" | "Surface" };
 export type FertigationDetails = { source: "manual"; activity: "fertigation"; product_name?: string; amount_per_tree?: number; amount_unit?: "kg" | "L"; growth_stage_note?: string };
-export type SprayingDetails    = { source: "manual"; activity: "spraying";    product_name?: string; rate_l_per_ha?: number; target?: string; phi_days?: number };
+// product_id and target_id: a product from the farm's library and what it was used against, which the decision engine's spray safeguards count.
+export type SprayingDetails    = { source: "manual"; activity: "spraying";    product_name?: string; rate_l_per_ha?: number; target?: string; phi_days?: number; product_id?: string; target_id?: string };
 export type ScoutingDetails    = { source: "manual"; activity: "scouting";    overall_risk?: "green" | "amber" | "red"; observations?: string; next_scouting?: string };
 export type PruningDetails     = { source: "manual"; activity: "pruning";     pruning_type?: "Formative" | "Maintenance" | "Summer" | "Renovation"; intensity?: "Low" | "Moderate" | "Heavy" };
 export type GenericDetails     = { source: "manual" };
@@ -120,6 +122,16 @@ export async function logActivity(
     if (!block) throw new Error("That block is not on this farm.");
   }
 
+  // A library product on a spray must be this farm's, used against a target it is listed for.
+  let details: ActivityDetails = params.details ?? { source: "manual" };
+  if (params.activity_type === "spraying" && "product_id" in details && details.product_id) {
+    const spray = await checkSprayEntry(admin, farmId, { productId: details.product_id, targetId: details.target_id });
+    details = { ...details, product_id: spray?.product_id, target_id: spray?.target_id ?? undefined };
+  } else if ("product_id" in details || "target_id" in details) {
+    const { product_id: _p, target_id: _t, ...rest } = details as SprayingDetails;
+    details = rest as ActivityDetails;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- farm_id predates the generated types
   const { data, error } = await (admin.from("activity_log") as any)
     .insert({
@@ -130,7 +142,7 @@ export async function logActivity(
       description: params.description,
       performed_at: params.performed_at,
       performed_by: user.id,
-      details: params.details ?? { source: "manual" },
+      details,
     })
     .select("id")
     .single();

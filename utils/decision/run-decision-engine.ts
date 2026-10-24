@@ -16,11 +16,13 @@ import type { ProposedAction } from '@/engines/framework/types'
 import { buildNarratorInput, type NarrationLanguage } from '@/engines/narrator/narration'
 import type { ProductLabel, SprayApplication } from '@/engines/safeguards/spray'
 import { daysBetween } from '@/engines/decision/weather'
+import { overridesFor } from '@/engines/learning/calibration'
 import { createPackContext, type PackContext } from '@/engines/pack/context'
-import { packSchema } from '@/engines/pack/schema'
+import { packSchema, type Pack } from '@/engines/pack/schema'
 import { checkSeries, SOIL_MOISTURE_RULES, usableReadings } from '@/engines/quality'
 import { toHectares } from '@/utils/area'
 import { toPolicy } from '@/utils/run-daily-snapshot'
+import { loadCalibrationStates } from './calibrations'
 import { fetchHourlyWeather, MAX_PAST_DAYS, type HourlyWeatherRow } from './hourly-weather'
 import { narratePlan, type NarratorCall } from './narrate'
 
@@ -117,23 +119,23 @@ function weatherRow(farmId: string, r: HourlyWeatherRow, fetchedAt: string) {
 export async function runDecisionEngine(admin: any, opts: DecisionRunOptions = {}): Promise<DecisionFarmResult[]> {
   const now = opts.now ?? new Date()
   const results: DecisionFarmResult[] = []
-  const packCache = new Map<string, PackContext | string>()
+  const packCache = new Map<string, Pack | string>()
 
-  async function loadPack(packId: string, version: string): Promise<PackContext | string> {
+  /** The block's pack with the farm's calibrated values in force on top (the learning loop). */
+  async function loadPack(packId: string, version: string, overrides: Record<string, number>): Promise<PackContext | string> {
     const key = `${packId}@${version}`
-    const cached = packCache.get(key)
-    if (cached) return cached
-    const { data, error } = await admin.from('crop_packs').select('content').eq('pack_id', packId).eq('version', version).maybeSingle()
-    let loaded: PackContext | string
-    if (error) loaded = `Pack ${key} could not be loaded: ${error.message}`
-    else if (!data) loaded = `Pack ${key} is not installed`
-    else {
-      const parsed = packSchema.safeParse(data.content)
-      // No farm calibration exists yet, so the pack's start values are the values in force.
-      loaded = parsed.success ? createPackContext(parsed.data) : `Pack ${key} does not match the pack format of this platform version`
+    let loaded = packCache.get(key)
+    if (!loaded) {
+      const { data, error } = await admin.from('crop_packs').select('content').eq('pack_id', packId).eq('version', version).maybeSingle()
+      if (error) loaded = `Pack ${key} could not be loaded: ${error.message}`
+      else if (!data) loaded = `Pack ${key} is not installed`
+      else {
+        const parsed = packSchema.safeParse(data.content)
+        loaded = parsed.success ? parsed.data : `Pack ${key} does not match the pack format of this platform version`
+      }
+      packCache.set(key, loaded)
     }
-    packCache.set(key, loaded)
-    return loaded
+    return typeof loaded === 'string' ? loaded : createPackContext(loaded, overrides)
   }
 
   let farmQuery = admin.from('farms').select('id, name, gps_lat, gps_lng, elevation_m')
@@ -317,16 +319,20 @@ export async function runDecisionEngine(admin: any, opts: DecisionRunOptions = {
     const { data: modeRows } = await admin.from('farm_engine_modes').select('pack_id, engine_id, mode').eq('farm_id', farm.id)
     const liveEngines = new Set<string>((modeRows ?? []).filter((m: any) => m.mode === 'live').map((m: any) => `${m.pack_id}:${m.engine_id}`))
     const modeOf = (a: ProposedAction): 'shadow' | 'live' => (liveEngines.has(`${a.packId}:${a.engineId}`) ? 'live' : 'shadow')
+    const calibration = await loadCalibrationStates(admin, farm.id)
+    if (calibration.error) r.errors.push(`Calibrated values could not be read, so the pack values are used: ${calibration.error}`)
     const reentryBlockedUntil: Record<string, string | null> = {}
     const stateSummary: Record<string, unknown> = {}
 
     for (const b of bound) {
       try {
-        const pack = await loadPack(b.pack_id, b.pack_version)
+        const pack = await loadPack(b.pack_id, b.pack_version, overridesFor(calibration.states, b.pack_id, b.id, b.pack_variety_id ?? null))
         if (typeof pack === 'string') {
           r.errors.push(`Block ${b.id}: ${pack}`)
           continue
         }
+        // A calibrated value the pack's bounds no longer allow is not applied (R11.1); say so.
+        for (const h of pack.held) r.errors.push(`Block ${b.id}: calibrated ${h.id} = ${h.value} not applied: ${h.reason}`)
 
         const areaHa = toHectares(b.area, b.area_unit)
         const treeCount = num(b.tree_count)

@@ -1,0 +1,29 @@
+couplings:
+  - id: hull_split_sets_rdi_window
+    from: phenology
+    to: irrigation
+    rule: Hull split progress sets the kernel-fill deficit irrigation window per block.
+    phase: kernel_fill
+  - id: hull_split_gates_now_spray
+    from: phenology
+    to: insect_pest
+    rule: Hull split progress gates the navel orangeworm spray timing.
+    phase: hull_split
+  - id: water_and_nitrogen_drive_hull_rot
+    from: irrigation, fertigation
+    to: disease
+    rule: Stem water potential and leaf nitrogen at hull split raise or lower hull rot risk.
+    phase: hull_split
+  - id: late_now_pressure_brings_harvest_forward
+    from: insect_pest
+    to: harvest
+    rule: High late navel orangeworm pressure brings harvest forward.
+  - id: bloom_frost_reduces_yield
+    from: frost
+    to: yield_forecast
+    rule: Frost damage at bloom reduces the expected yield.
+    phase: bloom
+
+to_be_sourced:
+  - item: Thresholds for each coupling
+    note: The specification describes the couplings in words only, so none has a rule table yet.

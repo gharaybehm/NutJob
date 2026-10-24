@@ -76,6 +76,14 @@ describe('packDiff', () => {
     expect(d.tables).toEqual([])
     expect(d.identical).toBe(false)
   })
+
+  it('shows that almond 0.1.2 adds only the names of the plant water status values', () => {
+    const load = (v: string) => packSchema.parse(loadPackSource(join(__dirname, '../../packs/almond', v)).raw)
+    const d = packDiff(load('0.1.1'), load('0.1.2'))
+    expect(d.sections).toEqual(['water'])
+    expect(d.parameters).toEqual({ added: [], removed: [], changed: [] })
+    expect(d.tables).toEqual([])
+  })
 })
 
 describe('newerVersion', () => {

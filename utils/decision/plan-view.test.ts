@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { engineTile, keyInputs, liveReadiness, sprayProducts, validateDecision, waitingEngines } from './plan-view'
+import { categoryForAction, engineTile, keyInputs, liveReadiness, pinnedSafeguards, safeguardEventKey, sprayProducts, validateDecision, validateScheduleDecision, waitingEngines } from './plan-view'
 
 describe('validateDecision', () => {
   it('accepts an acceptance with no reason', () => {
@@ -116,5 +116,62 @@ describe('waitingEngines', () => {
       { engineId: 'frost', notes: ['The pack has no frost section'] },
     ])
     expect(waitingEngines(null)).toEqual([])
+  })
+})
+
+describe('categoryForAction', () => {
+  it('books an action by the form of its type, then by its engine', () => {
+    expect(categoryForAction({ engineId: 'insect_pest', actionType: 'spray_x' })).toBe('spray')
+    expect(categoryForAction({ engineId: 'weed_groundcover', actionType: 'spray_weeds' })).toBe('spray')
+    expect(categoryForAction({ engineId: 'irrigation', actionType: 'irrigate_partial' })).toBe('irrigate')
+    expect(categoryForAction({ engineId: 'irrigation', actionType: 'stop_irrigation' })).toBe('other')
+    expect(categoryForAction({ engineId: 'fertigation', actionType: 'tissue_sampling' })).toBe('scout')
+    expect(categoryForAction({ engineId: 'insect_pest', actionType: 'monitor_now' })).toBe('scout')
+    expect(categoryForAction({ engineId: 'frost', actionType: 'frost_damage_scouting' })).toBe('scout')
+    expect(categoryForAction({ engineId: 'fertigation', actionType: 'fertigate' })).toBe('fertilize')
+    expect(categoryForAction({ engineId: 'canopy_pruning', actionType: 'seasonal_task' })).toBe('prune')
+    expect(categoryForAction({ engineId: 'frost', actionType: 'frost_protect' })).toBe('other')
+  })
+})
+
+describe('validateScheduleDecision', () => {
+  const start = '2026-04-02T05:00:00.000Z'
+  it('accepts with a start time, and an optional duration', () => {
+    expect(validateScheduleDecision({ decision: 'accepted', start })).toEqual({ ok: true, value: { decision: 'accepted', reason: null, note: null, start, durationHours: null } })
+    expect(validateScheduleDecision({ decision: 'accepted', start, durationHours: '3' })).toMatchObject({ ok: true, value: { durationHours: 3 } })
+  })
+  it('refuses a skip, a missing start or a bad duration', () => {
+    expect(validateScheduleDecision({ decision: 'skipped', reason: 'other', note: 'x', start })).toEqual({ ok: false, error: 'decision' })
+    expect(validateScheduleDecision({ decision: 'accepted', start: 'soon' })).toEqual({ ok: false, error: 'schedule' })
+    expect(validateScheduleDecision({ decision: 'accepted', start, durationHours: -1 })).toEqual({ ok: false, error: 'schedule' })
+  })
+  it('still needs a reason and a note to change an action', () => {
+    expect(validateScheduleDecision({ decision: 'edited', start })).toEqual({ ok: false, error: 'reason' })
+  })
+})
+
+describe('pinnedSafeguards', () => {
+  const spray = { blockId: 'b1', engineId: 'insect_pest' as const, ruleId: 'R1', actionType: 'spray_x' }
+  const actions = new Map([['a1', spray], ['a2', { ...spray, blockId: 'b2' }]])
+  const events = [
+    { actionId: 'a1', day: 1, safeguardId: 'SG-SPR-1', reason: 'Wind above the label limit' },
+    { actionId: 'a1', day: 2, safeguardId: 'SG-SPR-1', reason: 'Wind above the label limit' },
+    { actionId: 'a2', day: 1, safeguardId: 'SG-SPR-1', reason: 'Wind above the label limit' },
+    { actionId: 'gone', day: 1, safeguardId: 'SG-SPR-1', reason: 'x' },
+  ]
+
+  it('pins one entry per finding, with the days it applies to', () => {
+    const pinned = pinnedSafeguards(events, actions, new Set())
+    expect(pinned.map(p => [p.blockId, p.days])).toEqual([
+      ['b1', [1, 2]],
+      ['b2', [1]],
+    ])
+  })
+
+  it('drops a finding once acknowledged, until its reason changes', () => {
+    const key = safeguardEventKey(events[0], spray)
+    expect(pinnedSafeguards(events, actions, new Set([key])).map(p => p.blockId)).toEqual(['b2'])
+    const changed = [{ ...events[0], reason: 'Rain within the rainfast period' }]
+    expect(pinnedSafeguards(changed, actions, new Set([key]))).toHaveLength(1)
   })
 })

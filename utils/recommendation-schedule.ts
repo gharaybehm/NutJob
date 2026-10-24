@@ -52,22 +52,41 @@ export async function bookRecommendationEvent(
   schedule: ScheduleInput,
   title?: string
 ): Promise<string> {
-  const { start, end } = bookingWindow(rec.category, schedule);
+  return bookCalendarEvent(
+    farmId,
+    actorId,
+    { title: title ?? rec.title, category: rec.category, block_id: rec.block_id, notes: rec.rationale, details: { source: "recommendation", recommendation_id: rec.id } },
+    schedule,
+  );
+}
+
+/**
+ * The booking itself, for any accepted piece of advice: a weekly card, an
+ * assistant draft, or a Live action of the decision engine. `details` says
+ * where the event came from, so the source can find its booking again.
+ */
+export async function bookCalendarEvent(
+  farmId: string,
+  actorId: string,
+  event: { title: string; category: RecommendationCategory; block_id: string | null; notes: string; details: Record<string, unknown> },
+  schedule: ScheduleInput,
+): Promise<string> {
+  const { start, end } = bookingWindow(event.category, schedule);
   const admin = createAdminClient();
-  const { data: event, error } = await (admin.from("calendar_events") as any)
+  const { data: row, error } = await (admin.from("calendar_events") as any)
     .insert({
       farm_id: farmId,
       user_id: actorId,
-      title: title ?? rec.title,
-      type: categoryToActivityType(rec.category),
-      block_id: rec.block_id,
+      title: event.title,
+      type: categoryToActivityType(event.category),
+      block_id: event.block_id,
       start_date: start.toISOString(),
       end_date: end.toISOString(),
-      notes: rec.rationale,
-      details: { source: "recommendation", recommendation_id: rec.id },
+      notes: event.notes,
+      details: event.details,
     })
     .select("id")
     .single();
   if (error) throw new Error(error.message);
-  return event.id as string;
+  return row.id as string;
 }

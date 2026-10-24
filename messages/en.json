@@ -202,7 +202,8 @@
       "biofixHint": "The date from which the pest's development is counted. A date entered here replaces the one the system works out from trap checks.",
       "kinds": {
         "biofix": "Biofix",
-        "hives": "Hives"
+        "hives": "Hives",
+        "plantWaterStatus": "Plant water status"
       },
       "hivesPresent": "Are hives in the block now?",
       "hivesYes": "Hives in the block",
@@ -226,7 +227,9 @@
         "forbidden": "You do not have access to this block.",
         "notBound": "This block is not linked to a crop pack.",
         "failed": "The observation could not be saved. Try again."
-      }
+      },
+      "waterStatusReading": "Reading",
+      "waterStatusHint": "The reading in the unit the crop pack uses (a water potential is below zero), and the air temperature when it was taken, which the comparison with a well-watered tree needs. A reading counts for a few days."
     }
   },
   "activityTypes": {
@@ -317,6 +320,33 @@
       "notesPlaceholder": "What was done, any observations, issues encountered…",
       "cancel": "Cancel",
       "markComplete": "Mark Complete"
+    },
+    "engine": {
+      "toggle": "Engine plan ({count})",
+      "reentry": "{block}: no entry",
+      "preharvest": "{block}: no harvest (pre-harvest interval)",
+      "harvestPlanned": "{block}: planned harvest",
+      "frostNight": "{block}: frost {level}",
+      "levels": {
+        "none": "no risk",
+        "watch": "watch",
+        "warning": "warning",
+        "critical": "critical"
+      },
+      "kinds": {
+        "planned": "Engine plan",
+        "season_task": "Season task falling due",
+        "reentry": "Re-entry interval",
+        "preharvest": "Pre-harvest interval",
+        "harvest_planned": "Planned harvest",
+        "frost_night": "Frost night"
+      },
+      "range": "{from} to {to}",
+      "live": "Live: accept it on the Recommendations page to book it.",
+      "shadow": "Shadow: recorded for comparison, not booked.",
+      "readOnly": "From the decision engine. Not a calendar event.",
+      "openPlan": "Open the engine plan",
+      "close": "Close"
     }
   },
   "inventory": {
@@ -471,8 +501,23 @@
           "note": "Say what was done instead, or explain \"Other\".",
           "forbidden": "Only a supervisor or an admin of this farm can record a decision.",
           "notFound": "This action is no longer in the record.",
-          "failed": "The decision could not be saved. Try again."
-        }
+          "failed": "The decision could not be saved. Try again.",
+          "schedule": "Choose a start time and a duration.",
+          "notLive": "This engine is in Shadow, so its actions are not booked.",
+          "booked": "This action is already on the calendar."
+        },
+        "acceptSchedule": "Accept and schedule",
+        "changeSchedule": "Change and schedule",
+        "skipLive": "Skip",
+        "book": "Book on the calendar",
+        "noteChanged": "What will be done instead",
+        "booked": "Booked for {date}.",
+        "bookedDone": "Done {date}.",
+        "openCalendar": "Open the calendar",
+        "acceptedLive": "Accepted",
+        "editedLive": "Changed",
+        "skippedLive": "Skipped",
+        "notBooked": "Decided, not booked"
       },
       "modes": {
         "title": "Shadow or Live, per engine",
@@ -515,6 +560,73 @@
         "LEACHING_NOT_ASSESSED": "No extra water for leaching salts is added.",
         "NUTRIENT_CREDITS_NOT_ASSESSED": "Nutrients supplied by water, soil and organic matter are not counted.",
         "VALUE_NOT_ESTIMATED": "The action has no money value yet, so it is not weighed against its cost."
+      },
+      "frostCheck": {
+        "title": "Frost check, every two hours",
+        "coldest": "Coldest night {date}: {value} °C",
+        "noNights": "No forecast nights",
+        "station": "station {value} °C",
+        "checkedAt": "checked {time}",
+        "levels": {
+          "none": "No risk",
+          "watch": "Watch",
+          "warning": "Warning",
+          "critical": "Critical"
+        }
+      },
+      "pinned": {
+        "title": "Safeguard findings to acknowledge ({count})",
+        "days": "day {days}",
+        "acknowledge": "Acknowledge",
+        "note": "Acknowledging records that you have seen it. The safeguard still applies.",
+        "errors": {
+          "forbidden": "Only a supervisor or an admin of this farm can acknowledge a safeguard.",
+          "notFound": "This finding is no longer in the plan.",
+          "failed": "Could not be saved. Try again."
+        }
+      },
+      "calibrations": {
+        "title": "Calibrated values (learning loop)",
+        "empty": "No calibrated values yet. The crop pack values are in force. A value is proposed for calibration only once enough outcomes have been logged (readings, observed events, harvests), so nothing is proposed for young trees in their first season.",
+        "unavailable": "The calibrated values could not be read.",
+        "intro": "Values calibrated for this farm on top of the crop pack. A proposed value can be promoted only inside the pack bounds and when it did better than the value in force on the logged history. A promotion can be rolled back in one step.",
+        "adminOnly": "Only a farm admin can promote, reject or roll back a calibrated value.",
+        "wholeFarm": "Whole farm",
+        "variety": "Variety {variety}",
+        "inForce": "In force",
+        "packValue": "{value} (crop pack)",
+        "bounds": "pack bounds {low} to {high}",
+        "backtest": "{metric}: {challenger} against {champion} now, over {n} outcomes",
+        "status": {
+          "challenger": "proposed",
+          "in_force": "in force",
+          "superseded": "replaced",
+          "rejected": "rejected",
+          "rolled_back": "rolled back"
+        },
+        "refusals": {
+          "notChallenger": "already decided",
+          "unknownParameter": "not a parameter of the pack in use",
+          "fixed": "the pack fixes this value",
+          "bounds": "outside the pack bounds, held for review",
+          "noBacktest": "no backtest on logged outcomes",
+          "notBetter": "did not do better than the value in force"
+        },
+        "promote": "Promote",
+        "reject": "Reject",
+        "rollback": "Roll back",
+        "errors": {
+          "forbidden": "Only a farm admin can decide on calibrated values.",
+          "notFound": "This value is no longer in the record.",
+          "notAllowed": "This cannot be done to this value.",
+          "notChallenger": "This value has already been decided.",
+          "unknownParameter": "The crop pack in use has no such parameter.",
+          "fixed": "The crop pack fixes this value.",
+          "bounds": "The value is outside the crop pack bounds.",
+          "noBacktest": "The value has no backtest on logged outcomes.",
+          "notBetter": "The value did not do better than the one in force.",
+          "failed": "Could not be saved. Try again."
+        }
       }
     }
   },
@@ -534,7 +646,14 @@
     "offlineBanner": "{count} {count, plural, one {activity} other {activities}} saved offline — will sync automatically when reconnected.",
     "syncingBanner": "Syncing offline activities…",
     "syncedBanner": "{count} {count, plural, one {activity} other {activities}} synced successfully.",
-    "pendingSyncBadge": "Pending sync"
+    "pendingSyncBadge": "Pending sync",
+    "sprayLibrary": {
+      "product": "Product from the library",
+      "none": "Not in the library",
+      "notApproved": "{name} (not approved)",
+      "target": "Used against",
+      "anyTarget": "Not stated"
+    }
   },
   "settings": {
     "title": "Settings",

@@ -1,0 +1,12 @@
+model: nuts per tree x kernel weight
+components:
+  - nuts_per_tree
+  - kernel_weight
+early_indicators:
+  - bloom density
+  - fruit set counts
+adjustments: Frost, pest and disease damage events reduce the estimate.
+to_be_sourced:
+  - item: Sampling protocol
+  - item: Yield curve by tree age
+  - item: Damage-to-yield relationships

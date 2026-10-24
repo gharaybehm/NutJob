@@ -25,9 +25,24 @@ describe('forms generated from a pack', () => {
     expect(form('hives', null)?.fields).toEqual([{ id: 'present', label: null, type: 'boolean' }])
   })
 
-  it('reads the almond pack: egg traps, hull split, moth traps, shoot strikes, two biofix forms and hives', () => {
-    const almond = observationForms(packSchema.parse(loadPackSource(join(__dirname, '../../packs/almond/0.1.1')).raw))
-    expect(almond.map(f => `${f.kind}:${f.subject ?? '-'}`)).toEqual(['trap_check:now', 'hull_split:-', 'biofix:now', 'trap_check:ptb', 'shoot_strikes:ptb', 'biofix:ptb', 'hives:-'])
+  it('reads the almond pack: egg traps, hull split, moth traps, shoot strikes, two biofix forms, plant water status and hives', () => {
+    const almond = observationForms(packSchema.parse(loadPackSource(join(__dirname, '../../packs/almond/0.1.2')).raw))
+    expect(almond.map(f => `${f.kind}:${f.subject ?? '-'}`)).toEqual(['trap_check:now', 'hull_split:-', 'biofix:now', 'trap_check:ptb', 'shoot_strikes:ptb', 'biofix:ptb', 'plant_water_status:-', 'hives:-'])
+  })
+
+  it('asks for a plant water status reading and the weather its baseline needs, both of which may be negative', () => {
+    const pack = packSchema.parse(loadPackSource(join(__dirname, '../../packs/almond/0.1.2')).raw)
+    const almond = observationForms(pack)
+    const form = almond.find(f => f.kind === 'plant_water_status')
+    expect(form?.fields).toEqual([
+      { id: 'reading', label: null, type: 'number', signed: true, required: true },
+      { id: 'air_temp_F', label: null, type: 'number', signed: true },
+    ])
+    const entry = (values: Record<string, unknown>) => validateObservation(almond, { kind: 'plant_water_status', subject: null, observedOn: TODAY, values }, TODAY)
+    expect(entry({ reading: '-12,5', air_temp_F: 95 })).toMatchObject({ ok: true, value: { values: { reading: -12.5, air_temp_F: 95 } } })
+    expect(entry({ air_temp_F: 95 })).toEqual({ ok: false, error: 'value', field: 'reading' })
+    // Other forms still refuse a negative count.
+    expect(validateObservation(almond, { kind: 'trap_check', subject: 'now', observedOn: TODAY, values: { eggs: -1 } }, TODAY)).toMatchObject({ ok: false, error: 'value' })
   })
 })
 

@@ -4,8 +4,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { AlertTriangle, ChevronDown, ChevronUp, Loader2, ShieldAlert, Workflow } from 'lucide-react'
-import { recordEngineDecision, setEngineMode, type EngineModeView, type EnginePlanView, type RecordedDecision } from '@/app/actions/engine-plan'
-import { DECISION_REASONS, keyInputs, sprayProducts, type Decision, type DecisionReason, type StoredPlanEntry } from '@/utils/decision/plan-view'
+import Link from 'next/link'
+import { acknowledgeSafeguard, recordEngineDecision, scheduleEngineAction, setEngineMode, type Booking, type EngineModeView, type EnginePlanView, type FrostCheckView, type RecordedDecision } from '@/app/actions/engine-plan'
+import { categoryForAction, DECISION_REASONS, keyInputs, sprayProducts, type Decision, type DecisionReason, type StoredPlanEntry } from '@/utils/decision/plan-view'
+import ScheduleFields, { defaultHoursFor } from './ScheduleFields'
+import Calibrations from './Calibrations'
+import type { CalibrationsView } from '@/app/actions/calibrations'
 
 const INPUT = 'w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-4 focus:outline-none focus:ring-2 focus:ring-green'
 
@@ -32,6 +36,155 @@ function Fold({ title, children, defaultOpen = false }: { title: string; childre
         {open ? <ChevronUp className="h-4 w-4 shrink-0 text-ink-4" /> : <ChevronDown className="h-4 w-4 shrink-0 text-ink-4" />}
       </button>
       {open && <div className="border-t border-line px-4 py-3">{children}</div>}
+    </div>
+  )
+}
+
+/**
+ * When the booking form starts: the planned day in the morning, or for frost
+ * protection the evening before the night it protects. The manager changes it.
+ */
+function defaultStartLocal(entry: StoredPlanEntry): string {
+  const date = entry.date ?? new Date().toISOString().slice(0, 10)
+  if (entry.action.actionType === 'frost_protect') {
+    const before = new Date(Date.parse(`${date}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+    return `${before}T20:00`
+  }
+  return `${date}T07:00`
+}
+
+function BookedLine({ farmId, booking }: { farmId: string; booking: Booking }) {
+  const t = useTranslations('recommendations.engine.decision')
+  const locale = useLocale()
+  const when = (iso: string) => new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
+  return (
+    <p className="text-xs text-ink-2">
+      {booking.completedAt ? t('bookedDone', { date: when(booking.completedAt) }) : t('booked', { date: when(booking.start) })}{' '}
+      <Link href={`/${farmId}/calendar`} className="font-medium text-green hover:underline">
+        {t('openCalendar')}
+      </Link>
+    </p>
+  )
+}
+
+/** A Live action: accept or change it and book it on the calendar, or skip it. */
+function LiveControls({ farmId, entry, recorded, booking }: { farmId: string; entry: StoredPlanEntry; recorded: RecordedDecision | undefined; booking: Booking | undefined }) {
+  const t = useTranslations('recommendations.engine.decision')
+  const router = useRouter()
+  const [draft, setDraft] = useState<Decision | null>(null)
+  const [changing, setChanging] = useState(false)
+  const [reason, setReason] = useState<DecisionReason | ''>('')
+  const [note, setNote] = useState('')
+  const [startLocal, setStartLocal] = useState(() => defaultStartLocal(entry))
+  const [hours, setHours] = useState(() => defaultHoursFor(categoryForAction(entry.action)))
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  if (!entry.logId) return <p className="text-xs text-ink-4">{t('noLog')}</p>
+  if (booking) {
+    return (
+      <div className="space-y-1">
+        {recorded && <Badge tone={recorded.decision === 'edited' ? 'amber' : 'green'}>{t(recorded.decision === 'edited' ? 'editedLive' : 'acceptedLive')}</Badge>}
+        <BookedLine farmId={farmId} booking={booking} />
+      </div>
+    )
+  }
+
+  async function save(decision: Decision) {
+    setPending(true)
+    setError(null)
+    try {
+      const res =
+        decision === 'skipped'
+          ? await recordEngineDecision(farmId, entry.logId as string, { decision, reason, note })
+          : await scheduleEngineAction(farmId, entry.logId as string, { decision, reason, note, start: new Date(startLocal).toISOString(), durationHours: hours })
+      if (res.ok) {
+        setDraft(null)
+        setChanging(false)
+        router.refresh()
+      } else {
+        setError(t(`errors.${res.error}`))
+      }
+    } catch {
+      setError(t('errors.failed'))
+    }
+    setPending(false)
+  }
+
+  if (recorded && !changing && draft === null) {
+    return (
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <Badge tone={recorded.decision === 'skipped' ? 'neutral' : 'amber'}>{t(recorded.decision === 'skipped' ? 'skippedLive' : 'notBooked')}</Badge>
+        {recorded.reason && <span className="text-ink-3">{t(`reasons.${recorded.reason}`)}</span>}
+        {recorded.note && <span className="text-ink-3 break-words">· {recorded.note}</span>}
+        <button type="button" onClick={() => setChanging(true)} className="font-medium text-green hover:underline">
+          {t('change')}
+        </button>
+      </div>
+    )
+  }
+
+  if (draft === null) {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-ink-3">{t('promptLive')}</span>
+        <button type="button" onClick={() => setDraft('accepted')} className="rounded-lg bg-green px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:brightness-105">
+          {t('acceptSchedule')}
+        </button>
+        <button type="button" onClick={() => setDraft('edited')} className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink-2 transition-colors hover:bg-tile">
+          {t('changeSchedule')}
+        </button>
+        <button type="button" onClick={() => setDraft('skipped')} className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink-2 transition-colors hover:bg-tile">
+          {t('skipLive')}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3 rounded-lg bg-tile p-3">
+      <p className="text-xs font-semibold text-ink-2">{t(draft === 'accepted' ? 'acceptSchedule' : draft === 'edited' ? 'changeSchedule' : 'skipLive')}</p>
+      {draft !== 'accepted' && (
+        <>
+          <label className="block text-xs font-semibold text-ink-3">
+            {t('reason')}
+            <select value={reason} onChange={e => setReason(e.target.value as DecisionReason | '')} className={`${INPUT} mt-1 font-normal`}>
+              <option value="">{t('chooseReason')}</option>
+              {DECISION_REASONS.map(r => (
+                <option key={r} value={r}>
+                  {t(`reasons.${r}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs font-semibold text-ink-3">
+            {draft === 'edited' ? t('noteChanged') : t('note')}
+            <textarea rows={2} maxLength={1000} value={note} onChange={e => setNote(e.target.value)} className={`${INPUT} mt-1 resize-none font-normal`} />
+          </label>
+        </>
+      )}
+      {draft !== 'skipped' && <ScheduleFields startLocal={startLocal} setStartLocal={setStartLocal} durationHours={hours} setDurationHours={setHours} />}
+      <div className="flex items-center justify-end gap-3">
+        {error && (
+          <span role="alert" className="text-xs font-medium text-red">
+            {error}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            setDraft(null)
+            setError(null)
+          }}
+          className="rounded-lg px-3 py-1.5 text-xs font-semibold text-ink-3 transition-colors hover:bg-surface"
+        >
+          {t('cancel')}
+        </button>
+        <button type="button" disabled={pending} onClick={() => save(draft)} className="flex items-center gap-1.5 rounded-lg bg-green px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:brightness-105 disabled:opacity-60">
+          {pending && <Loader2 className="h-3 w-3 animate-spin" />}
+          {draft === 'skipped' ? t('save') : t('book')}
+        </button>
+      </div>
     </div>
   )
 }
@@ -85,7 +238,7 @@ function DecisionControls({ farmId, entry, recorded }: { farmId: string; entry: 
   if (draft === null) {
     return (
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-ink-3">{entry.mode === 'live' ? t('promptLive') : t('promptShadow')}</span>
+        <span className="text-xs text-ink-3">{t('promptShadow')}</span>
         <button type="button" disabled={pending} onClick={() => save('accepted')} className="rounded-lg bg-green px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:brightness-105 disabled:opacity-60">
           {pending ? <Loader2 className="h-3 w-3 animate-spin" /> : t('accepted')}
         </button>
@@ -264,7 +417,91 @@ function EntryCard({ farmId, entry, view, showDecision }: { farmId: string; entr
       </button>
       {open && <Why entry={entry} />}
 
-      {showDecision && <DecisionControls farmId={farmId} entry={entry} recorded={entry.logId ? view.decisions[entry.logId] : undefined} />}
+      {showDecision &&
+        (entry.mode === 'live' ? (
+          <LiveControls farmId={farmId} entry={entry} recorded={entry.logId ? view.decisions[entry.logId] : undefined} booking={entry.logId ? view.bookings[entry.logId] : undefined} />
+        ) : (
+          <DecisionControls farmId={farmId} entry={entry} recorded={entry.logId ? view.decisions[entry.logId] : undefined} />
+        ))}
+    </div>
+  )
+}
+
+/** Safeguard findings stay pinned until a supervisor or an admin acknowledges them. Shown exactly as recorded. */
+function PinnedSafeguards({ farmId, view }: { farmId: string; view: EnginePlanView }) {
+  const t = useTranslations('recommendations.engine.pinned')
+  const router = useRouter()
+  const [pending, setPending] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function acknowledge(key: string) {
+    setPending(key)
+    setError(null)
+    try {
+      const res = await acknowledgeSafeguard(farmId, key)
+      if (res.ok) router.refresh()
+      else setError(t(`errors.${res.error}`))
+    } catch {
+      setError(t('errors.failed'))
+    }
+    setPending(null)
+  }
+
+  return (
+    <div role="alert" className="space-y-2 rounded-xl border border-amber/40 bg-amber-soft p-4">
+      <p className="flex items-center gap-2 text-sm font-semibold text-amber-ink">
+        <ShieldAlert className="h-4 w-4" />
+        {t('title', { count: view.pinned.length })}
+      </p>
+      <ul className="space-y-2">
+        {view.pinned.map(p => (
+          <li key={p.key} className="flex flex-wrap items-start justify-between gap-2 text-xs text-ink-2">
+            <span className="min-w-0 break-words">
+              <span className="font-semibold" dir="ltr">
+                {p.safeguardId}
+              </span>{' '}
+              · {view.blockNames[p.blockId] ?? p.blockId} · {t('days', { days: [...p.days].sort((a, b) => a - b).join(', ') })} · {p.reason}
+            </span>
+            <button type="button" disabled={pending !== null} onClick={() => acknowledge(p.key)} className="flex shrink-0 items-center gap-1.5 rounded-lg border border-amber/50 bg-surface px-2.5 py-1 font-semibold text-amber-ink hover:bg-tile disabled:opacity-60">
+              {pending === p.key && <Loader2 className="h-3 w-3 animate-spin" />}
+              {t('acknowledge')}
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="text-[11px] text-ink-3">{t('note')}</p>
+      {error && (
+        <p role="alert" className="text-xs font-medium text-red">
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** The latest frost check of each block, from the check every two hours. */
+function FrostChecks({ view }: { view: EnginePlanView }) {
+  const t = useTranslations('recommendations.engine.frostCheck')
+  const locale = useLocale()
+  const time = (iso: string) => new Intl.DateTimeFormat(locale, { weekday: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
+  const tone = { none: 'green', watch: 'amber', warning: 'amber', critical: 'red' } as const
+  return (
+    <div className="rounded-xl border border-line px-4 py-3">
+      <p className="text-sm font-semibold text-ink-2">{t('title')}</p>
+      <ul className="mt-2 divide-y divide-line">
+        {view.frostChecks.map((c: FrostCheckView) => (
+          <li key={c.blockId} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+            <div className="min-w-0">
+              <p className="font-medium text-ink">{view.blockNames[c.blockId] ?? c.blockId}</p>
+              <p className="text-xs text-ink-3">
+                {c.worstNight !== null && c.worstMinC !== null ? t('coldest', { date: c.worstNight, value: c.worstMinC }) : t('noNights')}
+                {c.stationC !== null && ` · ${t('station', { value: c.stationC })}`} · {t('checkedAt', { time: time(c.checkedAt) })}
+              </p>
+            </div>
+            <Badge tone={tone[c.level]}>{t(`levels.${c.level}`)}</Badge>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
@@ -321,7 +558,7 @@ function ModeRow({ farmId, mode }: { farmId: string; mode: EngineModeView }) {
  * engine is still waiting for. Texts of the actions are written by the
  * engine, in English.
  */
-export default function EnginePlan({ farmId, view }: { farmId: string; view: EnginePlanView }) {
+export default function EnginePlan({ farmId, view, calibrations }: { farmId: string; view: EnginePlanView; calibrations: CalibrationsView }) {
   const t = useTranslations('recommendations.engine')
   const locale = useLocale()
   if (view.status === 'forbidden') return null
@@ -348,6 +585,10 @@ export default function EnginePlan({ farmId, view }: { farmId: string; view: Eng
           </div>
         )}
       </div>
+
+      {view.pinned.length > 0 && <PinnedSafeguards farmId={farmId} view={view} />}
+
+      {view.frostChecks.length > 0 && <FrostChecks view={view} />}
 
       {view.status === 'none' && <p className="text-sm text-ink-3">{t('none')}</p>}
       {view.status === 'unavailable' && <p className="text-sm text-amber-ink">{t('unavailable')}</p>}
@@ -454,6 +695,12 @@ export default function EnginePlan({ farmId, view }: { farmId: string; view: Eng
               ),
             )}
           </ul>
+        </Fold>
+      )}
+
+      {calibrations.status !== 'forbidden' && (
+        <Fold title={t('calibrations.title')}>
+          <Calibrations farmId={farmId} view={calibrations} blockNames={view.blockNames} />
         </Fold>
       )}
 
